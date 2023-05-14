@@ -1146,32 +1146,21 @@ to the compiler") "This is not ignored"
   (->> [1 1 2 3 5 8 13 21]
        (partition 2))
 
-  ;; The first argument/element passed to `->>` is
-  ;; `[1 1 2 3 5 8 13 21]`
-  ;; This is inserted as the last element of the
-  ;; function call `(partition 2)`, yielding:
+  ;; The first argument/element passed to `->>` is `[1 1 2 3 5 8 13 21]` This is inserted as the last element of the function call `(partition 2)`, yielding:
 
   (partition 2 [1 1 2 3 5 8 13 21])
 
-  ;; This partitions the list into lists of
-  ;; 2 elements => `((1 1) (2 3) (5 8) (13 21))`
-  ;; This new list is then inserted (threaded)
-  ;; as the last argument to the next function,
-  ;; yielding:
+  ;; This partitions the list into lists of 2 elements => `((1 1) (2 3) (5 8) (13 21))`. This new list is then inserted (threaded) as the last argument to the next function, yielding:
 
   (zipmap [:a :b :c :d] '((1 1) (2 3) (5 8) (13 21)))
 
-  ;; Which ”zips” together a Clojure map using
-  ;; the first list as keys and the second list
-  ;; as values
+  ;; Which ”zips” together a Clojure map using the first list as keys and the second list as values
   ;; => `{:a (1 1), :b (2 3), :c (5 8), :d (13 21)}`
-  ;; This map is then threaded as the last argument
-  ;; to the function `:d`
+  ;; This map is then threaded as the last argument to the function `:d`
 
   (:d '{:a (1 1), :b (2 3), :c (5 8), :d (13 21)})
 
-  ;; (In clojure keywords are functions that look
-  ;;  themselves up in the map handed to them.)
+  ;; (In clojure keywords are functions that look themselves up in the map handed to them.)
   ;; => `(13 21)`
   ;; You know the drill by now, this is threaded
 
@@ -1184,20 +1173,15 @@ to the compiler") "This is not ignored"
   (Math/abs -8)
   ;; 🎉
 
-  ;; (In many Clojure capable editors, including
-  ;; Calva, there are commands for ”unwinding”
-  ;; a thread, and for converting a nested
-  ;; expressions into a thread. Search for ”thread”
-  ;; among the commands.)
+  ;; (In many Clojure capable editors, including Calva, there are commands for ”unwinding” a thread, and for converting a nested expressions into a thread. Search for ”thread” among the commands.)
+
   ;; https://github.com/clojure-emacs/clj-refactor.el/wiki/cljr-unwind-all
 
   ;; There is also a thread-first macro
+
   ;; `->` https://clojuredocs.org/clojure.core/-%3E
-  ;; Sometimes you neither want to thread first
-  ;; or last. There is a macro for this too.
-  ;; `as->` lets you bind a variable name to the
-  ;; threaded thing and place it wherever you
-  ;; fancy in each function call.
+
+  ;; Sometimes you neither want to thread first or last. There is a macro for this too. `as->` lets you bind a variable name to the threaded thing and place it wherever you fancy in each function call.
 
   (as-> 15 foo
     (range 1 foo 3)
@@ -1205,9 +1189,7 @@ to the compiler") "This is not ignored"
 
   ;; https://clojuredocs.org/clojure.core/as-%3E
 
-  ;; It's common to utilize the fact that most characters
-  ;; are available when naming Clojure symbols. I often
-  ;; use `$` for this threading macro:
+  ;; It's common to utilize the fact that most characters are available when naming Clojure symbols. I often use `$` for this threading macro:
 
   (as-> 15 $
     (range 1 $ 3)
@@ -1219,8 +1201,7 @@ to the compiler") "This is not ignored"
     (range 1 <> 3)
     (interpose ":" <>))
   
-  ;; I think emojis should be avoided, the official
-  ;; docs only mention alphanumerics plus:
+  ;; I think emojis should be avoided, the official docs only mention alphanumerics plus:
   ;; `*`, `+`, `!`, `-`, `_`, `'`, `?`, `<`, `>`, and `=`
   ;; (so not even `$`) but here goes:
 
@@ -1229,69 +1210,52 @@ to the compiler") "This is not ignored"
     (interpose ":" ❤️))
 
   ;; Other core threading macros are:
+
   ;; `cond->`, `cond->>`, `some->`, and `some->>`
+  
   ;; https://clojuredocs.org/clojure.core/cond-%3E
 
-  ;; Please feel encouraged to copy the examples
-  ;; from ClojureDocs here and play with them.
-  ;; Here's one:
+  ;; Please feel encouraged to copy the examples from ClojureDocs here and play with them. Here's one:
 
   (cond-> 1        ; we start with 1
     true inc       ; the condition is true so (inc 1) => 2
     false (* 42)   ; the condition is false so the operation is skipped
     (= 2 2) (* 3)) ; (= 2 2) is true so (* 2 3) => 6 
 
-  ;; See ”Threading with Style” by Stuart Sierra
-  ;; for idiomatic use of the threading facilities.
+  ;; See ”Threading with Style” by Stuart Sierra for idiomatic use of the threading facilities.
+  
   ;; https://stuartsierra.com/2018/07/06/threading-with-style
   )
 
-;; With special forms, the special syntax of the Reader,
-;; and macros, the foundations of what is the Clojure
-;; language you use are laid. You can of course extend
-;; the language further with libraries including macros
-;; or create your own. However the core language, with
-;; its macros is very expressive. Taking data oriented
-;; approaches is often enough. Even to prefer, rather
-;; than creating more macros.
+;; With special forms, the special syntax of the Reader, and macros, the foundations of what is the Clojure language you use are laid. You can of course extend the language further with libraries including macros or create your own. However the core language, with its macros is very expressive. Taking data oriented approaches is often enough. Even to prefer, rather than creating more macros.
 
 ;; On to flow control!
 
 (comment
-  ;; = Flow Control, Conditionals, Branching =
-  ;; Clojure is richer than most languages in what it
-  ;; offers us to let our programs flow the way we want
-  ;; them to. Almost all the core library features for
-  ;; this are implemented using the primitive (special
-  ;; form) `if`. This is still the staple for us as
-  ;; Clojure coders. It takes three forms as its
-  ;; arguments:
+  ;; ## Flow Control, Conditionals, Branching 
+  ;; Clojure is richer than most languages in what it offers us to let our programs flow the way we want
+  ;; them to. Almost all the core library features for this are implemented using the primitive (special form) `if`. This is still the staple for us as Clojure coders. It takes three forms as its arguments:
   ;; 1. A condition to evaluate
-  ;; 2. What to evaluate if the condition evaluates
-  ;;    to something true (truthy)
-  ;; 3. The form to evaluate if the condition does not
-  ;;    evaluate to something truthy (the ”else” branch)
-  ;; Roll this die, some ten-twenty times, checking if
-  ;; it is a six:
+  ;; 2. What to evaluate if the condition evaluates  to something true (truthy)
+  ;; 3. The form to evaluate if the condition does not evaluate to something truthy (the ”else” branch)
+  ;; Roll this dice, some ten-twenty times, checking if it is a six:
 
   (if (= 6 (inc (rand-int 6)))
     "One time out of six you get a six"
     "Five times out of six you get something else")
 
-  ;; Since there are no statements in Clojure `if` is
-  ;; the equivalent to the ternary `if` expression you
-  ;; find in C and many other languages:
+  ;; Since there are no statements in Clojure `if` is the equivalent to the ternary `if` expression you find in C and many other languages:
+
   ;;   test ? true-expression : false-expression
+  
   ;; Pseudo code for our dice:
+ 
   ;;   int(rand() * 6) + 1 == 6 ?
   ;;     "One time out of six you get a six" :
   ;;     "Five times out of six you get something else";
 
-  ;; == The Search for Truth ==
-  ;; Again, in Clojure we use expressions evaluating to
-  ;; values. When examined for branching all values
-  ;; are either truthy or falsy. In fact, almost all
-  ;; values are truthy
+  ;; ### The Search for Truth 
+  ;; Again, in Clojure we use expressions evaluating to values. When examined for branching all values are either truthy or falsy. In fact, almost all values are truthy
 
   (if true :truthy :falsy)
   (if :foo :truthy :falsy)
@@ -1305,17 +1269,11 @@ to the compiler") "This is not ignored"
   (if nil :truthy :falsy)
   (when false :truthy)
 
-  ;; About that last one: `when` evaluates to `nil`
-  ;; when the condition is falsy. Since `nil` is 
-  ;; falsy the above `when` expression would be
-  ;; making the ”else” branch of an `if` to be
-  ;; evaluated
+  ;; About that last one: `when` evaluates to `nil` when the condition is falsy. Since `nil` is  falsy the above `when` expression would be making the ”else” branch of an `if` to be evaluated
 
   (if (when false :truthy) :true :falsy)
 
-  ;; (Super extra bad code, but anyway)
-  ;; When only boolean truth or falsehood can cut
-  ;; it for you, there is the `true?` function
+  ;; (Super extra bad code, but anyway) When only boolean truth or falsehood can cut it for you, there is the `true?` function
 
   (true? true)
   (true? 0)
@@ -1327,30 +1285,19 @@ to the compiler") "This is not ignored"
 
   (if (true? 0) :true :false)
 
-  ;; == `when` ==
-  ;; As mentioned before, `when` is a one-branch
-  ;; `if`, only for the truthy branch, which is
-  ;; wrapped in a `do` for you. Try this and then
-  ;; try it replacing the `when` with an `if`:
+  ;; ### `when` 
+  ;; As mentioned before, `when` is a one-branch`if`, only for the truthy branch, which is wrapped in a `do` for you. Try this and then try it replacing the `when` with an `if`:
 
   (when :truthy
     (println "That sounds true to me")
     :truthy-for-you)
 
-  ;; If the `when` condition is not truthy,
-  ;; `nil` will be returned.
+  ;; If the `when` condition is not truthy, `nil` will be returned.
 
   (when nil :true-enough?)
 
-  ;; == `cond` ==
-  ;; Since deeply nested if/else structures can be
-  ;; hard to write, read, and maintain, Clojure core
-  ;; offers several more constructs for flow control,
-  ;; one very common such is the `cond` macro. It
-  ;; takes pairs of condition/result forms, tests
-  ;; each condition, if it is true, then the result
-  ;; form is evaluated and ”returned”, short-circuiting
-  ;; so that no more condition is tested.
+  ;; ### `cond` 
+  ;; Since deeply nested if/else structures can be hard to write, read, and maintain, Clojure core offers several more constructs for flow control, one very common such is the `cond` macro. It takes pairs of condition/result forms, tests each condition, if it is true, then the result form is evaluated and ”returned”, short-circuiting so that no more condition is tested.
 
   (let [dice-roll (inc (rand-int 6))]
     (cond
@@ -1358,27 +1305,18 @@ to the compiler") "This is not ignored"
       (odd? dice-roll) (str "An odd roll " dice-roll " is")
       :else            (str "Not six, nor odd, instead: " dice-roll)))
 
-  ;; The `:else` is just the keyword `:else` which
-  ;; evaluates to itself and is truthy. It is the
-  ;; conventional way to give your cond forms a
-  ;; default value. Without a default clause, the
-  ;; form would evaluate to `nil` for anything not-six
-  ;; not-odd. Try it by placing two ignore markers
-  ;; (`#_ #_`) in front of the `:else` keyword.
+  ;; The `:else` is just the keyword `:else` which evaluates to itself and is truthy. It is the conventional way to give your cond forms a default value. Without a default clause, the form would evaluate to `nil` for anything not-six not-odd. Try it by placing two ignore markers (`#_ #_`) in front of the `:else` keyword.
 
   ;; Gotta love ClojureDocs
+
   ;; https://clojuredocs.org/clojure.core/cond
+  
   ;; Paste examples from there here and play around:
 
   ;; See also links to `cond->` info above
 
-  ;; == `case` ==
-  ;; A bit similar to `switch/case` constructs in
-  ;; other languages, Clojure core has the `case`
-  ;; macro which takes a test expression, followed by
-  ;; zero or more clauses (pairs) of test constant/expr,
-  ;; followed by an optional expr. (However, the body
-  ;; after the test expression may not be empty.)
+  ;; ### `case`  
+  ;; A bit similar to `switch/case` constructs in other languages, Clojure core has the `case` macro which takes a test expression, followed by zero or more clauses (pairs) of test constant/expr, followed by an optional expr. (However, the body after the test expression may not be empty.)
 
   (let [test-str "foo bar"]
     (case test-str
@@ -1386,8 +1324,7 @@ to the compiler") "This is not ignored"
       "baz"     :baz
       (count    test-str)))
 
-  ;; The trailing expression, if any, is ”returned” as
-  ;; the default value.
+  ;; The trailing expression, if any, is ”returned” as the default value.
 
   (let [test-str "foo bar"]
     (case test-str
@@ -1395,8 +1332,7 @@ to the compiler") "This is not ignored"
       "baz"     :baz
       (count    test-str)))
 
-  ;; If no clause matches and there is no default,
-  ;; a run time error happens
+  ;; If no clause matches and there is no default,a run time error happens
 
   (let [test-str "foo bar"]
     (case test-str
@@ -1404,9 +1340,7 @@ to the compiler") "This is not ignored"
       "baz"     :baz
       #_(count    test-str)))
 
-  ;; WATCH OUT! A test constant must be a compile
-  ;; time literal, and the compiler won't  help you
-  ;; find bugs like this:
+  ;; WATCH OUT! A test constant must be a compile time literal, and the compiler won't  help you find bugs like this:
 
   (let [test-int 2
         two 2]
@@ -1416,17 +1350,15 @@ to the compiler") "This is not ignored"
       (str test-int ": Probably not expected")))
 
   ;; https://clojuredocs.org/clojure.core/case
+  
   ;; Paste some `case` examples here and experiment
 
-  ;; The Functional Design in Clojure podcast has a
-  ;; fantastic episode about branching
+  ;; The Functional Design in Clojure podcast has a fantastic episode about branching
+
   ;; https://clojuredesign.club/episode/089-branching-out/
 
-  ;; == Less branching is good, right? ==
-  ;; The core library is rich with functions that
-  ;; helps you avoid writing branching code. Instead
-  ;; you provide the condition as a predicate.
-  ;; An often used predicate function is `filter`
+  ;; ### Less branching is good, right?  
+  ;; The core library is rich with functions that helps you avoid writing branching code. Instead you provide the condition as a predicate. An often used predicate function is `filter`
 
   (filter even? [0 1 2 3 4 5 6 7 8 9 10 11 12])
 
@@ -1434,11 +1366,7 @@ to the compiler") "This is not ignored"
 
   (remove odd? [0 1 2 3 4 5 6 7 8 9 10 11 12])
 
-  ;; Filtering sequences of values is a common task
-  ;; and your programming time can instead be used
-  ;; to decide _how_ it should be filtered, by writing
-  ;; the predicate. Sometimes you don't even need to
-  ;; do that, Clojure core is rich with predicates
+  ;; Filtering sequences of values is a common task and your programming time can instead be used to decide _how_ it should be filtered, by writing the predicate. Sometimes you don't even need to do that, Clojure core is rich with predicates
 
   (zero? 0)
   (even? 0)
@@ -1452,54 +1380,41 @@ to the compiler") "This is not ignored"
   (indexed? [1 2 3])
   (indexed? '(1 2 3))
 
-  ;; What's a predicate? For the purpose of this guide
-  ;; A predicate is a function testing things for
-  ;; truthiness. It is convention that these functions
-  ;; end with `?`. Many take only one argument.
+  ;; What's a predicate? For the purpose of this guide A predicate is a function testing things for truthiness. It is convention that these functions end with `?`. Many take only one argument.
 
-  ;; A handy predicate is `some?` which tests for
-  ;; "somethingness”, if it is not `nil` it is
-  ;; something
+  ;; A handy predicate is `some?` which tests for "somethingness”, if it is not `nil` it is something
 
   (some? nil)
   (some? false)
   (some? '())
 
-  ;; You can use it to test for if something is `nil`
-  ;; by wrapping it in a call to the `not` function
+  ;; You can use it to test for if something is `nil` by wrapping it in a call to the `not` function
 
   (not (some? nil))
   (not (some? false))
 
-  ;; You get the urge to define a function named `nil?`,
-  ;; right? You don't have to
+  ;; You get the urge to define a function named `nil?`, right? You don't have to
 
   (nil? nil)
   (nil? false)
 
-  ;; Clojure core also contains predicates that take
-  ;; a predicate plus a collection to apply it on.
-  ;; Such as `every?`
+  ;; Clojure core also contains predicates that take a predicate plus a collection to apply it on. Such as `every?`
 
   (every? nat-int? [0 1 2])
   (every? nat-int? [-1 0 1 2])
 
-  ;; Check the docs for `nat-int? and come up
-  ;; with some more lists to test, like
+  ;; Check the docs for `nat-int? and come up with some more lists to test, like
 
   (every? nat-int? [0 1 2N]) ; 2N is not fixed precision
   (doc nat-int?)
 
-  ;; This pattern with functions that take functions
-  ;; as argument is common in Clojure. It spans beyond
-  ;; predicates. Functions that take functions as
-  ;; arguments are referred to as ”higher order
-  ;; functions”.
+  ;; This pattern with functions that take functions as argument is common in Clojure. It spans beyond predicates. Functions that take functions as arguments are referred to as ”higher order functions”.
+  
   ;; https://en.wikipedia.org/wiki/Higher-order_function
   )
 
 (comment
-  ;; = Functions =
+  ;; ## Functions 
   ;; Before diving into higher order functions, let's
   ;; look at functions. Functions are first class
   ;; Clojure citizens and the main building blocks for
