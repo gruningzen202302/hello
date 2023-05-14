@@ -709,7 +709,7 @@ like this, if leading spaces are no-no."
   ;; Anyway, `deref` is so common that there is
   ;; shorthand syntax for it
 
-  @an-atom
+  (str @an-atom)
   (= (deref an-atom)
      @an-atom)
 
@@ -846,6 +846,8 @@ to the compiler") "This is not ignored"
 
   (.before #inst "2018-03-28T10:48:00.000"
            #inst "2021-02-17T00:27:00.000")
+  (.after #inst "2018-03-28T10:48:00.000"
+           #inst "2021-02-17T00:27:00.000")
 
   ;; This invokes the method `before` on the date
   ;; object for year 2018 giving it the date from
@@ -862,93 +864,185 @@ to the compiler") "This is not ignored"
   ;; https://clojure.org/guides/weird_characters
   )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 (comment
-  ;; = MACROS =
-  ;; Clojure has powerful data transformation
-  ;; capabilities. We'll touch on that a bit later.
-  ;; Here I want to highlight that this power can
-  ;; be wielded for extending the language itself. 
-  ;; Since Clojure code is structured and code is
-  ;; data, Clojure can be used to produce Clojure
-  ;; code from Clojure code. It is similar to the
-  ;; preprocessor facilitates that some languages
-  ;; offer, like C's `#pragma`, but it is much more
-  ;; convenient and powerful. A lot of what you
-  ;; will learn to love and recognize as Clojure
-  ;; is actually created with Clojure, as macros.
+  ;; ## MACROS 
+  ;; Clojure has powerful data transformation capabilities. We'll touch on that a bit later.
+  ;; Here I want to highlight that this power can be wielded for extending the language itself. 
+  ;; Since Clojure code is structured and code is data, Clojure can be used to produce Clojure code from Clojure code. It is similar to the preprocessor facilitates that some languages offer, like C's `#pragma`, but it is much more convenient and powerful. A lot of what you will learn to love and recognize as Clojure is actually created with Clojure, as macros.
 
-  ;; This guide is mostly concerned with letting you
-  ;; know that macros are a thing, to help you to
-  ;; quickly realize when you are using a macro rather 
-  ;; than a function. I.e. I will not go into the
-  ;; subject of how to create macros.
+  ;; This guide is mostly concerned with letting you know that macros are a thing, to help you to quickly realize when you are using a macro rather than a function. I.e. I will not go into the subject of how to create macros.
 
-  ;; The distinction is important, because even if
-  ;; macro calls look a lot like function calls,
-  ;; macros are not first class. They can't be
-  ;; passed as arguments, or returned as results.
-  ;; More about ”first class” in the section about
-  ;; functions, later.
+  ;; The distinction is important, because even if macro calls look a lot like function calls, macros are not first class. They can't be passed as arguments, or returned as results. More about ”first class” in the section about functions, later.
 
-  ;; == `when` ==
-  ;; Let's just briefly examine the macro`when`.
-  ;; This macro helps with writing more readable code.
-  ;; How? Let's say you want to conditionally evaluate
-  ;; something. Above you learnt that there is
-  ;; a special form named `if` that can be used for
-  ;; this. Like so:
+  ;; ### `when` 
+  ;; Let's just briefly examine the macro`when`. This macro helps with writing more readable code. How? Let's say you want to conditionally evaluate something. Above you learnt that there is a special form named `if` that can be used for this. Like so:
 
   (if 'this-is-true
     'evaluate-this
     'else-evaluate-this)
 
-  ;; Now say you don't have something to evaluate
-  ;; in the else case. `if` allows you to write this
+  ;; Now say you don't have something to evaluate in the else case. `if` allows you to write this
 
   (if 'this-is-true
     'evaluate-this)
 
-  ;; Which is fine, but you will have to scan the
-  ;; code a bit extra to see that there is no else
-  ;; branch. Easy with this short example, but can
-  ;; get pretty hairy in real code. To address this,
-  ;; you could write:
+  ;; Which is fine, but you will have to scan the code a bit extra to see that there is no else branch. Easy with this short example, but can get pretty hairy in real code. To address this,you could write:
 
   (if 'this-is-true
     'evaluate-this
     nil)
 
-  ;; But that is a bit silly, what if there was a
-  ;; way to tell the human reading the code that
-  ;; there is no else branch? There is!
+  ;; But that is a bit silly, what if there was a way to tell the human reading the code that there is no else branch? There is!
 
   (when 'this-is-true
     'evaluate-this)
 
-  ;; Let's look at how `when` is defined, you can
-  ;; ctrl/cmd-click `when` to navigate to where
-  ;; it is defined in Clojure `core.clj`.
-  ;; You can also use the function `macroexpand`
+  ;; Let's look at how `when` is defined, you can ctrl/cmd-click `when` to navigate to where it is defined in Clojure `core.clj`. You can also use the function `macroexpand`
 
   (macroexpand '(when 'this-is-true
                   'evaluate-this))
 
-  ;; You'll notice that `when` wraps the body in
-  ;; a `(do ...)`, which is a special form that lets
-  ;; you evaluate several expressions, returning the
-  ;; results of the last one.
+  ;; You'll notice that `when` wraps the body in a `(do ...)`, which is a special form that lets you evaluate several expressions, returning the results of the last one.
   ;; https://clojuredocs.org/clojure.core/do
-  ;; `do` is handy when you want to have some side-
-  ;; effect going, in addition to evaluating something.
-  ;; In development this often happens when you 
-  ;; want to `println` something before the result
-  ;; of the expression is evaluated and returned.
+  ;; `do` is handy when you want to have some side-effect going, in addition to evaluating something. In development this often happens when you want to `prin of the expression is evaluated and returned.
 
   (do (println "The quick brown fox jumps over the lazy dog")
       (+ 2 2))
 
-  ;; The `when` macro let's you take advantage of that
-  ;; there is only one branch, so you can do this
+  ;; The `when` macro let's you take advantage of that there is only one branch, so you can do this
 
   (when 'this-is-true
     (println "The quick brown fox jumps over the lazy dog")
@@ -961,46 +1055,28 @@ to the compiler") "This is not ignored"
       (println "The quick brown fox jumps over the lazy dog")
       (+ 2 2)))
 
-  ;; Here `when` saves us both the extra scanning for
-  ;; the else-branch and the use of `do`.
+  ;; Here `when` saves us both the extra scanning for the else-branch and the use of `do`.
 
-  ;; As far as macros go, `when` is about as simple as
-  ;; they get. From two built-in special forms,
-  ;; `if` and `do`, it composes a form that helps us
-  ;; write easy to write and easy to read code. 
+  ;; As far as macros go, `when` is about as simple as they get. From two built-in special forms,`if` and `do`, it composes a form that helps us write easy to write and easy to read code. 
 
-  ;; == `for` ==
-  ;; The `for` macro really demonstrates how Clojure
-  ;; can be extended using Clojure. You might think
-  ;; it provides looping like the for loop in many
-  ;; other languages, but in Clojure there are no for
-  ;; loops. Instead `for` is about list comprehensions
-  ;; (if you have Python experience, yes, that kind of
-  ;; list comprehensions). Here's how to produce the
-  ;; cartesian product of two vectors, `x` and `y`:
+  ;; ### `for` 
+  ;; The `for` macro really demonstrates how Clojure can be extended using Clojure. You might think it provides looping like the for loop in many other languages, but in Clojure there are no for loops. Instead `for` is about list comprehensions (if you have Python experience, yes, that kind of list comprehensions). Here's how to produce the cartesian product of two vectors, `x` and `y`:
 
   (for [x [1 2 3]
         y [1 2 3 4]]
     [x y])
 
-  ;; If you recall the `let` form above, and how it
-  ;; lets you bind variables to use in the body of the
-  ;; form, this is similar, only that `x` and `y` will
-  ;; get bound to each value in the sequences and the
-  ;; body will get evaluated for all combinations of
-  ;; `x` and `y`.
+  ;; If you recall the `let` form above, and how it lets you bind variables to use in the body of the
+  ;; form, this is similar, only that `x` and `y` will get bound to each value in the sequences and the body will get evaluated for all combinations of `x` and `y`.
 
-  ;; All values? Well, `for` also lets you filter the
-  ;; results
+  ;; All values? Well, `for` also lets you filter the results
 
   (for [x [1 2 3]
         y [1 2 3 4]
         :when (not= x y)]
     [x y])
 
-  ;; You can bind variable names in the comprehension
-  ;; to store intermediate calculations and generally
-  ;; make code more readable
+  ;; You can bind variable names in the comprehension to store intermediate calculations and generally make code more readable
 
   (for [x [1 2 3]
         y [1 2 3 4]
@@ -1014,36 +1090,26 @@ to the compiler") "This is not ignored"
         y [1 2 3 4]]
     (Math/abs (- x y)))
 
-  ;; Debatable what is more readable in this particular
-  ;; case... ¯\_(ツ)_/¯
+  ;; Debatable what is more readable in this particular case... ¯\_(ツ)_/¯
 
-  ;; A note about the variable name `d'` above:
-  ;; `d'` is just a symbol name like any other. The
-  ;; single-quote has no special meaning unless it is
-  ;; the first character
+  ;; A note about the variable name `d'` above: `d'` is just a symbol name like any other. The single-quote has no special meaning unless it is the first character
 
-  ;; Filters and bindings can be used together.
-  ;; Use both `:let` and `:when` to make this
-  ;; comprehension return a list of all `[x y]` where
-  ;; their sum is odd. The functions `+` and `odd?`
-  ;; are your friends here.
+  ;; Filters and bindings can be used together. Use both `:let` and `:when` to make this comprehension return a list of all `[x y]` where their sum is odd. The functions `+` and `odd?` are your friends here.
 
   (for [x [1 2 3]
         y [1 2 3 4]]
     [x y])
 
-  ;; (Yes, it can be solved without `:let` or `:when`.
-  ;; Humour me. 😎)
+  ;; (Yes, it can be solved without `:let` or `:when`. Humour me. 😎)
 
-  ;; See https://www.youtube.com/watch?v=5lvV9ICwaMo for
-  ;; a great primer on Clojure list comprehensions
-  ;; See https://clojuredocs.org/clojure.core/for for
-  ;; example usages and tips.
+  ;; See 
+  ;; https://www.youtube.com/watch?v=5lvV9ICwaMo 
+  ;; for a great primer on Clojure list comprehensions
+  ;; See 
+  ;; https://clojuredocs.org/clojure.core/for 
+  ;; for example usages and tips.
 
-  ;; Note that even though `let` and `for` look like
-  ;; functions, they are not. The compiler would not
-  ;; like it if you are passing undefined symbols to a
-  ;; function. This is legal code:
+  ;; Note that even though `let` and `for` look like functions, they are not. The compiler would not like it if you are passing undefined symbols to a function. This is legal code:
 
   (let [abc 1]
     2)
@@ -1053,17 +1119,12 @@ to the compiler") "This is not ignored"
   (str [abc 1]
        1)
 
-  ;; (Notice that the clj-kondo linter is marking the
-  ;; first with a warning, and the second as an error)
+  ;; (Notice that the clj-kondo linter is marking the first with a warning, and the second as an error)
   ;; Macros extend the Clojure compiler.
   ;; https://clojure.org/reference/macros
 
-  ;; == Threading macros ==
-  ;; Macros can totally rearrange your code. The
-  ;; built-in ”threading” macros do this. Sometimes
-  ;; when the nesting of function(-ish) calls get
-  ;; deep it can get a bit hard to read and to keep
-  ;; track of all the parens 
+  ;; ### Threading macros  
+  ;; Macros can totally rearrange your code. The built-in ”threading” macros do this. Sometimes when the nesting of function(-ish) calls get deep it can get a bit hard to read and to keep track of all the parens 
 
   (Math/abs
    (apply -
@@ -1071,10 +1132,7 @@ to the compiler") "This is not ignored"
                [:a :b :c :d]
                (partition 2 [1 1 2 3 5 8 13 21])))))
 
-  ;; You read Clojure from the innermost expression
-  ;; and out, which gets easier with time, but an
-  ;; experienced Clojure coder would still find it
-  ;; easier to read this
+  ;; You read Clojure from the innermost expression and out, which gets easier with time, but an experienced Clojure coder would still find it easier to read this
 
   (->> [1 1 2 3 5 8 13 21]
        (partition 2)
@@ -1083,11 +1141,7 @@ to the compiler") "This is not ignored"
        (apply -)
        (Math/abs))
 
-  ;; Let's read this together. The thread-last macro,
-  ;; `->>` is used, it takes its first argument and
-  ;; places it (threads it) as the last argument to
-  ;; following function. The first such step in
-  ;; isolation:
+  ;; Let's read this together. The thread-last macro, `->>` is used, it takes its first argument and places it (threads it) as the last argument to following function. The first such step in isolation:
 
   (->> [1 1 2 3 5 8 13 21]
        (partition 2))
