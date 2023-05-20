@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: polymorphism</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/352-clojure-from-the-ground-up-polymorphism" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/352-clojure-from-the-ground-up-polymorphism">Clojure from the ground up: polymorphism</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/writing">Writing</a> <a href="/tags/software">Software</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Aug 27, 2020, 6:05:00 PM" pubdate>
+          2020-08-27
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>Previously: <a href="/posts/319-clojure-from-the-ground-up-debugging">Debugging</a>.</p>
+<p>In this chapter, we’ll discuss some of Clojure’s mechanisms for <em>polymorphism</em>: writing programs that do different things depending on what kind of inputs they receive. We’ll show ways to write <em>open</em> functions, which can be extended to new conditions later on, without changing their original definitions. Along the way, we’ll investigate Clojure’s type system in more detail–discussing <em>interfaces</em>, <em>protocols</em>, how to construct our own datatypes, and the relationships between types which let us write flexible programs.</p>
+<p>Thus far, our functions have taken one type of input. For example:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Adds an element x to the end of a vector v.&quot;</span>
+  <span class="p">[</span><span class="nv">v</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">conj </span><span class="nv">v</span> <span class="nv">x</span><span class="p">))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span>
+</code></pre>
+<p>But we might want to append to <em>more</em> than vectors. What if we wanted to append something to the end of a list?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="o">'</span><span class="p">(</span><span class="mi">1</span> <span class="mi">2</span><span class="p">)</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">3</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<p>Since <code>conj</code> prepends to lists, our <code>append</code> function doesn’t work correctly here. We could redefine <code>append</code> in a way that works for both vectors and lists–for instance, using <code>concat</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append-concat</span>
+  <span class="s">&quot;Adds an element x to the end of a collection coll by concatenating a</span>
+<span class="s">  single-element list (x) to the end of coll.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">)))</span>
+</code></pre>
+<p>But this is less than ideal: <code>concat</code> produces a wrapper object every time we call <code>append-concat</code>, which introduces unnecessary overhead when working with vectors. What we would like is a function which does different things to different types of inputs. This is the heart of <em>polymorphism</em>.</p>
+<h2><a href="#a-simple-approach" id="a-simple-approach">A Simple Approach</a></h2>
+<p>We have a function <code>type</code> which returns the type of an object. What if append asked for the type of collection it was being asked to append to, and did different things based on that type? Let’s check the types of lists and vectors:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">type</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">])</span>
+<span class="nv">clojure.lang.PersistentVector</span>
+<span class="p">(</span><span class="nf">type</span> <span class="o">'</span><span class="p">(</span><span class="mi">1</span> <span class="mi">2</span><span class="p">))</span>
+<span class="nv">clojure.lang.PersistentList</span>
+</code></pre>
+<p>Okay, so we could try checking whether the type of our collection is a PersistentVector, and if so, use <code>conj</code> to append an element efficiently!</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Adds an element x to the end of a collection coll. Coll may be either a</span>
+<span class="s">  vector or a list.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">condp</span> <span class="nb">= </span><span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)</span>
+    <span class="nv">clojure.lang.PersistentVector</span>
+    <span class="p">(</span><span class="nb">conj </span><span class="nv">coll</span> <span class="nv">x</span><span class="p">)</span>
+
+    <span class="nv">clojure.lang.PersistentList</span>
+    <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">))))</span>
+</code></pre>
+<p>As an aside: we’re using <code>condp =</code> instead of <code>case</code>, even though <code>case</code> might seem like the obvious solution here. That’s because <code>case</code> uses optimizations which require that each case is a a compile-time constant, and classes like <code>clojure.lang.PersistentVector</code> aren’t actually constant in that sense. Don’t worry too much about this—it’s not important for understanding this chapter. The important question is: does this approach of checking the type at runtime <em>work</em>? Can we append to both vectors and lists?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="o">'</span><span class="p">(</span><span class="mi">1</span> <span class="mi">2</span><span class="p">)</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p>It does! We’ve written a <em>polymorphic function</em> which can take two different kinds of input, and does different things depending on what type of input was provided. Just to confirm, let’s try an empty list:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="o">'</span><span class="p">()</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nv">IllegalArgumentException</span> <span class="nv">No</span> <span class="nv">matching</span> <span class="nv">clause</span><span class="err">:</span> <span class="nb">class </span><span class="nv">clojure.lang.PersistentList$EmptyList</span>  <span class="nv">scratch.polymorphism/append</span> <span class="p">(</span><span class="nf">polymorphism.clj</span><span class="ss">:7</span><span class="p">)</span>
+</code></pre>
+<p>Oh shoot. Are empty lists… a <em>different type</em>?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="o">'</span><span class="p">())</span>
+<span class="nv">clojure.lang.PersistentList$EmptyList</span>
+</code></pre>
+<p>Indeed, they are. Empty lists have a special type in Clojure: <code>clojure.lang.PersistentList</code> is not the same type as <code>clojure.lang.PersistentList$EmptyList</code>. Why, then, are they mostly interchangeable? What is it that lets <code>()</code> and <code>(1 2 3)</code> behave as if they were both the same type of thing?</p>
+<h2><a href="#subtypes" id="subtypes">Subtypes</a></h2>
+<p>Most languages have a notion of a <em>relationship</em> between types. The exact nature of these relationships is complex and language-specific, but informally, most languages have a way to express that type <code>A</code> is a <em>subtype</em> of type <code>B</code>, and conversely, <code>B</code> is a supertype of <code>A</code>. For instance, type <code>Cat</code> might be a subtype of type <code>Animal</code>. This allows us to write functions which depend only on properties of <code>Animal</code>, in such a way that they work automatically on <code>Cat</code>s, <code>Dog</code>s, <code>Fish</code>, and so on. This is another form of polymorphism!</p>
+<p>Some languages organize their types into a tree, such that each type is a subtype of exactly one other type ( except for a single “all-inclusive” type, often called <code>Top</code> or <code>Object</code>). We might say, for instance, that <code>Cat</code>s are <code>Animal</code>s, <code>AlarmClock</code>s are <code>Electronic</code>s, and both <code>Animal</code>s and <code>Electronic</code>s are <code>Object</code>s.</p>
+<p>This sounds straightforward enough, but types rarely fall into this kind of tree-like hierarchy neatly. For instance, both <code>Cat</code>s and <code>AlarmClock</code>s can yowl at you when you’d really prefer to be sleeping. Perhaps both should be subtypes of <code>Noisemaker</code>! But not all <code>Animal</code>s are <code>Noisemaker</code>s, nor are all <code>Noisemaker</code>s <code>Animal</code>s. Down this path lies madness! For this reason, most type systems allow a type to have <em>multiple</em> supertypes: a <code>Cat</code> can be <em>both</em> a <code>Noisemaker</code> and an <code>Animal</code>. In the JVM—the program which underlies Clojure—there are (and I speak very loosely here: we’re going to ignore <a href="https://www.baeldung.com/java-primitives-vs-objects">primitives</a> and smooth over all kinds of internal details) two kinds of types, and both of these kinds of relationships are in play.</p>
+<p>The types of JVM values—things like <code>java.lang.Long</code>, <code>java.lang.String</code>, <code>clojure.lang.PersistentVector</code>, etc.—are called <em>classes</em>. If you have a value like <code>2</code> or <code>[&quot;foo&quot; :bar]</code> in Clojure, that value’s type is a class. Each class is a subtype of exactly one other class, except for <code>Object</code>, the JVM’s Top class.</p>
+<p>The other kind of JVM type is called an <em>interface</em> (or an <a href="https://pythonconquerstheuniverse.wordpress.com/2011/05/24/java-abc-vs-interface/"><em>abstract class</em></a>—we’ll use “interface” to refer to both throughout this chapter) and it defines the behavior for a type. In essence, an interface defines a collection of functions which take an instance of that interface as their first argument. Both classes and interfaces can be a subtype of any number of interfaces. Clojure uses interfaces to define the behavior of things like “a list” or “something you can look up values in”, and provides a variety of classes, each optimized for a different kind of work, which are <em>subtypes</em> of those interfaces. These shared interfaces are why we can have two types of lists which work the same way.</p>
+<p>We can see these relationships between types in Clojure with the <code>supers</code> function, which returns the <em>supertypes</em> of a given type:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">supers</span> <span class="nv">clojure.lang.PersistentList$EmptyList</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{</span><span class="nv">clojure.lang.Obj</span> <span class="nv">clojure.lang.IPersistentCollection</span> <span class="nv">clojure.lang.IMeta</span> <span class="nv">clojure.lang.IObj</span> <span class="nv">clojure.lang.Sequential</span> <span class="nv">java.lang.Iterable</span> <span class="nv">java.io.Serializable</span> <span class="nv">clojure.lang.IPersistentStack</span> <span class="nv">java.lang.Object</span> <span class="nv">clojure.lang.IHashEq</span> <span class="nv">clojure.lang.IPersistentList</span> <span class="nv">clojure.lang.Seqable</span> <span class="nv">clojure.lang.ISeq</span> <span class="nv">clojure.lang.Counted</span> <span class="nv">java.util.List</span> <span class="nv">java.util.Collection</span><span class="p">}</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">supers</span> <span class="nv">clojure.lang.PersistentList</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{</span><span class="nv">clojure.lang.Obj</span> <span class="nv">clojure.lang.IPersistentCollection</span> <span class="nv">clojure.lang.IReduce</span> <span class="nv">clojure.lang.IMeta</span> <span class="nv">clojure.lang.IObj</span> <span class="nv">clojure.lang.Sequential</span> <span class="nv">java.lang.Iterable</span> <span class="nv">java.io.Serializable</span> <span class="nv">clojure.lang.IPersistentStack</span> <span class="nv">java.lang.Object</span> <span class="nv">clojure.lang.IHashEq</span> <span class="nv">clojure.lang.IPersistentList</span> <span class="nv">clojure.lang.Seqable</span> <span class="nv">clojure.lang.ISeq</span> <span class="nv">clojure.lang.ASeq</span> <span class="nv">clojure.lang.Counted</span> <span class="nv">java.util.List</span> <span class="nv">java.util.Collection</span> <span class="nv">clojure.lang.IReduceInit</span><span class="p">}</span>
+</code></pre>
+<p>A few of these types, like <code>java.lang.Object</code>, are actual classes. The rest are interfaces. Note that these sets are almost identical: empty and non-empty lists share almost all their supertypes. Both, for example, are subtypes of <code>clojure.lang.Counted</code>, which means that they keep track of how many elements they contain—the <code>count</code> function uses <code>Counted</code> to count collections efficiently. Both are <code>clojure.lang.Seqable</code>, which means they can be interpreted as a sequence of objects—that’s why we can call <code>map</code>, <code>filter</code>, and so on over lists. Most relevant for our purposes, both are kinds of <code>clojure.lang.IPersistentList</code>, which <a href="https://www.javadoc.io/doc/org.clojure/clojure/1.10.1/clojure/lang/IPersistentList.html">defines</a> the core of how lists work: using <code>cons</code> to prepend elements. Let’s change our <code>append</code> function to use the <code>IPersistentList</code> type instead, and see if it lets us append to empty lists.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Adds an element x to the end of a collection coll. Coll may be either a</span>
+<span class="s">  vector or a list.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">condp</span> <span class="nb">= </span><span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)</span>
+    <span class="nv">clojure.lang.PersistentVector</span>
+    <span class="p">(</span><span class="nb">conj </span><span class="nv">coll</span> <span class="nv">x</span><span class="p">)</span>
+
+    <span class="nv">clojure.lang.IPersistentList</span>
+    <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">))))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="o">'</span><span class="p">()</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nv">IllegalArgumentException</span> <span class="nv">No</span> <span class="nv">matching</span> <span class="nv">clause</span><span class="err">:</span> <span class="nb">class </span><span class="nv">clojure.lang.PersistentList$EmptyList</span>  <span class="nv">scratch.polymorphism/append</span> <span class="p">(</span><span class="nf">polymorphism.clj</span><span class="ss">:7</span><span class="p">)</span>
+</code></pre>
+<p>Ah, of course. We’re asking if the types of <code>coll</code> is <em>equal</em> to <code>clojure.lang.IPersistentList</code>, but they’re not actually the same type. What we want to know is if the type of <code>coll</code> is a <em>subtype</em> of <code>clojure.lang.IPersistentList</code>. Let’s check if any of <code>coll</code>’s <em>supertypes</em> match as well:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Adds an element x to the end of a collection coll. Coll may be either a</span>
+<span class="s">  vector or a list.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">t</span>     <span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)</span>
+        <span class="nv">types</span> <span class="p">(</span><span class="nb">conj </span><span class="p">(</span><span class="nf">supers</span> <span class="nv">t</span><span class="p">)</span> <span class="nv">t</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">cond </span><span class="p">(</span><span class="nf">types</span> <span class="nv">clojure.lang.PersistentVector</span><span class="p">)</span>
+          <span class="p">(</span><span class="nb">conj </span><span class="nv">coll</span> <span class="nv">x</span><span class="p">)</span>
+
+          <span class="p">(</span><span class="nf">types</span> <span class="nv">clojure.lang.IPersistentList</span><span class="p">)</span>
+          <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">))</span>
+
+          <span class="nv">true</span> <span class="p">(</span><span class="nb">str </span><span class="s">&quot;Sorry, I don't know how to append to a &quot;</span>
+                <span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)</span> <span class="s">&quot;, which has supertypes &quot;</span> <span class="nv">types</span><span class="p">))))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="o">'</span><span class="p">()</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<p>We’ve generalized our function from depending on <em>specific</em> types to depending on a type <em>or its supertypes</em>. What about… a lazy sequence, like the ones returned by <code>map</code>?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">(</span><span class="nb">map inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span> <span class="mi">5</span><span class="p">)</span>
+<span class="s">&quot;Sorry, I don't know how to append to a class clojure.lang.LazySeq, which has supertypes #{java.util.List clojure.lang.IHashEq java.io.Serializable clojure.lang.IObj clojure.lang.IPersistentCollection clojure.lang.ISeq java.util.Collection java.lang.Iterable clojure.lang.Seqable clojure.lang.IPending clojure.lang.Sequential java.lang.Object clojure.lang.IMeta clojure.lang.Obj}&quot;</span>
+</code></pre>
+<p>We could add another clause for <code>LazySeq</code> to our definition of <code>append</code>—but would it actually be any <em>different</em> from how we append to lists? If we plan to <code>concat</code> for both, perhaps we should search for a type that sequences and lists have in common.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">require</span> <span class="o">'</span><span class="p">[</span><span class="nv">clojure.set</span> <span class="ss">:as</span> <span class="nv">set</span><span class="p">])</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">set/intersection</span> <span class="p">(</span><span class="nf">supers</span> <span class="nv">clojure.lang.IPersistentList</span><span class="p">)</span> <span class="p">(</span><span class="nf">supers</span> <span class="nv">clojure.lang.LazySeq</span><span class="p">))</span>
+<span class="o">#</span><span class="p">{</span><span class="nv">clojure.lang.IPersistentCollection</span> <span class="nv">clojure.lang.Seqable</span> <span class="nv">clojure.lang.Sequential</span><span class="p">}</span>
+</code></pre>
+<p>These types have three supertypes in common. One is <code>IPersistentCollection</code>, which defines how <em>any</em> Clojure collection works, including sets, maps, etc. Another is <code>Seqable</code>, which means that the collection can be <em>interpreted</em> as a sequence of values—this too applies to sets and maps. The final type in common is <code>Sequential</code>, which applies only to collections <em>with a well-defined order</em>: lists and vectors, but not sets and maps. If we think of <code>append</code> as operating only over <em>ordered</em> collections, we should define it in terms of Sequential, rather than Seqable.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Adds an element x to the end of any sequential collection--faster for vectors.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">t</span>     <span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)</span>
+        <span class="nv">types</span> <span class="p">(</span><span class="nb">conj </span><span class="p">(</span><span class="nf">supers</span> <span class="nv">t</span><span class="p">)</span> <span class="nv">t</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">cond </span><span class="p">(</span><span class="nf">types</span> <span class="nv">clojure.lang.PersistentVector</span><span class="p">)</span>
+          <span class="p">(</span><span class="nb">conj </span><span class="nv">coll</span> <span class="nv">x</span><span class="p">)</span>
+
+          <span class="p">(</span><span class="nf">types</span> <span class="nv">clojure.lang.Seqable</span><span class="p">)</span>
+          <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">))</span>
+
+          <span class="nv">true</span> <span class="p">(</span><span class="nb">str </span><span class="s">&quot;Sorry, I don't know how to append to a &quot;</span>
+                <span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)</span> <span class="s">&quot;, which has supertypes &quot;</span> <span class="nv">types</span><span class="p">))))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">(</span><span class="nb">map inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span> <span class="mi">5</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)</span>
+</code></pre>
+<p>Now our function is even <em>more</em> general: it can accept vectors, lists, and lazy sequences of all kinds, while being <em>smart</em> about it: for vectors, it efficiently adds elements to the end using <code>conj</code>, and for other Sequential types, it falls back to using <code>concat</code>.</p>
+<p>This idea—checking a value’s type <em>and</em> supertypes—is so useful that there’s a special function for it. We say that a value <code>v</code> is an <em>instance</em> of type <code>T</code> if <code>v</code>’s type, or any of its supertypes, is <code>T</code>. We can use the <code>instance?</code> function to ask if this is so!</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.PersistentVector</span> <span class="p">[])</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.PersistentVector</span> <span class="p">(</span><span class="nf">list</span><span class="p">))</span>
+<span class="nv">false</span>
+</code></pre>
+<p>Thanks to the <code>instance?</code> function, we don’t need to compute the set of types and supertypes ourselves.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Adds an element x to the end of any sequential collection--faster for</span>
+<span class="s">  vectors.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">cond </span><span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.PersistentVector</span> <span class="nv">coll</span><span class="p">)</span>
+        <span class="p">(</span><span class="nb">conj </span><span class="nv">coll</span> <span class="nv">x</span><span class="p">)</span>
+
+        <span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.IPersistentList</span> <span class="nv">coll</span><span class="p">)</span>
+        <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">))</span>
+
+        <span class="nv">true</span> <span class="p">(</span><span class="nb">str </span><span class="s">&quot;Sorry, I don't know how to append to a &quot;</span>
+                  <span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">))))</span>
+</code></pre>
+<p>Wonderful! The supertype machinery disappears, and we’re left with something that asks succinctly about how a value might behave.</p>
+<p>This is a perfectly valid way to write a polymorphic function, but it has an important limitation. Whenever someone finds or creates a new type they’d like to append to, they have to edit the <code>append</code> function to add support for that type. This is one half of a classic dilemma in programming languages known as <a href="https://wiki.c2.com/?ExpressionProblem">the expression problem</a>. It would be nice if we could define functions piece by piece, so that we could add support for different types <em>without</em> changing the original definition of the function. This is the motivation behind Clojure’s <em>multimethods</em>.</p>
+<h2><a href="#multimethods" id="multimethods">Multimethods</a></h2>
+<p>A <em>multimethod</em> is a special kind of function. Instead of a function body, it has a <em>dispatch function</em>, which takes the arguments to the function and tells us not what to return, but how to find a particular <em>implementation</em> of that function. We define the implementations (essentially, the function bodies) separately.</p>
+<p>To define a multimethod, use <code>defmulti</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmulti </span><span class="nv">append</span>
+  <span class="s">&quot;Appends an x to collection coll.&quot;</span>
+  <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nf">type</span> <span class="nv">coll</span><span class="p">)))</span>
+</code></pre>
+<p>Here, we’re defining an <code>append</code> function. This will overwrite our <code>append</code> function from earlier, so you can rename or delete the original to avoid the conflict, if you like. Like <code>defn</code>, we provide a docstring. Unlike <code>defn</code>, we follow that with a <em>dispatch function</em>, which takes two arguments (<code>coll</code> and <code>x</code>) and returns the type of <code>coll</code>. The return value of the dispatch function is how Clojure decides which implementation to use. All together, this <code>defmulti</code> says “the behavior of <code>append</code>, a function of two arguments, depends on the type of its first argument.”</p>
+<p>Next, we need to provide an <em>implementation</em> of the <code>append</code> function. We do this with <code>defmethod</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmethod </span><span class="nv">append</span> <span class="nv">clojure.lang.PersistentVector</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">conj </span><span class="nv">coll</span> <span class="nv">x</span><span class="p">))</span>
+</code></pre>
+<p>When <code>append</code>’s dispatch function returns <code>clojure.lang.PersistentVector</code>, we take the arguments <code>coll</code> and <code>x</code>, and use <code>conj</code> to append <code>x</code> to <code>coll</code>. This is the same implementation as our original polymorphic function for vectors, but we’ve decoupled the plumbing from the implementation: one function decides <em>which</em> implementation to run, and the implementation does the work. This decoupling means we can add additional implementations (again using <code>defmethod</code>) without changing our existing implementation!</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmethod </span><span class="nv">append</span> <span class="nv">clojure.lang.Sequential</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">concat </span><span class="nv">coll</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">)))</span>
+</code></pre>
+<p>This implementation of <code>append</code> takes a <code>clojure.lang.Sequential</code> as its first argument, and uses <code>concat</code> to add x to the end. Now our <code>append</code> function can take either a vector or any sequential object:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">(</span><span class="nb">map inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">])</span> <span class="mi">4</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre>
+<p>That’s odd! We dispatched using <code>(type coll)</code>, which, for <code>(map inc ...)</code>, would have been a <code>LazySeq</code>. But we didn’t define any method for <code>LazySeq</code>. Why… why did this work?</p>
+<p>The answer is that Clojure doesn’t compare multimethod dispatch values via <code>=</code>. It compares them using a function we haven’t seen before: <code>isa?</code>.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">doc </span><span class="nv">isa?</span><span class="p">)</span>
+<span class="nv">-------------------------</span>
+<span class="nv">clojure.core/isa?</span>
+<span class="p">([</span><span class="nv">child</span> <span class="nv">parent</span><span class="p">]</span> <span class="p">[</span><span class="nv">h</span> <span class="nv">child</span> <span class="nv">parent</span><span class="p">])</span>
+  <span class="nv">Returns</span> <span class="nv">true</span> <span class="k">if </span><span class="p">(</span><span class="nb">= </span><span class="nv">child</span> <span class="nv">parent</span><span class="p">)</span>, <span class="nb">or </span><span class="nv">child</span> <span class="nv">is</span> <span class="nv">directly</span> <span class="nb">or </span><span class="nv">indirectly</span> <span class="nv">derived</span> <span class="nv">from</span>
+  <span class="nv">parent</span>, <span class="nv">either</span> <span class="nv">via</span> <span class="nv">a</span> <span class="nv">Java</span> <span class="nv">type</span> <span class="nv">inheritance</span> <span class="nv">relationship</span> <span class="nb">or </span><span class="nv">a</span>
+  <span class="nv">relationship</span> <span class="nv">established</span> <span class="nv">via</span> <span class="nv">derive.</span> <span class="nv">h</span> <span class="nv">must</span> <span class="nv">be</span> <span class="nv">a</span> <span class="nv">hierarchy</span> <span class="nv">obtained</span>
+  <span class="nv">from</span> <span class="nv">make-hierarchy</span>, <span class="k">if </span><span class="nb">not </span><span class="nv">supplied</span> <span class="nv">defaults</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">global</span>
+  <span class="nv">hierarchy</span>
+</code></pre>
+<p>So <code>isa?</code> tells us whether two things are equal (using <code>=</code>), <em>or</em> whether <code>child</code> is related to <code>parent</code> via Java types, <em>or</em> via “a relationship established via derive”, whatever that is. The fact that <code>isa?</code> knows about Java type relationships means that we can use a supertype (e.g. <code>Sequential</code>) rather than listing every specific type (e.g. <code>PersistentList</code>, <code>LazySeq</code>, etc).</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="nv">clojure.lang.PersistentList</span> <span class="nv">clojure.lang.Counted</span><span class="p">)</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="nv">clojure.lang.PersistentList</span> <span class="nv">clojure.lang.PersistentVector</span><span class="p">)</span>
+<span class="nv">false</span>
+</code></pre>
+<p><code>isa?</code> has another trick up its sleeve–it says it can use relationships defined via <code>derive</code>. What does <em>that</em> do?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">doc </span><span class="nv">derive</span><span class="p">)</span>
+<span class="nv">-------------------------</span>
+<span class="nv">clojure.core/derive</span>
+<span class="p">([</span><span class="nv">tag</span> <span class="nv">parent</span><span class="p">]</span> <span class="p">[</span><span class="nv">h</span> <span class="nv">tag</span> <span class="nv">parent</span><span class="p">])</span>
+  <span class="nv">Establishes</span> <span class="nv">a</span> <span class="nv">parent/child</span> <span class="nv">relationship</span> <span class="nv">between</span> <span class="nv">parent</span> <span class="nv">and</span>
+  <span class="nv">tag.</span> <span class="nv">Parent</span> <span class="nv">must</span> <span class="nv">be</span> <span class="nv">a</span> <span class="nv">namespace-qualified</span> <span class="nb">symbol or keyword </span><span class="nv">and</span>
+  <span class="nv">child</span> <span class="nv">can</span> <span class="nv">be</span> <span class="nv">either</span> <span class="nv">a</span> <span class="nv">namespace-qualified</span> <span class="nb">symbol or keyword or </span><span class="nv">a</span>
+  <span class="nv">class.</span> <span class="nv">h</span> <span class="nv">must</span> <span class="nv">be</span> <span class="nv">a</span> <span class="nv">hierarchy</span> <span class="nv">obtained</span> <span class="nv">from</span> <span class="nv">make-hierarchy</span>, <span class="k">if </span><span class="nv">not</span>
+  <span class="nv">supplied</span> <span class="nv">defaults</span> <span class="nv">to</span>, <span class="nb">and </span><span class="nv">modifies</span>, <span class="nv">the</span> <span class="nv">global</span> <span class="nv">hierarchy.</span>
+</code></pre>
+<p>Huh. So this lets us establish relationships between symbols or keywords. And classes, too—though classes can only be children. Let’s give that a shot.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">derive</span> <span class="ss">::milk</span>  <span class="ss">::dairy</span><span class="p">)</span>
+<span class="p">(</span><span class="nf">derive</span> <span class="ss">::dairy</span> <span class="ss">::grocery</span><span class="p">)</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::milk</span> <span class="ss">::milk</span><span class="p">)</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::milk</span> <span class="ss">::furniture</span><span class="p">)</span>
+<span class="nv">false</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::milk</span> <span class="ss">::dairy</span><span class="p">)</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::milk</span> <span class="ss">::grocery</span><span class="p">)</span>
+<span class="nv">true</span>
+</code></pre>
+<p>With these <code>derive</code> statements, we’ve built a web of relationships between these keywords. Now <code>isa?</code> not only knows that milk is a kind of dairy, but also (because dairy is a kind of grocery) that milk is a kind of grocery. And we know that milk is <em>not</em> furniture—I’m <em>pretty</em> sure that’s true. Note that we’re using qualified keywords here (beginning with a <code>::</code>), which prevents us from accidentally changing the relationships in other namespaces.</p>
+<p>We’re not limited to defining 1:1 relationships. Milk can be a grocery <em>and</em> refrigerated. Apples can <em>also</em> be groceries.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">derive</span> <span class="ss">::milk</span> <span class="ss">::refrigerated</span><span class="p">)</span>
+<span class="p">(</span><span class="nf">derive</span> <span class="ss">::apples</span> <span class="ss">::grocery</span><span class="p">)</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::milk</span> <span class="ss">::grocery</span><span class="p">)</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::milk</span> <span class="ss">::refrigerated</span><span class="p">)</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">isa?</span> <span class="ss">::apples</span> <span class="ss">::grocery</span><span class="p">)</span>
+<span class="nv">true</span>
+</code></pre>
+<p>We can see the all the things that milk is by using the <code>parents</code> function. That’s kind of like supertypes, only these aren’t types: they’re just plain old keywords.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">parents</span> <span class="ss">::milk</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{</span><span class="ss">:scratch.polymorphism/refrigerated</span> <span class="ss">:scratch.polymorphism/dairy</span><span class="p">}</span>
+</code></pre>
+<p>And we can see all the things that are refrigerated using <code>descendents</code>. That’s kind of like subtypes:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">descendants</span> <span class="ss">::grocery</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{</span><span class="ss">:scratch.polymorphism/milk</span> <span class="ss">:scratch.polymorphism/apples</span> <span class="ss">:scratch.polymorphism/dairy</span><span class="p">}</span>
+</code></pre>
+<p>Now imagine we represented our groceries as maps. Something like <code>{:item-type ::milk, :size :gallon}</code>. When we get home from running errands, we’d like a function to put those grocery maps away—but <em>how</em> they’re stored should depend on the <code>:item-type</code> of the grocery item. We could write:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmulti </span><span class="nv">put-away</span>
+  <span class="s">&quot;Stores an item when we get home.&quot;</span>
+  <span class="ss">:item-type</span><span class="p">)</span>
+</code></pre>
+<p>This takes advantage of the fact that keywords are functions: <code>:item-type</code> will look up the type of the item, and use that to choose an implementation.</p>
+<p>In general, we can put groceries in the pantry, and refrigerated items, we’ll put in the fridge.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmethod </span><span class="nv">put-away</span> <span class="ss">::grocery</span>
+  <span class="p">[</span><span class="nv">item</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">println </span><span class="s">&quot;Putting a&quot;</span> <span class="p">(</span><span class="nb">name </span><span class="p">(</span><span class="ss">:size</span> <span class="nv">item</span><span class="p">))</span> <span class="s">&quot;of&quot;</span> <span class="p">(</span><span class="nb">name </span><span class="p">(</span><span class="ss">:item-type</span> <span class="nv">item</span><span class="p">))</span>
+           <span class="s">&quot;in the pantry&quot;</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defmethod </span><span class="nv">put-away</span> <span class="ss">::refrigerated</span>
+  <span class="p">[</span><span class="nv">item</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">println </span><span class="s">&quot;Storing a&quot;</span> <span class="p">(</span><span class="nb">name </span><span class="p">(</span><span class="ss">:size</span> <span class="nv">item</span><span class="p">))</span> <span class="s">&quot;of&quot;</span> <span class="p">(</span><span class="nb">name </span><span class="p">(</span><span class="ss">:item-type</span> <span class="nv">item</span><span class="p">))</span>
+           <span class="s">&quot;in the fridge&quot;</span><span class="p">))</span>
+</code></pre>
+<p>Now we can store some apples, and see them go into the pantry.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">put-away</span> <span class="p">{</span><span class="ss">:item-type</span> <span class="ss">::apples</span>, <span class="ss">:size</span> <span class="ss">:large-bag</span><span class="p">})</span>
+<span class="nv">Putting</span> <span class="nv">a</span> <span class="nv">large-bag</span> <span class="nv">of</span> <span class="nv">apples</span> <span class="nv">in</span> <span class="nv">the</span> <span class="nv">pantry</span>
+</code></pre>
+<p>How about milk?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">put-away</span> <span class="p">{</span><span class="ss">:item-type</span> <span class="ss">::milk</span>, <span class="ss">:size</span> <span class="ss">:gallon</span><span class="p">})</span>
+<span class="nv">IllegalArgumentException</span> <span class="nv">Multiple</span> <span class="nv">methods</span> <span class="nv">in</span> <span class="nv">multimethod</span> <span class="ss">'put-away</span><span class="o">'</span> <span class="nv">match</span> <span class="nv">dispatch</span> <span class="nv">value</span><span class="err">:</span> <span class="ss">:scratch.polymorphism/milk</span> <span class="nb">-&gt; </span><span class="ss">:scratch.polymorphism/grocery</span> <span class="nb">and </span><span class="ss">:scratch.polymorphism/refrigerated</span>, <span class="nb">and </span><span class="nv">neither</span> <span class="nv">is</span> <span class="nv">preferred</span>  <span class="nv">clojure.lang.MultiFn.findAndCacheBestMethod</span> <span class="p">(</span><span class="nf">MultiFn.java</span><span class="ss">:178</span><span class="p">)</span>
+</code></pre>
+<p>Ah, that’s interesting. Since milk is both a grocery <em>and</em> refrigerated, <em>either</em> of these implementations could apply to it. We can tell Clojure how to resolve the ambiguity using <code>prefer-method</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">prefer-method</span> <span class="nv">put-away</span> <span class="ss">::refrigerated</span> <span class="ss">::grocery</span><span class="p">)</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">put-away</span> <span class="p">{</span><span class="ss">:item-type</span> <span class="ss">::milk</span>, <span class="ss">:size</span> <span class="ss">:gallon</span><span class="p">})</span>
+<span class="nv">Storing</span> <span class="nv">a</span> <span class="nv">gallon</span> <span class="nv">of</span> <span class="nv">milk</span> <span class="nv">in</span> <span class="nv">the</span> <span class="nv">fridge</span>
+</code></pre>
+<p>Very good! We’ve established that the <code>::refrigerated</code> item type takes precedence over the <code>::grocery</code> item type. It’s important to prevent spoilage!</p>
+<p>You can use multimethods wherever you need to extend a function’s behavior later. This is especially useful when you intend your code to be used by other people—if someone else were to use our grocery-storage system, they could define new types of items, and be able to tell <code>put-away</code> exactly how to handle those new item types. We didn’t talk about garbage bags, pencils, or medication here, but because <code>put-away</code> is a multimethod, someone else could define something like <code>{:item-type ::medication}</code>, and extend <code>put-away</code> to store it correctly.</p>
+<p>Throughout this example, we’ve talked about “item types”, but… we used keywords, like <code>::apples</code>, to represent those types. These aren’t types in the sense of Clojure’s type system, but we could use them <em>like</em> types. In a very real sense, what we’ve done here is define our own tiny language, with its own itty bitty type system, completely separate from Clojure’s. The core <em>ideas</em> are the same: we use subtype relationships to write code which depends only on general things (e.g. “refrigerated things”) automatically cover more specific things (e.g. “milk”).</p>
+<p>Multimethods are powerful and general thanks to their dispatch functions. However, because those dispatch functions get involved in every call to a multimethod, they’re a bit slower than regular function calls. When performance matters, we turn to <em>interfaces</em> and <em>protocols</em>.</p>
+<h2><a href="#interfaces" id="interfaces">Interfaces</a></h2>
+<p>The idea of a polymorphic function which decides what to do based on the type of its arguments is so common, and so useful, that most languages provide special facilities for it. We call this “type dispatch”: the type of the value being passed chooses which particular code the language invokes. We wrote a version of type dispatch using multimethods and the <code>type</code> function. Many languages, such as Haskell and Java, build type dispatch into <em>every</em> function—types are attached to each argument, and used to decide between alternative implementations.</p>
+<p>To support this feature in Java, the JVM has a fast, built-in mechanism for type dispatch using interfaces. We aren’t limited to using the interfaces given to us by Clojure and the JVM. We can define our own interfaces, and use them to get extra-speedy type dispatch, using the <code>definterface</code> macro.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">definterface </span><span class="nv">IAppend</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">x</span><span class="p">]))</span>
+</code></pre>
+<p>We’ve defined a new type: specifically, an interface. The name of our interface is <code>IAppend</code>. We’ve also stated that if a value <code>coll</code> is an instance of type IAppend, then there must be a <em>method</em>, named <code>append</code>. These methods are (and I know this is confusing) <em>not</em> the multimethods we discussed earlier. These methods are <em>JVM</em> methods: a sort of primitive function. Methods take arguments, evaluate code, and return results, like functions. Unlike Clojure’s functions, they aren’t values: you can’t ask them for docstrings, or pass them around to <code>map</code> or <code>filter</code>. We’ve provided only a single method here, but if we liked, we could define several in the same <code>definterface</code>.</p>
+<p>The <code>append</code> method we defined takes two arguments. Yes, <em>two</em>. Interfaces always take a first argument, which in this case must be an instance of <code>IAppend</code>. Since the first argument is mandatory, <code>definterface</code> doesn’t ask us to write it down. This is a bit weird, and contradicts how function definitions work everywhere else, but we’re stuck with this behavior for historical reasons. Long story short: <code>(append [x]</code> tells us that our first argument is an <code>IAppend</code>, and our second argument is some object called <code>x</code>. And that’s it! Like a multimethod, there’s no function body: we provide that later. Unlike a multimethod, there’s no dispatch function. The JVM will always dispatch based on the type of the first argument.</p>
+<p>“All right”, you might say. “It’s great that we have type to express that something is appendable, and an <code>append</code>… method, whatever that is, exists. But how do we make <em>an appendable thing</em>?”</p>
+<p>For this, we need new tools.</p>
+<h2><a href="#making-an-appendable-thing" id="making-an-appendable-thing">Making An Appendable Thing</a></h2>
+<p>We have an interface, <code>IAppend</code>, and we’d like to make an <em>instance</em> of that type. The quickest way to make an object of some type is to use a macro called <code>reify</code>: a fancy philosophical word that means “make a concrete thing out of an abstract concept.” In Clojure, <code>reify</code> takes interfaces, and definitions for how the methods in those interfaces should work, and returns an object which is an instance of those interfaces. For instance, perhaps we want an object to keep track of a grocery list:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">grocery-list</span>
+  <span class="s">&quot;Creates an appendable grocery list. Takes a vector of</span>
+<span class="s">  groceries to buy.&quot;</span>
+  <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">reify</span> <span class="nv">IAppend</span>
+    <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+      <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">)))))</span>
+</code></pre>
+<p>There are two parts here: the first is a function, <code>grocery-list</code>, which we’re going to call when we want to make a new grocery list. The second is the <code>(reify IAppend ...)</code>, which constructs a value. That value will be an instance of type <code>IAppend</code>; at compile time, <code>reify</code> summons a new, anonymous class from the void, and makes sure that class is a subtype of <code>IAppend</code>. Each call to this <code>(reify ...)</code> constructs a new instance of that anonymous class.</p>
+<p>Inside the <code>reify</code>, we’ve provided definitions for <em>how</em> to handle <code>IAppend</code>’s methods: when someone calls the <code>append</code> method with <code>this</code> (some value which this reify constructed) and <code>x</code>, we add <code>x</code> to the end of the <code>to-buy</code> vector using <code>conj</code>, and call <code>grocery-list</code> to make a new <code>GroceryList</code> out of it. That way we can keep appending more things later.</p>
+<p>An interesting thing to note: like <code>fn</code>, <code>reify</code> can use variables, like <code>to-buy</code>, from the surrounding code. When <code>grocery-list</code> returns, the object constructed by <code>reify</code> <em>remembers</em> the value of <code>to-buy</code>, and can use it later. We say that <code>reify</code>, like <code>fn</code>, <em>closes over</em> those variables: <code>reify</code> and <code>fn</code> are <em>closures</em>. That’s a fancy bit of programming jargon you can use to get strangers to stop talking to you at parties.</p>
+<p>Let’s try it out:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span>
+<span class="o">#</span><span class="nv">object</span><span class="p">[</span><span class="nv">scratch.polymorphism$grocery_list$reify__1950</span> <span class="mi">0</span><span class="nv">x70e02b5</span> <span class="s">&quot;scratch.polymorphism$grocery_list$reify__1950@70e02b5&quot;</span><span class="p">]</span>
+</code></pre>
+<p>This is not a particularly helpful representation of a grocery list. If you squint, you can see the namespace (<code>scratch.polymorphism</code>) and function (<code>grocery_list</code>) in there, and also <code>reify</code>, since we used <code>reify</code> to make this value. The <code>_1950</code> is a unique number that helps the computer tell this particular reify apart from others. In fact, this whole first part is the automatically generated class which <code>reify</code> defined for us. <code>0x70e02b5</code> is a number that identifies where this particular instance of that class lives in memory. Unhelpfully, <em>nothing</em> here tells us about the to-buy list we provided (<code>[:eggs]</code>).</p>
+<p>One thing we <em>do</em> know, though, is that this is something we can append to.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">supers</span> <span class="p">(</span><span class="nf">type</span> <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])))</span>
+<span class="o">#</span><span class="p">{</span><span class="nv">clojure.lang.IObj</span> <span class="nv">scratch.polymorphism.IAppend</span> <span class="nv">java.lang.Object</span> <span class="nv">clojure.lang.IMeta</span><span class="p">}</span>
+</code></pre>
+<p>Remember how many types were in <code>(supers clojure.lang.PersistentVector)</code>? Objects made with <code>reify</code> are far simpler. There’s <code>IAppend</code>: that’s the interface type we defined earlier. There’s <code>java.lang.Object</code>, of course. <code>clojure.lang.IObj</code> and <code>IMeta</code> mean that our reify object has metadata. Wait—what <em>is</em> this thing’s metadata anyway?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">meta </span><span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">]))</span>
+<span class="p">{</span><span class="ss">:line</span> <span class="mi">12</span>, <span class="ss">:column</span> <span class="mi">3</span><span class="p">}</span>
+</code></pre>
+<p>Huh! That’s the line and column number, of the <code>reify</code> expression which made this object. But what about appending? How do we use <code>append</code> with this thing?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span> <span class="ss">:tofu</span><span class="p">)</span>
+<span class="s">&quot;Sorry, I don't know how to append to a class scratch.polymorphism$grocery_list$reify__1491&quot;</span>
+</code></pre>
+<p>Oh, wait, hang on—that’s our <code>append</code> function from before. We wanted to call the append <em>method</em> we defined using <code>definterface</code>: methods and functions are different things, even if they have the same name. To make a method call, we put a <code>.</code> in front of the method name:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">.append</span> <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span> <span class="ss">:tofu</span><span class="p">)</span>
+<span class="o">#</span><span class="nv">object</span><span class="p">[</span><span class="nv">scratch.polymorphism$grocery_list$reify__1950</span> <span class="mi">0</span><span class="nv">x40eb00f0</span> <span class="s">&quot;scratch.polymorphism$grocery_list$reify__1950@40eb00f0&quot;</span><span class="p">]</span>
+</code></pre>
+<p>If we wanted a function for <code>append</code>, we could write one which calls the method. We might call this a <em>wrapper</em> function, since it wraps the append method up in a nice functional package. This version of <code>append</code> we can use with <code>reduce</code> or <code>partial</code>, and so on.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">append</span>
+  <span class="s">&quot;Appends x to the end of coll.&quot;</span>
+  <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">.append</span> <span class="nv">coll</span> <span class="nv">x</span><span class="p">))</span>
+</code></pre>
+<p>Moving on: we’ve called our <code>append</code> method, and it gave us… another unhelpful grocery-list. It’d be great if we had a more reasonable way to <em>print</em> these lists to the console. In the JVM, the <code>Object</code> class defines a method called <code>toString</code>. That’s how <code>str</code> (typically) makes strings out of things. Let’s expand our <code>reify</code> to define a <em>different</em> <code>toString</code> method:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">grocery-list</span>
+  <span class="s">&quot;Creates an appendable (via IAppend) grocery list. Takes a vector of</span>
+<span class="s">  groceries to buy.&quot;</span>
+  <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">reify</span>
+    <span class="nv">IAppend</span>
+    <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+      <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">)))</span>
+    
+    <span class="nv">Object</span>
+    <span class="p">(</span><span class="nf">toString</span> <span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+      <span class="p">(</span><span class="nb">str </span><span class="s">&quot;To buy: &quot;</span> <span class="nv">to-buy</span><span class="p">))))</span>
+</code></pre>
+<p>In general, <code>reify</code> takes a type followed by method definitions for that particular type, then another type, and any number of methods for <em>that</em> type, and so on. Our grocery lists were already <code>Object</code> before, and they were given simple, default definitions for all of <code>Object</code>’s methods–that’s how the REPL was able to show us <code>#object[scratch.polymorphism$grocery_list$reify__1950 ...]</code>. But now our call to <code>reify</code> states explicitly: when interpreted as an <code>Object</code>, here’s how the <code>toString</code> method works.</p>
+<p>Let’s see it in action!</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">str </span><span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">]))</span>
+<span class="s">&quot;To buy: [:eggs]&quot;</span>
+</code></pre>
+<p>Hey, that’s more helpful! This is another kind of polymorphism at work: the <code>toString</code> method (and by extension, the <code>str</code> function) does different things depending on the type of object it’s given. And what’s neat is that <em>unlike</em> our initial polymorphic function <code>append</code>—where we had a single function definition which had to know about <em>all</em> the types we wanted to call… we didn’t have to change <code>toString</code> or <code>str</code>’s definitions. The plumbing—looking up what code to evaluate—is handled automatically. As with multimethods, we’re free to define behaviors for new types <em>without</em> having to change the definitions for other types.</p>
+<p>Let’s try out our <code>append</code> method again and see if it works:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">str </span><span class="p">(</span><span class="nf">.append</span> <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span> <span class="ss">:tomatoes</span><span class="p">))</span>
+<span class="s">&quot;To buy: [:eggs :tomatoes]&quot;</span>
+</code></pre>
+<p>Hey, that’s great! We can see the results of appending to our grocery list. What about appending to lists and vectors, though? Can we use <code>.append</code> with them?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">.append</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nv">IllegalArgumentException</span> <span class="nv">No</span> <span class="nv">matching</span> <span class="nv">method</span> <span class="nv">found</span><span class="err">:</span> <span class="nv">append</span> <span class="nb">for class </span><span class="nv">clojure.lang.PersistentVector</span>  <span class="nv">clojure.lang.Reflector.invokeMatchingMethod</span> <span class="p">(</span><span class="nf">Reflector.java</span><span class="ss">:53</span><span class="p">)</span>
+</code></pre>
+<p>The <em>reflector</em> is a part of Clojure which figures out what definition of a method to use for a given type. It <em>failed</em> to find a matching method for <code>append</code>, given a <code>clojure.lang.PersistentVector</code>—which makes sense, because we haven’t made <code>clojure.lang.PersistentVector</code> a subtype of <code>IAppend</code>. Let’s do that next!</p>
+<p>I have terrible news: we <em>can’t</em> do this. Interfaces are a one-way street: when we define a new type (as we did with <code>reify</code>), we can say how that type works with any number of interfaces. But when we define an interface, we <em>don’t</em> get to say how it works with existing types. That’s just how the JVM’s type system works.</p>
+<p>“But this is awful!” You might exclaim. “The whole reason we defined an interface was so that we could write polymorphic functions like <code>append</code>, which could append to <em>many</em> kinds of objects. Instead, we’re limited to polymorphism only over types which we ourselves define!”</p>
+<p>This is the other half of the <a href="https://wiki.c2.com/?ExpressionProblem">expression problem</a> we mentioned earlier: existing (regular) functions can’t be extended to new types, and existing types can’t be extended to new interfaces. We solved the function-extension problem with multimethods and interfaces… but how do we solve the interface-extension problem?</p>
+<h2><a href="#protocols" id="protocols">Protocols</a></h2>
+<p>In Clojure, a <em>protocol</em> is like an interface which can be extended to existing types. It defines a named type, together with functions whose first argument is an instance of that type. Where interfaces are built into the JVM, protocols are a Clojure-specific construct. To define a protocol, we use <code>defprotocol</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defprotocol </span><span class="nv">Append</span>
+  <span class="s">&quot;This protocol lets us add things to the end of a collection.&quot;</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">coll</span> <span class="nv">x</span><span class="p">]</span>
+          <span class="s">&quot;Appends x to the end of collection coll.&quot;</span><span class="p">))</span>
+</code></pre>
+<p>If you still have the <code>append</code> function we wrote earlier, this <code>append</code> function will replace it; you’ll see a message like <code>Warning: protocol #'scratch.polymorphism/Append is overwriting function append</code> at the REPL. You can delete or rename the original <code>append</code> function if you like.</p>
+<p>We’ve named our protocol <code>Append</code> (not to be confused with the interface <code>IAppend</code>), and given it a bit of documentation to remind us what it’s for. It has one function, named <code>append</code>, which takes two arguments: <code>coll</code> and <code>x</code>. We can give a docstring for the <code>append</code> function too. Like an interface, we <em>don’t</em> define how the function works: we’re simply saying it exists. Unlike interfaces, these are real functions, not methods. Their first arguments are explicit, they have docstrings, we don’t need to use a <code>.</code> to call them, and they can be passed around to other functions.</p>
+<p>We can ask for our protocol’s documentation at the repl, just like we can for functions and namespaces:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">doc </span><span class="nv">Append</span><span class="p">)</span>
+<span class="nv">-------------------------</span>
+<span class="nv">scratch.polymorphism/Append</span>
+  <span class="nv">This</span> <span class="nv">protocol</span> <span class="nv">lets</span> <span class="nv">us</span> <span class="nv">add</span> <span class="nv">things</span> <span class="nv">to</span> <span class="nv">the</span> <span class="nv">end</span> <span class="nv">of</span> <span class="nv">a</span> <span class="nv">collection.</span>
+</code></pre>
+<p>And likewise, functions defined in <code>defprotocol</code> can be inspected, just like those made with <code>defn</code>.</p>
+<pre><code>scratch.polymorphism=&gt; (doc append)
+-------------------------
+scratch.polymorphism/append
+([coll x])
+  Appends x to the end of collection coll.
+</code></pre>
+<p>If we try to use the <code>append</code> function with a grocery list, it’s going to fail: the grocery list <code>reify</code> is a subtype of the <em>interface</em> <code>IAppend</code>, but we haven’t told it how the <em>protocol</em> <code>Append</code> works yet:</p>
+<pre><code>scratch.polymorphism=&gt; (append (grocery-list [:eggs]) :tomatoes)
+IllegalArgumentException No implementation of method: :append of protocol: #'scratch.polymorphism/Append found for class: scratch.polymorphism$grocery_list$reify__1758  clojure.core/-cache-protocol-fn (core_deftype.clj:568)
+</code></pre>
+<p>This error tells us that the <code>append</code> function doesn’t have an <em>implementation</em> (a function body) for the type <code>scratch.polymorphism$grocery_list$reify__1758</code>. We can fix that by changing our <code>reify</code> to use the <code>Append</code> protocol, instead of the <code>IAppend</code> interface. This is a one-character change: protocol functions and interface methods are defined in <code>reify</code> in exactly the same way.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">grocery-list</span>
+  <span class="s">&quot;Creates an appendable (via IAppend) grocery list. Takes a vector of</span>
+<span class="s">  groceries to buy.&quot;</span>
+  <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">reify</span>
+    <span class="nv">Append</span>
+    <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+      <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">)))</span>
+
+    <span class="nv">Object</span>
+    <span class="p">(</span><span class="nf">toString</span> <span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+      <span class="p">(</span><span class="nb">str </span><span class="s">&quot;To buy: &quot;</span> <span class="nv">to-buy</span><span class="p">))))</span>
+</code></pre>
+<p>Now we can use our <code>append</code> function with grocery lists!</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">str </span><span class="p">(</span><span class="nf">append</span> <span class="p">(</span><span class="nf">grocery-list</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span> <span class="ss">:tomatoes</span><span class="p">))</span>
+<span class="s">&quot;To buy: [:eggs :tomatoes]&quot;</span>
+</code></pre>
+<p>So far, we’ve done exactly what we did with interfaces. In fact, when we called <code>defprotocol</code>, it not only defined a protocol: it also defined an interface as well. But unlike interfaces, we can extend our protocol to cover <em>existing</em> types. To do this, we use <code>extend-protocol</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">extend-protocol</span> <span class="nv">Append</span>
+  <span class="nv">clojure.lang.IPersistentVector</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">v</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">conj </span><span class="nv">v</span> <span class="nv">x</span><span class="p">)))</span>
+</code></pre>
+<p>This expresses that the <code>Append</code> protocol’s functions (i.e. <code>append</code>) can now be used on anything which is an <code>IPersistentVector</code>. When we call <code>(append v x)</code> with a vector <code>v</code>, we return the result of <code>(conj v x)</code>. Let’s try it out:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span>
+</code></pre>
+<p>Fantastic! What about other sequential collections?</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">extend-protocol</span> <span class="nv">Append</span>
+  <span class="nv">clojure.lang.IPersistentVector</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">v</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">conj </span><span class="nv">v</span> <span class="nv">x</span><span class="p">))</span>
+  
+  <span class="nv">clojure.lang.Sequential</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">v</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">concat </span><span class="nv">v</span> <span class="p">(</span><span class="nb">list </span><span class="nv">x</span><span class="p">))))</span>
+</code></pre>
+<p><code>extend-protocol</code> can take several types, and the function definitions for each of them. Here, we’re extending <code>Append</code> over both <code>IPersistentVector</code> and <code>Sequential</code>—and providing definitions for how <code>append</code> works in each case. If you want to extend a single type to multiple protocols, use <code>extend-type</code>. Both <code>extend-protocol</code> and <code>extend-type</code> can be called as often as you like: all their definitions get merged together.</p>
+<p>We can even extend a protocol over <code>nil</code>! We could add this to the existing <code>extend-protocol</code>, or write it separately. This is another advantage of protocols over interfaces.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">extend-protocol</span> <span class="nv">Append</span>
+  <span class="nv">nil</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">v</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">[</span><span class="nv">x</span><span class="p">]))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="nv">nil</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+</code></pre>
+<h2><a href="#named-datatypes" id="named-datatypes">Named Datatypes</a></h2>
+<p>We’ve used <code>reify</code> to make an object which satisfies some interfaces or protocols. Like an anonymous function <code>(fn [x] ...)</code>, <code>reify</code> creates an <em>anonymous type</em>. Because the <code>reify</code> type has no (predictable) name, we can’t extend protocols to it later. How do we make a type with a name–like <code>clojure.lang.PersistentVector</code>, or <code>clojure.lang.LazySeq</code>?</p>
+<p>There are two tools at our disposal here: <code>deftype</code> and <code>defrecord</code>. Both define new named types—classes, to be exact. The <code>deftype</code> macro produces a very basic datatype, whereas <code>defrecord</code> defines a type which behaves, in many respects, like a Clojure map. First, <code>deftype</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">deftype </span><span class="nv">GroceryList</span> <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="nv">Append</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">)))</span>
+  
+  <span class="nv">Object</span>
+  <span class="p">(</span><span class="nf">toString</span> <span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">str </span><span class="s">&quot;To buy: &quot;</span> <span class="nv">to-buy</span><span class="p">)))</span>
+</code></pre>
+<p>We’re defining a new type, named <code>GroceryList</code>. Objects of this type keep track of a single variable, called <code>to-buy</code>. Just as with <code>reify</code>, we provide a sequence of types we’d like GroceryLists to be a subtype of, and provide implementations for their functions or methods. The only difference is that in <code>append</code>, we construct a new grocery list using <code>(GroceryList. to-buy)</code>. We use the name of the class followed by a period <code>.</code> to make a new instance of Grocerylist.</p>
+<p>Let’s try creating one of these GroceryLists.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span>
+<span class="o">#</span><span class="nv">object</span><span class="p">[</span><span class="nv">scratch.polymorphism.GroceryList</span> <span class="mi">0</span><span class="nv">x370dbd33</span> <span class="s">&quot;To buy: [:eggs]&quot;</span><span class="p">]</span>
+</code></pre>
+<p>Voilà! An instance of GroceryList. We’ve got the full name of the type: <code>GroceryList</code>, preceded by the namespace <code>scratch.polymorphism</code>. There’s a memory address, and then our string representation. Can we append to it?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">append</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">])</span> <span class="ss">:spinach</span><span class="p">)</span>
+<span class="o">#</span><span class="nv">object</span><span class="p">[</span><span class="nv">scratch.polymorphism.GroceryList</span> <span class="mi">0</span><span class="nv">x3c612037</span> <span class="s">&quot;To buy: [:eggs :spinach]&quot;</span><span class="p">]</span>
+</code></pre>
+<p>Indeed we can. What else can we do with a GroceryList?</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">supers</span> <span class="nv">GroceryList</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{</span><span class="nv">clojure.lang.IType</span> <span class="nv">scratch.polymorphism.Append</span> <span class="nv">java.lang.Object</span><span class="p">}</span>
+</code></pre>
+<p>Not much. There’s <code>clojure.lang.IType</code>, which just means “this thing is a Clojure datatype”. There’s our <code>Append</code> protocol, and <code>java.lang.Object</code>, of course—almost <em>everything</em> is a subtype of Object. As it turns out, <code>deftype</code> is pretty bare-bones.</p>
+<p>We <em>do</em> get a few things for free with <code>deftype</code>. We can access the fields by using <code>.some-field-name</code>, like so:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">.to-buy</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:eggs</span><span class="p">]))</span>
+<span class="p">[</span><span class="ss">:eggs</span><span class="p">]</span>
+</code></pre>
+<p>And we also get a function that takes a <code>to-buy</code> list and builds a new <code>GroceryList</code>. These “constructor functions” take one argument for each field in the <code>deftype</code>.</p>
+<pre><code>scratch.polymorphism=&gt; (-&gt;GroceryList [:strawberries])
+#object[scratch.polymorphism.GroceryList 0x44cc69b3 &quot;To buy: [:strawberries]&quot;]
+</code></pre>
+<p>This is a small wrapper around <code>(GroceryList. to-buy)</code>. It’s there because <code>GroceryList.</code>, like a method, isn’t a full-fledged Clojure function. Like methods, we can’t use <code>GroceryList.</code> with <code>map</code> or <code>apply</code>, or other things that expect functions. But we <em>can</em> use <code>-&gt;GroceryList</code> in these contexts!</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">map </span><span class="nv">GroceryList.</span> <span class="p">[[</span><span class="ss">:twix</span><span class="p">]</span> <span class="p">[</span><span class="ss">:kale</span> <span class="ss">:bananas</span><span class="p">]])</span>
+<span class="nv">CompilerException</span> <span class="nv">java.lang.ClassNotFoundException</span><span class="err">:</span> <span class="nv">GroceryList.</span>, <span class="nv">compiling</span><span class="err">:</span><span class="p">(</span><span class="nf">/tmp/form-init2122621676255621718.clj</span><span class="ss">:1:1</span><span class="p">)</span> 
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">map </span><span class="nv">-&gt;GroceryList</span> <span class="p">[[</span><span class="ss">:twix</span><span class="p">]</span> <span class="p">[</span><span class="ss">:kale</span> <span class="ss">:bananas</span><span class="p">]])</span>
+<span class="p">(</span><span class="o">#</span><span class="nv">object</span><span class="p">[</span><span class="nv">scratch.polymorphism.GroceryList</span> <span class="mi">0</span><span class="nv">x552db723</span> <span class="s">&quot;To buy: [:twix]&quot;</span><span class="p">]</span> <span class="o">#</span><span class="nv">object</span><span class="p">[</span><span class="nv">scratch.polymorphism.GroceryList</span> <span class="mi">0</span><span class="nv">x4d81eefd</span> <span class="s">&quot;To buy: [:kale :bananas]&quot;</span><span class="p">])</span>
+</code></pre>
+<p>The types constructed by <code>deftype</code> are <em>so</em> basic that they lack properties we’ve taken for granted so far—like equality:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cheese</span><span class="p">])</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cheese</span><span class="p">]))</span>
+<span class="nv">false</span>
+</code></pre>
+<p>The <em>only</em> thing a GroceryList is equal to is <em>itself</em>.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">gl</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:fish</span><span class="p">])]</span> <span class="p">(</span><span class="nb">= </span><span class="nv">gl</span> <span class="nv">gl</span><span class="p">))</span>
+<span class="nv">true</span>
+</code></pre>
+<p>This is Clojure being conservative—it doesn’t know if, say, two GroceryLists with the same <code>to-buy</code> list can <em>really</em> be considered equivalent. It’s up to us to define that by providing an implementation for the <code>equals</code> method—another part of <code>Object</code>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">deftype </span><span class="nv">GroceryList</span> <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="nv">Append</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">)))</span>
+  
+  <span class="nv">Object</span>
+  <span class="p">(</span><span class="nf">toString</span> <span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">str </span><span class="s">&quot;To buy: &quot;</span> <span class="nv">to-buy</span><span class="p">))</span>
+  
+  <span class="p">(</span><span class="nf">equals</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">other</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">and </span><span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">type</span> <span class="nv">this</span><span class="p">)</span> <span class="p">(</span><span class="nf">type</span> <span class="nv">other</span><span class="p">))</span>
+         <span class="p">(</span><span class="nb">= </span><span class="nv">to-buy</span> <span class="p">(</span><span class="nf">.to-buy</span> <span class="nv">other</span><span class="p">)))))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cheese</span><span class="p">])</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cheese</span><span class="p">]))</span>
+<span class="nv">true</span>
+</code></pre>
+<p>Want to make all grocery lists equal? Go wild!</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">deftype </span><span class="nv">GroceryList</span> <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="nv">Append</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">)))</span>
+  
+  <span class="nv">Object</span>
+  <span class="p">(</span><span class="nf">toString</span> <span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">str </span><span class="s">&quot;To buy: &quot;</span> <span class="nv">to-buy</span><span class="p">))</span>
+  
+  <span class="p">(</span><span class="nf">equals</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">other</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">type</span> <span class="nv">this</span><span class="p">)</span> <span class="p">(</span><span class="nf">type</span> <span class="nv">other</span><span class="p">))))</span>
+
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:ketchup</span><span class="p">])</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:mayo</span><span class="p">]))</span>
+<span class="nv">true</span>
+</code></pre>
+<p>So, <code>deftype</code> gives us the power to construct our own, primitive types. But most of the time, we don’t <em>want</em> this degree of control: defining exactly how to print our values, how to compare two values together, and so on. After all, plain old maps are a great way to model data. They’re easy to print and easy to manipulate. It’d be nice if we could create a type—to take advantage of protocols—but have it still work like a map. Clojure calls this kind of type a <em>record</em>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defrecord </span><span class="nv">GroceryList</span> <span class="p">[</span><span class="nv">to-buy</span><span class="p">]</span>
+  <span class="nv">Append</span>
+  <span class="p">(</span><span class="nf">append</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">to-buy</span> <span class="nv">x</span><span class="p">))))</span>
+</code></pre>
+<p>The <code>defrecord</code> macro looks almost exactly like <code>deftype</code>: it takes the name of the type we’re defining, the names of the fields each instance will keep track of, and then a series of types with method implementations. As with <code>deftype</code>, we can construct instances of our <code>GroceryList</code> type using <code>GroceryList.</code> or the <code>-&gt;GroceryList</code> function.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:beans</span><span class="p">])</span>
+<span class="o">#</span><span class="nv">scratch.polymorphism.GroceryList</span><span class="p">{</span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:beans</span><span class="p">]}</span>
+</code></pre>
+<p><em>Unlike</em> <code>deftype</code>, we get a nice, concise string representation for free. The first part shows the type name, and after that it looks just like a map, showing the fields of this <code>GroceryList</code> and their corresponding values.</p>
+<p>We don’t have to define our own equality either: two records are equal if they’re of the same type, and their fields are equal.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:beans</span><span class="p">])</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:beans</span><span class="p">]))</span>
+<span class="nv">true</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:beans</span><span class="p">])</span> <span class="p">{</span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:beans</span><span class="p">]})</span>
+<span class="nv">false</span>
+</code></pre>
+<p>A GroceryList works <em>like</em> a map, but it’s not the same type: records aren’t equal to maps, even if they have the same keys and values.</p>
+<p>Like <code>deftype</code>, we can access the fields of a record using <code>.to-buy</code>:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">.to-buy</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:bread</span><span class="p">]))</span>
+<span class="p">[</span><span class="ss">:bread</span><span class="p">]</span>
+</code></pre>
+<p>But since records work like maps, we can also access them using <code>get</code>, or by using keywords as functions:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">get </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:bread</span><span class="p">])</span> <span class="ss">:to-buy</span><span class="p">)</span>
+<span class="p">[</span><span class="ss">:bread</span><span class="p">]</span>
+<span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="ss">:to-buy</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:bread</span><span class="p">]))</span>
+<span class="p">[</span><span class="ss">:bread</span><span class="p">]</span>
+</code></pre>
+<p>And we can alter those fields using <code>assoc</code> and <code>update</code>, just like maps. Let’s replace our shopping list with onions:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:chicken</span><span class="p">])</span>
+                           <span class="p">(</span><span class="nb">assoc </span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:onion</span><span class="p">]))</span>
+<span class="o">#</span><span class="nv">scratch.polymorphism.GroceryList</span><span class="p">{</span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:onion</span><span class="p">]}</span>
+</code></pre>
+<p>… and add some beets:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:chicken</span><span class="p">])</span>
+                           <span class="p">(</span><span class="nb">assoc </span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:onion</span><span class="p">])</span>
+                           <span class="p">(</span><span class="nf">update</span> <span class="ss">:to-buy</span> <span class="nb">conj </span><span class="ss">:beets</span><span class="p">))</span>
+<span class="o">#</span><span class="nv">scratch.polymorphism.GroceryList</span><span class="p">{</span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:onion</span> <span class="ss">:beets</span><span class="p">]}</span>
+</code></pre>
+<p>Just as with maps, these updates are immutable: they don’t alter the original GroceryList. Instead, they create <em>copies</em> with our requested changes. We aren’t limited to the fields we explicitly defined in the <code>defrecord</code>, either. Let’s tack on a <code>:note</code> to our grocery list:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nb">assoc </span><span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cherries</span><span class="p">])</span> <span class="ss">:note</span> <span class="s">&quot;Tart cherries if possible!&quot;</span><span class="p">)</span>
+<span class="o">#</span><span class="nv">scratch.polymorphism.GroceryList</span><span class="p">{</span><span class="ss">:to-buy</span> <span class="p">[</span><span class="ss">:cherries</span><span class="p">]</span>, <span class="ss">:note</span> <span class="s">&quot;Tart cherries if possible!&quot;</span><span class="p">}</span>
+</code></pre>
+<p>This is possible because records (unlike deftypes) always carry around an extra map—just in case they need to store additional fields we didn’t define up front. The <code>assoc</code> function tries to update a field if it can, and if there’s no field by that name, it stores it in the record’s extra map.</p>
+<p>Both <code>deftype</code> and <code>defrecord</code> produce named types, which means we can extend protocols over them after the fact. Let’s add a new protocol for printing out things nicely to the console—something we could use to print our grocery list and the items on it.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defprotocol </span><span class="nv">Printable</span>
+  <span class="p">(</span><span class="nf">print-out</span> <span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="s">&quot;Print out the given object, nicely formatted.&quot;</span><span class="p">))</span>
+</code></pre>
+<p>Now we can define how to print a <code>GroceryList</code>. Let’s add a basic <code>print-out</code> function that works on any object, while we’re at it:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">extend-protocol</span> <span class="nv">Printable</span>
+  <span class="nv">GroceryList</span>
+  <span class="p">(</span><span class="nf">print-out</span> <span class="p">[</span><span class="nv">gl</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">println </span><span class="s">&quot;GROCERIES&quot;</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">println </span><span class="s">&quot;---------&quot;</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">doseq </span><span class="p">[</span><span class="nv">item</span> <span class="p">(</span><span class="ss">:to-buy</span> <span class="nv">gl</span><span class="p">)]</span>
+      <span class="p">(</span><span class="nb">print </span><span class="s">&quot;[ ] &quot;</span><span class="p">)</span>
+      <span class="p">(</span><span class="nf">print-out</span> <span class="nv">item</span><span class="p">)</span>
+      <span class="p">(</span><span class="nf">println</span><span class="p">)))</span>
+  
+  <span class="nv">Object</span>
+  <span class="p">(</span><span class="nf">print-out</span> <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">print </span><span class="nv">x</span><span class="p">)))</span>
+</code></pre>
+<p>Like we saw earlier, we can use <code>(:to-buy gl)</code> to get the items on the grocery list. We go through each one in turn using <code>doseq</code>, and call that particular item <code>item</code>. With that item, we print out a pair of brackets <code>&quot;[ ] &quot;</code>. Then we do something a bit strange: we call <code>print-out</code> <em>again</em>, but this time, with the <code>item</code> in question. The <code>Object</code> implementation takes over from there.</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">print-out</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cilantro</span> <span class="ss">:carrots</span> <span class="ss">:pork</span> <span class="ss">:baguette</span><span class="p">]))</span>
+<span class="nv">GROCERIES</span>
+<span class="nv">---------</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:cilantro</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:carrots</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:pork</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:baguette</span>
+</code></pre>
+<p>Nice! This actually looks like a real grocery list. What if we wanted to keep track of how <em>many</em> carrots to buy? We could introduce a <em>new</em> type to keep track of things that come in a certain quantity:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defrecord </span><span class="nv">CountedItem</span> <span class="p">[</span><span class="nv">thing</span> <span class="nv">quantity</span><span class="p">]</span>
+  <span class="nv">Printable</span>
+  <span class="p">(</span><span class="nf">print-out</span> <span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">print-out</span> <span class="nv">thing</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">print </span><span class="p">(</span><span class="nb">str </span><span class="s">&quot; (&quot;</span> <span class="nv">quantity</span> <span class="s">&quot;x)&quot;</span><span class="p">))))</span>
+</code></pre>
+<p>We’ve defined how to print out a counted item: first we print out the thing, then the quantity in parentheses. Let’s give that a shot:</p>
+<pre><code><span></span><span class="nv">scratch.polymorphism=&gt;</span> <span class="p">(</span><span class="nf">print-out</span> <span class="p">(</span><span class="nf">GroceryList.</span> <span class="p">[</span><span class="ss">:cilantro</span> <span class="p">(</span><span class="nf">CountedItem.</span> <span class="ss">:carrots</span> <span class="mi">2</span><span class="p">)</span> <span class="ss">:pork</span> <span class="ss">:baguette</span><span class="p">]))</span>
+<span class="nv">GROCERIES</span>
+<span class="nv">---------</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:cilantro</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:carrots</span> <span class="p">(</span><span class="mi">2</span><span class="nv">x</span><span class="p">)</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:pork</span>
+<span class="p">[</span> <span class="p">]</span> <span class="ss">:baguette</span>
+</code></pre>
+<p>Neat! We didn’t have to change <code>GroceryList</code> at all to get this behavior. Because it used the polymorphic protocol function <code>print-out</code>, it <em>automatically</em> knew how to work with our new <code>CountedItem</code> type.</p>
+<h2><a href="#when-to-use-deftype-and-defrecord" id="when-to-use-deftype-and-defrecord">When To Use Deftype and Defrecord</a></h2>
+<p>If you’re coming from an object-oriented language (e.g. Ruby, Java), or a typed language with algebraic datatypes (e.g. Haskell, ML), you might see <code>defprotocol</code>, <code>deftype</code>, and <code>defrecord</code>, and think: “Ah, finally. Here are the tools I’ve been waiting for.” You might start by wanting to model a person, and immediately jump to <code>(defrecord Person [name pronouns age])</code>. While this is valid, you should take a step back, and ask: do I <em>need</em> polymorphism here? Are there going to be functions that take people <em>and</em> animals? Or do I simply want to keep track of some data?</p>
+<p>If you don’t need polymorphism, there’s a good chance your data can be modeled in Clojure as plain old maps, sets, vectors, and so on. Need to represent a person? How about:</p>
+<pre><code><span></span><span class="p">{</span><span class="ss">:name</span>     <span class="s">&quot;Morgan&quot;</span>
+ <span class="ss">:pronouns</span> <span class="p">[</span><span class="ss">:they</span> <span class="ss">:them</span><span class="p">]</span>
+ <span class="ss">:age</span>      <span class="mi">56</span><span class="p">}</span>
+</code></pre>
+<p>No <code>defrecord</code> required. Sticking to maps keeps your data in a shape that can be easily manipulated using standard Clojure functions. It’s easy to store this data on disk, or send it across the network. It’s easier to share this kind of data with other people. And it’s more concise to print at the console, which makes debugging your programs easier.</p>
+<p>Conversely, you’ll want to use <code>defrecord</code> and <code>deftype</code> when maps aren’t sufficient: when you need polymorphism, when you need to participate in existing protocols or interfaces, or when multimethod performance is too slow. Records are often faster and more memory-efficient than maps, so even if you don’t need the polymorphism, it can be worthwhile to define a record or so when map performance bogs you down. This is something you’ll want to find out by <em>measuring</em> your code, though, rather than simply assuming.</p>
+<p>If you’re reaching for records for type safety: it’s not going to be as helpful as you’d like. Functions like <code>assoc</code> work equally well across <em>all</em> kinds of records, and the compiler won’t warn you about using the wrong keyword. Sticking to methods eliminates <em>some</em> of those risks, but it’s nothing like the type guardrails in Java or Haskell. Clojure programs generally rely more on tests and contracts to prevent these type errors. There are also static type systems like <a href="https://github.com/clojure/core.typed">core.typed</a>, which we’ll discuss later.</p>
+<h2><a href="#review" id="review">Review</a></h2>
+<p>When a function’s behavior depends on the type of values it is provided, we call that function polymorphic. Many of Clojure’s core functions, like <code>conj</code> or <code>reduce</code>, are polymorphic: we can <code>conj</code> into maps, vectors, sets, and lists, and each does something different. Often, our own code is <em>implicitly</em> polymorphic by virtue of using other polymorphic functions: <code>(defn add-bird [coll] (conj coll :bird))</code> can add birds to lots of different things.</p>
+<p>When we need a function whose behavior explicitly depends on its arguments, we can use ad-hoc approaches, like <code>if</code>, <code>cond</code>, or <code>case</code>. The <code>instance?</code>, <code>type</code>, and <code>supers</code> functions let us choose what to do based on the <em>type</em> of the value.</p>
+<p>When we need an <em>open</em> function—one whose behavior can be extended to new things <em>later</em>—we use a multimethod, an interface, or a protocol. Multimethods are the most general approach: they use a <em>dispatch function</em>, which receives the function’s arguments and decides which implementation to call. They’re not limited to dispatching by argument type: they can use arbitrary values and relationships between keywords, defined with <code>derive</code>. They also offer fine-grained control when that dispatch would be ambiguous. This flexibility comes with a performance penalty: Clojure has to evaluate the dispatch function every time the multimethod is called.</p>
+<p>When a function’s behavior depends on the type of the first argument, use protocols or interfaces. Interfaces can’t be extended to existing types; protocols can. Protocols have some ergonomic advantages: they define regular functions, rather than methods, and come with documentation—though there’s nothing stopping you from writing your own documented wrapper functions, or using <a href="https://github.com/aleph-io/potemkin#definterface">definterface+</a>, which does so automatically. Interfaces are slightly faster; prefer them when performance matters.</p>
+<p>To create instances of a new type, we have <code>reify</code>. Like <code>(fn [x] ...)</code>, <code>reify</code> generates an <em>anonymous</em> type—it can have interfaces and protocols as supertypes, and provides implementations for those types, but has no (predictable, meaningful) name. When we want to name our types—perhaps so that other people can extend them later—we use <code>deftype</code> and <code>defrecord</code>. Most of the time, <code>defrecord</code> is most useful: they work like maps out of the box. However, <code>deftype</code> is available should we need to construct bare-bones types with unusual behaviors.</p>
+<p>We <em>haven’t</em> talked about the details of classes or inheritance in this discussion. These are important for Java interop, but we don’t use these concepts often in Clojure. A topic for later discussion!</p>
+<h2><a href="#problems" id="problems">Problems</a></h2>
+<ul>
+<li>
+<p>Write a <code>sorted</code> function that uses <code>cond</code> and <code>instance?</code> to convert lists to sorted lists (using <code>(sort ...)</code>), and sets to sorted sets (using <code>(into (sorted-set) ...)</code>).</p>
+</li>
+<li>
+<p>Rewrite <code>sorted</code> as a multimethod. Using <code>defmethod</code>, extend <code>sorted</code> to handle maps.</p>
+</li>
+<li>
+<p>Add a <code>checked-off</code> field to the <code>GroceryList</code> type, and use it to store a set of items that are already in the cart. Write a <code>check-off</code> function that takes a grocery list and checks off an item on it, by adding that item to the <code>checked-off</code> set: <code>(check-off my-list eggs)</code></p>
+</li>
+<li>
+<p>Write a <code>remaining</code> function which takes a <code>GroceryList</code> and returns the items that <em>haven’t</em> been checked off yet.</p>
+</li>
+<li>
+<p>Change the definition of <code>print-out</code> for <code>GroceryList</code> to take the <code>checked-off</code> set into account, printing an <code>[x]</code> in front of checked-off items.</p>
+</li>
+<li>
+<p>Imagine Clojure had <em>no</em> built-in sets. Make up a <code>Set</code> protocol with some basic operations, like <code>add-element</code>, <code>has-element?</code>, and <code>remove-element</code>.</p>
+</li>
+<li>
+<p>Using a vector or list to store your elements, write a basic implementation of your <code>Set</code> protocol. Experiment to make sure adding the same item twice doesn’t add two copies.</p>
+</li>
+<li>
+<p>Try making larger and larger sets–say, with ten, a thousand, and a hundred thousand elements. Use <code>(time (has-element? some-set 123))</code> to see how your set performance changes with size. Why is this?</p>
+</li>
+<li>
+<p>Write a different implementation of a <code>Set</code>, which uses a <em>map</em> to store its elements. Compare its performance to your list-based set.</p>
+</li>
+<li>
+<p>The <code>deref</code> function uses an interface called <code>clojure.lang.IDeref</code> to return the <em>current value</em> of a container type. Using <code>deftype</code>, define your own container type. Try <code>@(MyContainer. :hi)</code> to verify that you can get the value of your container (<code>:hi</code>) back.</p>
+</li>
+<li>
+<p>[advanced] So far, we’ve worked only with immutable types. <code>deftype</code> lets us define <em>mutable</em> types by tagging a field with <code>^:unsynchronized-mutable</code>, like so: <code>(deftype DangerBox [^:unsynchronized-mutable value] ...)</code>. Design a <code>Mutable</code> protocol with a <code>(write! box value)</code> function to overwrite the value of a mutable container. Using <code>(set! field value)</code>, build your own mutable container type which supports both <code>Mutable</code> and <code>IDeref</code>. Confirm that you can change its value using <code>write!</code>, and read it back using <code>@</code>.</p>
+</li>
+<li>
+<p>[advanced] Use your mutable container as a counter by reading its current state and writing back a value one greater–e.g. via <code>(write! box (inc @box))</code>. Using <code>dotimes</code>, perform <em>many</em> updates in a row, and verify that the final value of the counter is the same as the number you passed to <code>dotimes</code>.</p>
+</li>
+<li>
+<p>[advanced] Run this <code>dotimes</code> increment loop in two threads at once, using <code>future</code>. Is the final counter value what you expected? Why? How does this compare to using an <code>(atom)</code> with <code>swap!</code>?</p>
+</li>
+</ul>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-3194"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Rune" title="Rune" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Rune
+          
+          
+          on
+          <a href="/posts/352-clojure-from-the-ground-up-polymorphism#comment-3194">
+            <time datetime="Aug 28, 2020, 5:05:21 AM" pubdate>
+              2020-08-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>FYI, the link to the previous blog entry is broken. It should have led to hxxps://aphyr.com/posts/319-clojure-from-the-ground-up-debugging</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3195"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3956eec13263ffb25480c0a31c74bf05?r=pg&s=96&d=identicon" alt="Jochen" title="Jochen" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jochen
+          
+          
+          on
+          <a href="/posts/352-clojure-from-the-ground-up-polymorphism#comment-3195">
+            <time datetime="Aug 28, 2020, 10:54:50 AM" pubdate>
+              2020-08-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This was amazing! Thank you
+I also appreciated how you explained the often cryptic error messages coming from the clojure evaluator.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3197"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8be1592fe29f2a7ac4e9e6ad683baaa1?r=pg&s=96&d=identicon" alt="Carlos" title="Carlos" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Carlos
+          
+          
+          on
+          <a href="/posts/352-clojure-from-the-ground-up-polymorphism#comment-3197">
+            <time datetime="Sep 3, 2020, 1:20:25 PM" pubdate>
+              2020-09-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is probably the best article about polimorfism in clojure,well done!</p>
+
+<p>Thank you…</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3213"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/19b0b76c5ab16aa5cd11a46b9e25c080?r=pg&s=96&d=identicon" alt="Jiacai" title="Jiacai" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://twitter.com/liujiacai" rel="nofollow">
+              Jiacai
+            </a>
+          
+          
+          on
+          <a href="/posts/352-clojure-from-the-ground-up-polymorphism#comment-3213">
+            <time datetime="Sep 19, 2020, 12:32:43 AM" pubdate>
+              2020-09-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <code class="block"><span class="p">(</span><span class="kd">defprotocol </span><span class="nv">Mutable</span>
+  <span class="p">(</span><span class="nf">write!</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="kd">deftype </span><span class="nv">DangerBox</span> <span class="p">[</span><span class="o">^</span><span class="ss">:unsynchronized-mutable</span> <span class="nv">value</span><span class="p">]</span>
+  <span class="nv">Mutable</span>
+  <span class="p">(</span><span class="nf">write!</span> <span class="p">[</span><span class="nv">this</span> <span class="nv">x</span><span class="p">]</span>
+    <span class="p">(</span><span class="nf">set!</span> <span class="nv">value</span> <span class="nv">x</span><span class="p">))</span>
+
+  <span class="nv">clojure.lang.IDeref</span>
+  <span class="p">(</span><span class="nb">deref </span><span class="p">[</span><span class="nv">this</span><span class="p">]</span>
+    <span class="nv">value</span><span class="p">))</span>
+
+<span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">box</span> <span class="p">(</span><span class="nf">-&gt;DangerBox</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="nv">f1</span> <span class="p">(</span><span class="nf">future</span>
+           <span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">_</span> <span class="mi">100</span><span class="p">]</span>
+             <span class="p">(</span><span class="nf">write!</span> <span class="nv">box</span> <span class="p">(</span><span class="nb">inc </span><span class="o">@</span><span class="nv">box</span><span class="p">))))</span>
+      <span class="nv">f2</span> <span class="p">(</span><span class="nf">future</span>
+           <span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">_</span> <span class="mi">100</span><span class="p">]</span>
+             <span class="p">(</span><span class="nf">write!</span> <span class="nv">box</span> <span class="p">(</span><span class="nb">inc </span><span class="o">@</span><span class="nv">box</span><span class="p">))))]</span>
+  <span class="c1">;; join futures</span>
+  <span class="p">(</span><span class="nb">println </span><span class="o">@</span><span class="nv">f1</span> <span class="o">@</span><span class="nv">f2</span><span class="p">)</span>
+  <span class="c1">;; due to race condition, the final result may well not be equals to 200</span>
+  <span class="p">(</span><span class="nb">println </span><span class="o">@</span><span class="nv">box</span><span class="p">))</span>
+</code>
+<p>My solution to the advanced problems.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-4264"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/d59ce8b760072b05fef23ef7ca4f5c67?r=pg&s=96&d=identicon" alt="Pyromancer" title="Pyromancer" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Pyromancer
+          
+          
+          on
+          <a href="/posts/352-clojure-from-the-ground-up-polymorphism#comment-4264">
+            <time datetime="Feb 26, 2023, 6:25:17 AM" pubdate>
+              2023-02-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I’ve just found your series. You manage to have a good balance, and I think it is great to promote depth over detail in understanding the language, specially one such has Clojure. On the same note, a repl tour of the language is also really good way to introduce Clojure without getting people entangled in tooling and editors/IDEs. And,very well written too!</p>
+
+
+<p>Thank you for your work and effort.
+I hope you decide to continue it!</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="352" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

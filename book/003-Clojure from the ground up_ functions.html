@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: functions</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="eeGVEdO9KjEPf1pSKVGutI3JU64gFttts/EKdoprXxA1GdY8SusDAX2VbaUc7ntEZ30HcBLyda2+nosu" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/303-clojure-from-the-ground-up-functions" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/303-clojure-from-the-ground-up-functions">Clojure from the ground up: functions</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Nov 3, 2013, 12:41:53 AM" pubdate>
+          2013-11-03
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>We <a href="/posts/302-clojure-from-the-ground-up-basic-types">left off last chapter</a> with a question: what <em>are</em> verbs, anyway? When you evaluate <code>(type :mary-poppins)</code>, what really happens?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="ss">:mary-poppins</span><span class="p">)</span>
+<span class="nv">clojure.lang.Keyword</span>
+</code></pre>
+<p>To understand how <code>type</code> works, we’ll need several new ideas. First, we’ll expand on the notion of symbols as references to other values. Then we’ll learn about functions: Clojure’s verbs. Finally, we’ll use the Var system to explore and change the definitions of those functions.</p>
+<h2><a href="#let-bindings" id="let-bindings">Let bindings</a></h2>
+<p>We know that symbols are names for things, and that when evaluated, Clojure replaces those symbols with their corresponding values. <code>+</code>, for instance, is a symbol which points to the verb <code>#&lt;core$_PLUS_ clojure.core$_PLUS_@12992c&gt;</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">+</span>
+<span class="o">#</span><span class="nv">&lt;core$_PLUS_</span> <span class="nv">clojure.core$_PLUS_</span><span class="o">@</span><span class="mi">12992</span><span class="nv">c&gt;</span>
+</code></pre>
+<p>When you try to use a symbol which has no defined meaning, Clojure refuses:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">cats</span>
+
+<span class="nv">CompilerException</span> <span class="nv">java.lang.RuntimeException</span><span class="err">:</span> <span class="nv">Unable</span> <span class="nv">to</span> <span class="nb">resolve </span><span class="nv">symbol</span><span class="err">:</span> <span class="nv">cats</span> <span class="nv">in</span> <span class="nv">this</span> <span class="nv">context</span>, <span class="nv">compiling</span><span class="err">:</span><span class="p">(</span><span class="nf">NO_SOURCE_PATH</span><span class="ss">:0:0</span><span class="p">)</span>
+</code></pre>
+<p>But we can define a meaning for a symbol within a specific expression, using <code>let</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">cats</span> <span class="mi">5</span><span class="p">]</span> <span class="p">(</span><span class="nb">str </span><span class="s">&quot;I have &quot;</span> <span class="nv">cats</span> <span class="s">&quot; cats.&quot;</span><span class="p">))</span>
+<span class="s">&quot;I have 5 cats.&quot;</span>
+</code></pre>
+<p>The <code>let</code> expression first takes a vector of <em>bindings</em>: alternating symbols and values that those symbols are <em>bound</em> to, within the remainder of the expression. &quot;Let the symbol <code>cats</code> be 5, and construct a string composed of <code>&quot;I have &quot;</code>, <code>cats</code>, and <code>&quot; cats&quot;</code>.</p>
+<p>Let bindings apply only within the let expression itself. They also override any existing definitions for symbols at that point in the program. For instance, we can redefine addition to mean subtraction, for the duration of a <code>let</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nb">+ </span><span class="nv">-</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">2</span> <span class="mi">3</span><span class="p">))</span>
+<span class="mi">-1</span>
+</code></pre>
+<p>But that definition doesn’t apply outside the let:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+<p>We can also provide <em>multiple</em> bindings. Since Clojure doesn’t care about spacing, alignment, or newlines, I’ll write this on multiple lines for clarity.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">person</span>   <span class="s">&quot;joseph&quot;</span>
+             <span class="nv">num-cats</span> <span class="mi">186</span><span class="p">]</span>
+         <span class="p">(</span><span class="nb">str </span><span class="nv">person</span> <span class="s">&quot; has &quot;</span> <span class="nv">num-cats</span> <span class="s">&quot; cats!&quot;</span><span class="p">))</span>
+<span class="s">&quot;joseph has 186 cats!&quot;</span>
+</code></pre>
+<p>When multiple bindings are given, they are evaluated in order. Later bindings can use previous bindings.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">cats</span> <span class="mi">3</span>
+             <span class="nv">legs</span> <span class="p">(</span><span class="nb">* </span><span class="mi">4</span> <span class="nv">cats</span><span class="p">)]</span>
+         <span class="p">(</span><span class="nb">str </span><span class="nv">legs</span> <span class="s">&quot; legs all together&quot;</span><span class="p">))</span>
+<span class="s">&quot;12 legs all together&quot;</span>
+</code></pre>
+<p>So fundamentally, <code>let</code> defines the meaning of symbols within an expression. When Clojure evaluates a <code>let</code>, it replaces all occurrences of those symbols in the rest of the <code>let</code> expression with their corresponding values, then evaluates the rest of the expression.</p>
+<h2><a href="#functions" id="functions">Functions</a></h2>
+<p>We saw in <a href="http://aphyr.com/posts/301-clojure-from-the-ground-up-first-principles">chapter one</a> that Clojure evaluates lists by <em>substituting</em> some other value in their place:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="mi">1</span><span class="p">)</span>
+<span class="mi">2</span>
+</code></pre>
+<p><code>inc</code> takes any number, and is replaced by that number plus one. That sounds an awful lot like a let:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="mi">1</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="mi">1</span><span class="p">))</span>
+<span class="mi">2</span>
+</code></pre>
+<p>If we bound <code>x</code> to <code>5</code> instead of <code>1</code>, this expression would evaluate to <code>6</code>. We can think about <code>inc</code> like a let expression, but without particular values provided for the symbols.</p>
+<pre><code><span></span><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="mi">1</span><span class="p">))</span>
+</code></pre>
+<p>We can’t actually evaluate this program, because there’s no value for <code>x</code> yet. It could be 1, or 4, or 1453. We say that <code>x</code> is <em>unbound</em>, because it has no binding to a particular value. This is the nature of the <em>function</em>: an expression with unbound symbols.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="mi">1</span><span class="p">))</span>
+<span class="o">#</span><span class="nv">&lt;user$eval293$fn__294</span> <span class="nv">user$eval293$fn__294</span><span class="o">@</span><span class="mi">663</span><span class="nv">fc37&gt;</span>
+</code></pre>
+<p>Does the name of that function remind you of anything?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">inc</span>
+<span class="o">#</span><span class="nv">&lt;core$inc</span> <span class="nv">clojure.core$inc</span><span class="o">@</span><span class="mi">16</span><span class="nv">bc0b3c&gt;</span>
+</code></pre>
+<p>Almost all verbs in Clojure are functions. Functions represent unrealized computation: expressions which are not yet evaluated, or incomplete. This particular function works just like <code>inc</code>: it’s an expression which has a single unbound symbol, <code>x</code>. When we <em>invoke</em> the function with a particular value, the expressions in the function are evaluated with <code>x</code> bound to that value.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="mi">2</span><span class="p">)</span>
+<span class="mi">3</span>
+<span class="nv">user=&gt;</span> <span class="p">((</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="mi">1</span><span class="p">))</span> <span class="mi">2</span><span class="p">)</span>
+<span class="mi">3</span>
+</code></pre>
+<p>We say that <code>x</code> is this function’s <em>argument</em>, or <em>parameter</em>. When Clojure evaluates <code>(inc 2)</code>, we say that <code>inc</code> is <em>called</em> with <code>2</code>, or that <code>2</code> is <em>passed</em> to <code>inc</code>. The result of that <em>function invocation</em> is the function’s <em>return value</em>. We say that <code>(inc 2)</code> <em>returns</em> <code>3</code>.</p>
+<p>Fundamentally, functions describe the relationship between arguments and return values: given <code>1</code>, return <code>2</code>. Given <code>2</code>, return <code>3</code>, and so on. Let bindings describe a similar relationship, but with a specific set of values for those arguments. <code>let</code> is evaluated immediately, whereas <code>fn</code> is evaluated <em>later</em>, when bindings are provided.</p>
+<p>There’s a shorthand for writing functions, too: <code>#(+ % 1)</code> is equivalent to <code>(fn [x] (+ x 1))</code>. <code>%</code> takes the place of the first argument to the function. You’ll sometime see <code>%1</code>, <code>%2</code>, etc. used for the first argument, second argument, and so on.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">burrito</span> <span class="o">#</span><span class="p">(</span><span class="nb">list </span><span class="s">&quot;beans&quot;</span> <span class="nv">%</span> <span class="s">&quot;cheese&quot;</span><span class="p">)]</span>
+         <span class="p">(</span><span class="nf">burrito</span> <span class="s">&quot;carnitas&quot;</span><span class="p">))</span>
+<span class="p">(</span><span class="s">&quot;beans&quot;</span> <span class="s">&quot;carnitas&quot;</span> <span class="s">&quot;cheese&quot;</span><span class="p">)</span>
+</code></pre>
+<p>Since functions exist to <em>defer</em> evaluation, there’s no sense in creating and invoking them in the same expression as we’ve done here. What we want is to give <em>names</em> to our functions, so they can be recombined in different ways.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">twice</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">x</span><span class="p">))]</span>
+         <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nf">twice</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">(</span><span class="nf">twice</span> <span class="mi">3</span><span class="p">)))</span>
+<span class="mi">8</span>
+</code></pre>
+<p>Compare that expression to an equivalent, expanded form:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="mi">1</span><span class="p">)</span>
+          <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="mi">3</span><span class="p">))</span>
+</code></pre>
+<p>The name <code>twice</code> is gone, and in its place is the same sort of computation–<code>(* 2 something)</code>–written twice. While we <em>could</em> represent our programs as a single massive expression, it’d be impossible to reason about. Instead, we use functions to compact redundant expressions, by isolating common patterns of computation. Symbols help us re-use those functions (and other values) in more than one place. By giving the symbols meaningful names, we make it easier to reason about the structure of the program as a whole; breaking it up into smaller, understandable parts.</p>
+<p>This is core pursuit of software engineering: organizing expressions. Almost every programming language is in search of the right tools to break apart, name, and recombine expressions to solve large problems. In Clojure we’ll see one particular set of tools for composing programs, but the underlying ideas will transfer to many other languages.</p>
+<h2><a href="#vars" id="vars">Vars</a></h2>
+<p>We’ve used <code>let</code> to define a symbol within an expression, but what about the default meanings of <code>+</code>, <code>conj</code>, and <code>type</code>? Are they also <code>let</code> bindings? Is the whole universe one giant <code>let</code>?</p>
+<p>Well, not exactly. That’s one way to think about default bindings, but it’s brittle. We’d need to wrap our whole program in a new <code>let</code> expression every time we wanted to change the meaning of a symbol. And moreover, once a <code>let</code> is defined, there’s no way to change it. If we want to redefine symbols for <em>everyone</em>–even code that we didn’t write–we need a new construct: a <em>mutable</em> variable.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">cats</span> <span class="mi">5</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/cats</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="o">#</span><span class="ss">'user/cats</span><span class="p">)</span>
+<span class="nv">clojure.lang.Var</span>
+</code></pre>
+<p><code>def</code> <em>defines</em> a type of value we haven’t seen before: a var. Vars, like symbols, are references to other values. When evaluated, a symbol pointing to a var is replaced by the var’s corresponding value:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">user/cats</span>
+<span class="mi">5</span>
+</code></pre>
+<p><code>def</code> also <em>binds</em> the symbol <code>cats</code> (and its globally qualified equivalent <code>user/cats</code>) to that var.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">user/cats</span>
+<span class="mi">5</span>
+<span class="nv">user=&gt;</span> <span class="nv">cats</span>
+<span class="mi">5</span>
+</code></pre>
+<p>When we said in chapter one that <code>inc</code>, <code>list</code>, and friends were symbols that pointed to functions, that wasn’t the whole story. The symbol <code>inc</code> points to the var <code>#'inc</code>, which in turn points to the function <code>#&lt;core$inc clojure.core$inc@16bc0b3c&gt;</code>. We can see the intermediate var with <code>resolve</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="ss">'inc</span>
+<span class="nb">inc </span><span class="c1">; the symbol</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">resolve </span><span class="ss">'inc</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'clojure.core/inc</span> <span class="c1">; the var</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">eval </span><span class="ss">'inc</span><span class="p">)</span>
+<span class="o">#</span><span class="nv">&lt;core$inc</span> <span class="nv">clojure.core$inc</span><span class="o">@</span><span class="mi">16</span><span class="nv">bc0b3c&gt;</span> <span class="c1">; the value</span>
+</code></pre>
+<p>Why two layers of indirection? Because unlike the symbol, we can <em>change</em> the meaning of a Var for everyone, globally, at any time.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">astronauts</span> <span class="p">[])</span>
+<span class="o">#</span><span class="ss">'user/astronauts</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">count </span><span class="nv">astronauts</span><span class="p">)</span>
+<span class="mi">0</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">astronauts</span> <span class="p">[</span><span class="s">&quot;Sally Ride&quot;</span> <span class="s">&quot;Guy Bluford&quot;</span><span class="p">])</span>
+<span class="o">#</span><span class="ss">'user/astronauts</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">count </span><span class="nv">astronauts</span><span class="p">)</span>
+<span class="mi">2</span>
+</code></pre>
+<p>Notice that <code>astronauts</code> had <em>two</em> distinct meanings, depending on <em>when</em> we evaluated it. After the first <code>def</code>, astronauts was an empty vector. After the second <code>def</code>, it had one entry.</p>
+<p>If this seems dangerous, you’re a smart cookie. Redefining names in this way changes the meaning of expressions <em>everywhere</em> in a program, without warning. Expressions which relied on the value of a Var could suddenly take on new, possibly incorrect, meanings. It’s a powerful tool for experimenting at the REPL, and for updating a running program, but it can have unexpected consequences. Good Clojurists use <code>def</code> to set up a program initially, and only change those definitions with careful thought.</p>
+<p>Totally redefining a Var isn’t the only option. There are safer, controlled ways to change the meaning of a Var within a particular part of a program, which we’ll explore later.</p>
+<h2><a href="#defining-functions" id="defining-functions">Defining functions</a></h2>
+<p>Armed with <em>def</em>, we’re ready to create our own named functions in Clojure.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">half</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">number</span><span class="p">]</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">number</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="o">#</span><span class="ss">'user/half</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">half</span> <span class="mi">6</span><span class="p">)</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Creating a function and binding it to a var is so common that it has its own form: <code>defn</code>, short for <code>def</code> <code>fn</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">half</span> <span class="p">[</span><span class="nv">number</span><span class="p">]</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">number</span> <span class="mi">2</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/half</span>
+</code></pre>
+<p>Functions don’t have to take an argument. We’ve seen functions which take zero arguments, like <code>(+)</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">half</span> <span class="p">[]</span> <span class="mi">1</span><span class="nv">/2</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/half</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">half</span><span class="p">)</span>
+<span class="mi">1</span><span class="nv">/2</span>
+</code></pre>
+<p>But if we try to use our earlier form with one argument, Clojure complains that the <em>arity</em>–the number of arguments to the function–is incorrect.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">half</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="nv">ArityException</span> <span class="nv">Wrong</span> <span class="nv">number</span> <span class="nv">of</span> <span class="nv">args</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="nv">passed</span> <span class="nv">to</span><span class="err">:</span> <span class="nv">user$half</span>  <span class="nv">clojure.lang.AFn.throwArity</span> <span class="p">(</span><span class="nf">AFn.java</span><span class="ss">:437</span><span class="p">)</span>
+</code></pre>
+<p>To handle <em>multiple</em> arities, functions have an alternate form. Instead of an argument vector and a body, one provides a series of lists, each of which starts with an argument vector, followed by the body.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">half</span>
+         <span class="p">([]</span>  <span class="mi">1</span><span class="nv">/2</span><span class="p">)</span>
+         <span class="p">([</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">x</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">half</span><span class="p">)</span>
+<span class="mi">1</span><span class="nv">/2</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">half</span> <span class="mi">10</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+<p>Multiple arguments work just like you expect. Just specify an argument vector of two, or three, or however many arguments the function takes.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">add</span>
+         <span class="p">[</span><span class="nv">x</span> <span class="nv">y</span><span class="p">]</span>
+         <span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="nv">y</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/add</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">add</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Some functions can take <em>any</em> number of arguments. For that, Clojure provides <code>&amp;</code>, which slurps up all remaining arguments as a list:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">vargs</span>
+         <span class="p">[</span><span class="nv">x</span> <span class="nv">y</span> <span class="o">&amp;</span> <span class="nv">more-args</span><span class="p">]</span>
+         <span class="p">{</span><span class="ss">:x</span>    <span class="nv">x</span>
+          <span class="ss">:y</span>    <span class="nv">y</span>
+          <span class="ss">:more</span> <span class="nv">more-args</span><span class="p">})</span>
+<span class="o">#</span><span class="ss">'user/vargs</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">vargs</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="nv">ArityException</span> <span class="nv">Wrong</span> <span class="nv">number</span> <span class="nv">of</span> <span class="nv">args</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="nv">passed</span> <span class="nv">to</span><span class="err">:</span> <span class="nv">user$vargs</span>  <span class="nv">clojure.lang.AFn.throwArity</span> <span class="p">(</span><span class="nf">AFn.java</span><span class="ss">:437</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">vargs</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span>, <span class="ss">:y</span> <span class="mi">2</span>, <span class="ss">:more</span> <span class="nv">nil</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">vargs</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span>, <span class="ss">:y</span> <span class="mi">2</span>, <span class="ss">:more</span> <span class="p">(</span><span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)}</span>
+</code></pre>
+<p>Note that <code>x</code> and <code>y</code> are mandatory, though there don’t have to be any remaining arguments.</p>
+<p>To keep track of what arguments a function takes, why the function exists, and what it does, we usually include a <em>docstring</em>. Docstrings help fill in the missing context around functions, to explain their assumptions, context, and purpose to the world.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">launch</span>
+  <span class="s">&quot;Launches a spacecraft into the given orbit by initiating a</span>
+<span class="s">   controlled on-axis burn. Does not automatically stage, but</span>
+<span class="s">   does vector thrust, if the craft supports it.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span> <span class="nv">target-orbit</span><span class="p">]</span>
+  <span class="s">&quot;OK, we don't know how to control spacecraft yet.&quot;</span><span class="p">)</span>
+</code></pre>
+<p>Docstrings are used to automatically generate documentation for Clojure programs, but you can also access them from the REPL.</p>
+<pre><code>user=&gt; (doc launch)
+-------------------------
+user/launch
+([craft target-orbit])
+   Launches a spacecraft into the given orbit by initiating a
+   controlled on-axis burn. Does not automatically stage, but
+   does vector thrust, if the craft supports it.
+nil
+</code></pre>
+<p><code>doc</code> tells us the full name of the function, the arguments it accepts, and its docstring. This information comes from the <code>#'launch</code> var’s <em>metadata</em>, and is saved there by <code>defn</code>. We can inspect metadata directly with the <code>meta</code> function:</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">meta </span><span class="o">#</span><span class="ss">'launch</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:arglists</span> <span class="p">([</span><span class="nv">craft</span> <span class="nv">target-orbit</span><span class="p">])</span>, <span class="ss">:ns</span> <span class="o">#</span><span class="nv">&lt;Namespace</span> <span class="nv">user&gt;</span>, <span class="ss">:name</span> <span class="nv">launch</span>, <span class="ss">:column</span> <span class="mi">1</span>, <span class="ss">:doc</span> <span class="s">&quot;Launches a spacecraft into the given orbit.&quot;</span>, <span class="ss">:line</span> <span class="mi">1</span>, <span class="ss">:file</span> <span class="s">&quot;NO_SOURCE_PATH&quot;</span><span class="p">}</span>
+</code></pre>
+<p>There’s some other juicy information in there, like the file the function was defined in and which line and column it started at, but that’s not particularly useful since we’re in the REPL, not a file. However, this <em>does</em> hint at a way to answer our motivating question: how does the <code>type</code> function work?</p>
+<h2><a href="#how-does-type-work" id="how-does-type-work">How does type work?</a></h2>
+<p>We know that <code>type</code> returns the type of an object:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nv">java.lang.long</span>
+</code></pre>
+<p>And that <code>type</code>, like all functions, is a kind of object with its own unique type:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">type</span>
+<span class="o">#</span><span class="nv">&lt;core$type</span> <span class="nv">clojure.core$type</span><span class="o">@</span><span class="mi">39</span><span class="nv">bda9b9&gt;</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="nv">type</span><span class="p">)</span>
+<span class="nv">clojure.core$type</span>
+</code></pre>
+<p>This tells us that <code>type</code> is a particular <em>instance</em>, at memory address <code>39bda9b9</code>, of the type <code>clojure.core$type</code>. <code>clojure.core</code> is a namespace which defines the fundamentals of the Clojure language, and <code>$type</code> tells us that it’s named <code>type</code> in that namespace. None of this is particularly helpful, though. Maybe we can find out more about the <code>clojure.core$type</code> by asking what its <em>supertypes</em> are:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">supers</span> <span class="p">(</span><span class="nf">type</span> <span class="nv">type</span><span class="p">))</span>
+<span class="o">#</span><span class="p">{</span><span class="nv">clojure.lang.AFunction</span> <span class="nv">clojure.lang.IMeta</span> <span class="nv">java.util.concurrent.Callable</span> <span class="nv">clojure.lang.Fn</span> <span class="nv">clojure.lang.AFn</span> <span class="nv">java.util.Comparator</span> <span class="nv">java.lang.Object</span> <span class="nv">clojure.lang.RestFn</span> <span class="nv">clojure.lang.IObj</span> <span class="nv">java.lang.Runnable</span> <span class="nv">java.io.Serializable</span> <span class="nv">clojure.lang.IFn</span><span class="p">}</span>
+</code></pre>
+<p>This is a set of all the types that include <code>type</code>. We say that <code>type</code> is an <em>instance</em> of <code>clojure.lang.AFunction</code>, or that it <em>implements</em> or <em>extends</em> <code>java.util.concurrent.Callable</code>, and so on. Since it’s a member of <code>clojure.lang.IMeta</code> it has metadata, and since it’s a member of clojure.lang.AFn, it’s a function. Just to double check, let’s confirm that <code>type</code> is indeed a function:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">fn?</span> <span class="nv">type</span><span class="p">)</span>
+<span class="nv">true</span>
+</code></pre>
+<p>What about its documentation?</p>
+<pre><code>user=&gt; (doc type)
+-------------------------
+clojure.core/type
+([x])
+  Returns the :type metadata of x, or its Class if none
+nil
+</code></pre>
+<p>Ah, that’s helpful. <code>type</code> can take a single argument, which it calls <code>x</code>. If it has <code>:type</code> metadata, that’s what it returns. Otherwise, it returns the class of <code>x</code>. Let’s take a deeper look at <code>type</code>’s metadata for more clues.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">meta </span><span class="o">#</span><span class="ss">'type</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:ns</span> <span class="o">#</span><span class="nv">&lt;Namespace</span> <span class="nv">clojure.core&gt;</span>, <span class="ss">:name</span> <span class="nv">type</span>, <span class="ss">:arglists</span> <span class="p">([</span><span class="nv">x</span><span class="p">])</span>, <span class="ss">:column</span> <span class="mi">1</span>, <span class="ss">:added</span> <span class="s">&quot;1.0&quot;</span>, <span class="ss">:static</span> <span class="nv">true</span>, <span class="ss">:doc</span> <span class="s">&quot;Returns the :type metadata of x, or its Class if none&quot;</span>, <span class="ss">:line</span> <span class="mi">3109</span>, <span class="ss">:file</span> <span class="s">&quot;clojure/core.clj&quot;</span><span class="p">}</span>
+</code></pre>
+<p>Look at that! This function was first added to Clojure in version 1.0, and is defined in the file <code>clojure/core.clj</code>, on line 3109. We could go dig up the Clojure source code and read its definition there–or we could ask Clojure to do it for us:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">source</span> <span class="nv">type</span><span class="p">)</span>
+<span class="p">(</span><span class="kd">defn </span><span class="nv">type</span> 
+  <span class="s">&quot;Returns the :type metadata of x, or its Class if none&quot;</span>
+  <span class="p">{</span><span class="ss">:added</span> <span class="s">&quot;1.0&quot;</span>
+   <span class="ss">:static</span> <span class="nv">true</span><span class="p">}</span>
+  <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">or </span><span class="p">(</span><span class="nb">get </span><span class="p">(</span><span class="nb">meta </span><span class="nv">x</span><span class="p">)</span> <span class="ss">:type</span><span class="p">)</span> <span class="p">(</span><span class="nb">class </span><span class="nv">x</span><span class="p">)))</span>
+<span class="nv">nil</span>
+</code></pre>
+<p>Aha! Here, at last, is how <code>type</code> works. It’s a function which takes a single argument <code>x</code>, and returns either <code>:type</code> from its metadata, or <code>(class x)</code>.</p>
+<p>We can delve into any function in Clojure using these tools:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">source</span> <span class="nv">+</span><span class="p">)</span>
+<span class="p">(</span><span class="kd">defn </span><span class="nv">+</span>
+  <span class="s">&quot;Returns the sum of nums. (+) returns 0. Does not auto-promote</span>
+<span class="s">  longs, will throw on overflow. See also: +'&quot;</span>
+  <span class="p">{</span><span class="ss">:inline</span> <span class="p">(</span><span class="nf">nary-inline</span> <span class="ss">'add</span> <span class="ss">'unchecked_add</span><span class="p">)</span>
+   <span class="ss">:inline-arities</span> <span class="nv">&gt;1?</span>
+   <span class="ss">:added</span> <span class="s">&quot;1.2&quot;</span><span class="p">}</span>
+  <span class="p">([]</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="p">([</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">cast </span><span class="nv">Number</span> <span class="nv">x</span><span class="p">))</span>
+  <span class="p">([</span><span class="nv">x</span> <span class="nv">y</span><span class="p">]</span> <span class="p">(</span><span class="k">. </span><span class="nv">clojure.lang.Numbers</span> <span class="p">(</span><span class="nf">add</span> <span class="nv">x</span> <span class="nv">y</span><span class="p">)))</span>
+  <span class="p">([</span><span class="nv">x</span> <span class="nv">y</span> <span class="o">&amp;</span> <span class="nv">more</span><span class="p">]</span>
+     <span class="p">(</span><span class="nf">reduce1</span> <span class="nb">+ </span><span class="p">(</span><span class="nb">+ </span><span class="nv">x</span> <span class="nv">y</span><span class="p">)</span> <span class="nv">more</span><span class="p">)))</span>
+<span class="nv">nil</span>
+</code></pre>
+<p>Almost every function in a programming language is made up of other, simpler functions. <code>+</code>, for instance, is defined in terms of <code>cast</code>, <code>add</code>, and <code>reduce1</code>. Sometimes functions are defined in terms of themselves. <code>+</code> uses itself twice in this definition; a technique called <em>recursion</em>.</p>
+<p>At the bottom, though, are certain fundamental constructs below which you can go no further. Core axioms of the language. Lisp calls these “special forms”. <code>def</code> and <code>let</code> are special forms (well–almost: <code>let</code> is a thin wrapper around <code>let*</code>, which is a special form) in Clojure. These forms are defined by the core implementation of the language, and are not reducible to other Clojure expressions.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">source</span> <span class="nv">def</span><span class="p">)</span>
+<span class="nv">Source</span> <span class="nb">not </span><span class="nv">found</span>
+</code></pre>
+<p>Some Lisps are written <em>entirely</em> in terms of a few special forms, but Clojure is much less pure. Many functions bottom out in Java functions and types, or, for CLJS, in terms of Javascript. Any time you see an expression like <code>(. clojure.lang.Numbers (add x y))</code>, there’s Java code underneath. Below Java lies the JVM, which might be written in C or C++, depending on which one you use. And underneath C and C++ lie more libraries, the operating system, assembler, microcode, registers, and ultimately, electrons flowing through silicon.</p>
+<p>A well-designed language <em>isolates</em> you from details you don’t need to worry about, like which logic gates or registers to use, and lets you focus on the task at hand. Good languages also need to allow escape hatches for performance or access to dangerous functionality, as we saw with Vars. You can write entire programs entirely in terms of Clojure, but sometimes, for performance or to use tools from other languages, you’ll rely on Java. The Clojure code is easy to explore with <code>doc</code> and <code>source</code>, but Java can be more opaque–I usually rely on the java source files and online documentation.</p>
+<h2><a href="#review" id="review">Review</a></h2>
+<p>We’ve seen how <code>let</code> associates names with values in a particular expression, and how Vars allow for <em>mutable</em> bindings which apply universally. and whose definitions can change over time. We learned that Clojure verbs are functions, which express the general shape of an expression but with certain values <em>unbound</em>. Invoking a function <em>binds</em> those variables to specific values, allowing evaluation of the function to proceed.</p>
+<p>Functions <em>decompose</em> programs into simpler pieces, expressed in terms of one another. Short, meaningful names help us understand what those functions (and other values) mean.</p>
+<p>Finally, we learned how to introspect Clojure functions with <code>doc</code> and <code>source</code>, and saw the definition of some basic Clojure functions. The <a href="http://clojure.org/cheatsheet">Clojure cheatsheet</a> gives a comprehensive list of the core functions in the language, and is a great starting point when you have to solve a problem but don’t know what functions to use.</p>
+<p>We’ll see a broad swath of those functions in <a href="http://aphyr.com/posts/304-clojure-from-the-ground-up-sequences">Chapter 4: Sequences</a>.</p>
+<p><em>My thanks to Zach Tellman, Kelly Sommers, and Michael R Bernstein for reviewing drafts of this chapter.</em></p>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1709"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Pontus" title="Pontus" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Pontus
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1709">
+            <time datetime="Nov 5, 2013, 6:05:33 PM" pubdate>
+              2013-11-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>These posts are awesome! Keep up the good work :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1710"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/026c47c3fd7bcdc2cf65f410ab016945?r=pg&s=96&d=identicon" alt="Joshua" title="Joshua" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Joshua
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1710">
+            <time datetime="Nov 7, 2013, 11:25:39 PM" pubdate>
+              2013-11-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is the most thoughtful and helpful introduction to Clojure I have yet encountered… I finally feel like I’m getting to grips with this fascinating language. Thank you!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1733"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Peter" title="Peter" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Peter
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1733">
+            <time datetime="Nov 9, 2013, 3:50:27 AM" pubdate>
+              2013-11-09
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Agreed with above users - this tutorial series is the best Clojure introduction I’ve seen!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1737"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/fd2c6b63ef32d6c7c4db777097d8edb3?r=pg&s=96&d=identicon" alt="Pierre" title="Pierre" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Pierre
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1737">
+            <time datetime="Nov 13, 2013, 3:04:25 AM" pubdate>
+              2013-11-13
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>great series! thank you a lot, can’t wait for next ones</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1739"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4e27a9e86ee2c6f38f0a05c7f396a20a?r=pg&s=96&d=identicon" alt="Nathan" title="Nathan" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Nathan
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1739">
+            <time datetime="Nov 14, 2013, 8:51:30 AM" pubdate>
+              2013-11-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Good stuff, looking forward to the next installment.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1740"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/04b06bf88fb09ea2c96a0f71d136944a?r=pg&s=96&d=identicon" alt="Donald Parish" title="Donald Parish" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Donald Parish
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1740">
+            <time datetime="Nov 14, 2013, 1:51:39 PM" pubdate>
+              2013-11-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great intro. Keep them coming. Give me a tip jar or publish an ebook like Brian Marick, and I’ll buy it!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1759"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Josh" title="Josh" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Josh
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1759">
+            <time datetime="Dec 1, 2013, 9:17:48 PM" pubdate>
+              2013-12-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great series! One possible correction:</p>
+
+<p>user=&gt; #‘user/cats
+5</p>
+
+<p>#'user/cats evaluates to #'user/cats at my REPL.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1805"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f8c6c9a889b4b593ce9c846c5f022de8?r=pg&s=96&d=identicon" alt="Willson" title="Willson" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Willson
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1805">
+            <time datetime="Jan 5, 2014, 12:26:27 PM" pubdate>
+              2014-01-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>^ agree with above user: when I evaluate #‘user/cats in the REPL, I get back #'user/cats and NOT 5</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1806"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f8c6c9a889b4b593ce9c846c5f022de8?r=pg&s=96&d=identicon" alt="Willson" title="Willson" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Willson
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1806">
+            <time datetime="Jan 5, 2014, 12:34:45 PM" pubdate>
+              2014-01-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for a great intro series!</p>
+
+<p>Quick question regarding your astronaut example:</p>
+
+<p>user=&gt; (def astronauts [])
+#‘user/astronauts
+user=&gt; (count astronauts)
+0</p>
+
+<p>user=&gt; (def astronauts [“Sally Ride” “Guy Bluford”])
+#'user/astronauts
+user=&gt; (count astronauts)
+2</p>
+
+<p>Are you saying that the symbol “astronauts” is always bound to the var #'user/astronauts, but that the value to which the var is bound changes from 0 to 2?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1815"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f8d638c9bc30c4be416d9a76e3512dd6?r=pg&s=96&d=identicon" alt="Krish" title="Krish" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Krish
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1815">
+            <time datetime="Jan 18, 2014, 9:35:52 AM" pubdate>
+              2014-01-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Beautifully written.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1817"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Flo" title="Flo" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Flo
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1817">
+            <time datetime="Jan 26, 2014, 9:35:01 PM" pubdate>
+              2014-01-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>@ Willson
+Just to be clear. The Value of that Var didn’t change. With the second call (def astronauts …) you created a new var which happens to be named as the old one.
+From that moment on, if you have a call to astronauts, the second definition gets evaluated.
+It looks like the value changed, but that’s not the case:
+(def a-value “old”)
+(def a-copy a-value)
+(= a-value a-copy) =&gt; true</p>
+
+<p>(def a “new”)
+(= a a-copy) =&gt; false</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1840"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1840">
+            <time datetime="Mar 11, 2014, 1:15:29 PM" pubdate>
+              2014-03-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Wilson, Flo, actually, the value of the var does change. Symbols are immutable; vars are mutable. Subsequent calls to <code>def</code> don’t create a new var–instead they modify the var’s value. That’s how you can redefine functions and values in Clojure programs piecewise. See the chapter on state. :)</p>
+<code class="block">user=&gt; (let [x (def a "foo") y (def a "bar")] (identical? x y))
+true</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1841"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Seunghoon" title="Seunghoon" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Seunghoon
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1841">
+            <time datetime="Mar 11, 2014, 2:50:06 PM" pubdate>
+              2014-03-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Awesome post! Thanks for sharing!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1939"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4616ced06042b424f4f94753ef57ede1?r=pg&s=96&d=identicon" alt="Tom" title="Tom" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Tom
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1939">
+            <time datetime="Jul 25, 2014, 12:32:02 PM" pubdate>
+              2014-07-25
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Am greatly appreciating this tutorial.  Actually, after the second definition, astronauts has 2 entries.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1945"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a7ff7661d5c9ca9879b9d26f3d3cad27?r=pg&s=96&d=identicon" alt="Or" title="Or" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Or
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-1945">
+            <time datetime="Aug 17, 2014, 10:19:59 PM" pubdate>
+              2014-08-17
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Wow, this chapter really steps up the level of awesomeness, I’m really looking forward to the rest.  Thank you so much!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2268"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a1fc7979a5afaeb4a22cec6eeacf16da?r=pg&s=96&d=identicon" alt="leandro moreira" title="leandro moreira" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://leandromoreira.com.br/" rel="nofollow">
+              leandro moreira
+            </a>
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2268">
+            <time datetime="Apr 4, 2015, 5:55:11 PM" pubdate>
+              2015-04-04
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi, </p>
+
+<p>Thanks for this amazing series, I think you might need to fix:</p>
+
+<p>This “After the second def, it had one entry.” by “After the second def, it had two entries.”</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2296"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3a9b33e9ea3df256df7b43b6aaa58ff9?r=pg&s=96&d=identicon" alt="Dan Jay" title="Dan Jay" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Dan Jay
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2296">
+            <time datetime="Apr 15, 2015, 7:53:15 AM" pubdate>
+              2015-04-15
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Awesome post. Love it.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2473"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a4cae679f8986fad8e3883c60b1f27ad?r=pg&s=96&d=identicon" alt="Martijn" title="Martijn" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Martijn
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2473">
+            <time datetime="Jul 30, 2015, 3:33:02 PM" pubdate>
+              2015-07-30
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Have to write another enthusiastic post. The doc and source macros finally make me understand how awesome it is that code is data. I’ve explored some Clojure before but this is the first introduction that makes this concept so clear so early on. Thanks so much for sharing this!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2501"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/581b7db70b57a031a339a7cef49ba73d?r=pg&s=96&d=identicon" alt="Chris" title="Chris" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://chrishauser.net" rel="nofollow">
+              Chris
+            </a>
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2501">
+            <time datetime="Aug 30, 2015, 2:55:20 PM" pubdate>
+              2015-08-30
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is absolutely amazing work. Thank you very much! I’m finally coming to grips with lisps, and specifically clojure. Please do keep it up, and let me know when I can get the book!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2654"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/287a6d92e10a6030168d881fae5d3530?r=pg&s=96&d=identicon" alt="lego" title="lego" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            lego
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2654">
+            <time datetime="Jun 3, 2016, 3:49:01 AM" pubdate>
+              2016-06-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Awesome post man! </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2671"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Justin" title="Justin" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Justin
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2671">
+            <time datetime="Jul 1, 2016, 12:58:15 PM" pubdate>
+              2016-07-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for this great intro. The link to the clojure cheatsheet is broken.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2841"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a66204966b9fb10f43191cf565114d43?r=pg&s=96&d=identicon" alt="Terry" title="Terry" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Terry
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2841">
+            <time datetime="Apr 11, 2017, 9:58:53 AM" pubdate>
+              2017-04-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>In “We say that x is this functions argument, …” s/functions/function’s/ .</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2876"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="jorge" title="jorge" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            jorge
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2876">
+            <time datetime="May 28, 2017, 5:59:24 PM" pubdate>
+              2017-05-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>There is a Csound frontend that accepts Clojure code for score generation. Your posts are amazing and are helping me a lot to understand and use this language. Thank you very much.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2963"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Lutz" title="Lutz" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Lutz
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-2963">
+            <time datetime="Jul 5, 2018, 2:19:43 AM" pubdate>
+              2018-07-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for the tutorial, it is really good.</p>
+
+<p>There is a tiny error. When you run <code>(meta #'launch)</code>, you reportedly get the meta information for a function with the <code>:name launch!</code> (with an exclamation point). I guess that is a left-over of an earlier idea of naming this example function that…</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3218"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/1955549f2fbc520baa819f63ea54e867?r=pg&s=96&d=identicon" alt="moose_und_squirrel" title="moose_und_squirrel" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            moose_und_squirrel
+          
+          
+          on
+          <a href="/posts/303-clojure-from-the-ground-up-functions#comment-3218">
+            <time datetime="Sep 24, 2020, 4:07:32 AM" pubdate>
+              2020-09-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I’ve come here in the distant future, (well 2020) and this is still a fantastic tutorial.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="303" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="eeGVEdO9KjEPf1pSKVGutI3JU64gFttts/EKdoprXxA1GdY8SusDAX2VbaUc7ntEZ30HcBLyda2+nosu" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

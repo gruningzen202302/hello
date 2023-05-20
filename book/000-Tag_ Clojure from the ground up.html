@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tag: Clojure from the ground up</title>
+
+    
+
+    
+    <link type="application/atom+xml" title="Aphyr: Posts" rel="alternate" href="/tags/clojure-from-the-ground-up.atom" />
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/tags/clojure-from-the-ground-up" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+<div class="text-content tags">
+  <div class="pure-g descriptor">
+    <div class="pure-u-1 sheet">
+      <div class="pure-g bar">
+        <h1 class="pure-u-1 pure-u-md-4-5">
+          Everything Tagged "Clojure from the ground up"
+        </h1>
+        <div class="meta pure-u-1 pure-u-md-1-5">
+          (In reverse chronological order)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pure-g gutter-sm">
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/352-clojure-from-the-ground-up-polymorphism">Clojure from the ground up: polymorphism</a></h1>
+            <div class="body">
+              
+              <p>Previously: <a href="/posts/319-clojure-from-the-ground-up-debugging">Debugging</a>.</p>
+
+
+<p>In this chapter, we’ll discuss some of Clojure’s mechanisms for <em>polymorphism</em>: writing programs that do different things depending on what kind of inputs they receive. We’ll show ways to write <em>open</em> functions, which can be extended to new conditions later on, without changing their original definitions. Along the way, we’ll investigate Clojure’s type system in more detail–discussing <em>interfaces</em>, <em>protocols</em>, how to construct our own datatypes, and the relationships between types which let us write flexible programs.</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/319-clojure-from-the-ground-up-debugging">Clojure from the ground up: debugging</a></h1>
+            <div class="body">
+              
+              <p>Previously: <a href="https://aphyr.com/posts/312-clojure-from-the-ground-up-modeling">Modeling</a>.</p>
+
+
+<p>Writing software can be an exercise in frustration. Useless error messages, difficult-to-reproduce bugs, missing stacktrace information, obscure functions without documentation, and unmaintained libraries all stand in our way. As software engineers, our most useful skill isn’t so much <em>knowing how to solve a problem</em> as <em>knowing how to explore a problem that we haven’t seen before</em>. Experience is important, but even experienced engineers face unfamiliar bugs every day. When a problem doesn’t bear a resemblance to anything we’ve seen before, we fall back on <em>general cognitive strategies</em> to explore–and ultimately solve–the problem.</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/318-clojure-from-the-ground-up-roadmap">Clojure from the ground up: roadmap</a></h1>
+            <div class="body">
+              
+              <p>With the language fundamentals in hand, here’s my thinking for the remainder of the Clojure from the ground up book chapters. I’m putting Jepsen on hold to work on this project for the rest of the year; hoping to get the source material complete by… January?</p>
+
+
+<ul>
+<li>Debugging and getting help</li>
+<li>Polymorphism</li>
+<li>Error Handling</li>
+<li>Modularization and refactoring</li>
+<li>It’s not at all obvious what an object is</li>
+<li>JVM interop</li>
+<li>The Clojure type system</li>
+<li>Compiler at runtime</li>
+<li>Build your own language</li>
+<li>Performance analysis</li>
+<li>Parsers and protocols</li>
+<li>Storage and persistence</li>
+<li>Networks and messaging</li>
+<li>Concurrency and queues</li>
+</ul>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/312-clojure-from-the-ground-up-modeling">Clojure from the ground up: modeling</a></h1>
+            <div class="body">
+              
+              <p>Previously: <a href="http://aphyr.com/posts/311-clojure-from-the-ground-up-logistics">Logistics</a></p>
+
+
+<p>Until this point in the book, we’ve dealt primarily in specific details: what an expression is, how math works, which functions apply to different data structures, and where code lives. But programming, like speaking a language, painting landscapes, or designing turbines, is about more than the <em>nuts and bolts</em> of the trade. It’s knowing how to <em>combine</em> those parts into a cohesive whole–and this is a skill which is difficult to describe formally. In this part of the book, I’d like to work with you on an integrative tour of one particular problem: modeling a rocket in flight.</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/311-clojure-from-the-ground-up-logistics">Clojure from the ground up: logistics</a></h1>
+            <div class="body">
+              
+              <p><em>Previously, we covered <a href="http://aphyr.com/posts/306-clojure-from-the-ground-up-state">state and mutability</a>.</em></p>
+
+
+<p>Up until now, we’ve been programming primarily at the REPL. However, the
+REPL is a limited tool. While it lets us explore a problem interactively, that
+interactivity comes at a cost: changing an expression requires retyping the
+entire thing, editing multi-line expressions is awkward, and our work vanishes
+when we restart the REPL–so we can’t share our programs with others, or run
+them again later. Moreover, programs in the REPL are hard to organize. To solve
+large problems, we need a way of writing programs <em>durably</em>–so they can be read
+and evaluated later.</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/306-clojure-from-the-ground-up-state">Clojure from the ground up: state</a></h1>
+            <div class="body">
+              
+              <p><em>Previously: <a href="http://aphyr.com/posts/305-clojure-from-the-ground-up-macros">Macros</a>.</em></p>
+
+
+<p>Most programs encompass <em>change</em>. People grow up, leave town, fall in love, and take new names. Engines burn through fuel while their parts wear out, and new ones are swapped in. Forests burn down and their logs become nurseries for new trees. Despite these changes, we say “She’s still Nguyen”, “That’s my motorcycle”, “The same woods I hiked through as a child.”</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/305-clojure-from-the-ground-up-macros">Clojure from the ground up: macros</a></h1>
+            <div class="body">
+              
+              <p>In <a href="/posts/301-clojure-from-the-ground-up-welcome">Chapter 1</a>, I asserted that the grammar of Lisp is uniform: every expression is a list, beginning with a verb, and followed by some arguments. Evaluation proceeds from left to right, and every element of the list must be evaluated <em>before</em> evaluating the list itself. Yet we just saw, at the end of <a href="/posts/304-clojure-from-the-ground-up-sequences">Sequences</a>, an expression which seemed to <em>violate</em> these rules.</p>
+
+
+<p>Clearly, this is not the whole story.</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/304-clojure-from-the-ground-up-sequences">Clojure from the ground up: sequences</a></h1>
+            <div class="body">
+              
+              <p>In <a href="/posts/303-clojure-from-the-ground-up-functions">Chapter 3</a>, we discovered functions as a way to <em>abstract</em> expressions; to
+rephrase a particular computation with some parts missing. We used functions to
+transform a single value. But what if we want to apply a function to <em>more than
+one</em> value at once? What about sequences?</p>
+
+
+<p>For example, we know that <code>(inc 2)</code> increments the number 2. What if we wanted to increment <em>every number</em> in the vector <code>[1 2 3]</code>, producing <code>[2 3 4]</code>?</p>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/303-clojure-from-the-ground-up-functions">Clojure from the ground up: functions</a></h1>
+            <div class="body">
+              
+              <p>We <a href="/posts/302-clojure-from-the-ground-up-basic-types">left off last chapter</a> with a question: what <em>are</em> verbs, anyway? When you evaluate <code>(type :mary-poppins)</code>, what really happens?</p>
+
+
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="ss">:mary-poppins</span><span class="p">)</span>
+<span class="nv">clojure.lang.Keyword</span>
+</code></pre>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/302-clojure-from-the-ground-up-basic-types">Clojure from the ground up: basic types</a></h1>
+            <div class="body">
+              
+              <p>We’ve learned <a href="http://aphyr.com/posts/301-clojure-from-the-ground-up-first-principles">the basics of Clojure’s syntax and evaluation model</a>. Now we’ll take a tour of the basic nouns in the language.</p>
+
+
+<h2><a href="#types" id="types">Types</a></h2>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+      <div class="pure-u-1 pure-u-md-1-3">
+        
+          <article class="post sheet">
+            <h1><a href="/posts/301-clojure-from-the-ground-up-welcome">Clojure from the ground up: welcome</a></h1>
+            <div class="body">
+              
+              <p>This guide aims to introduce newcomers and experienced programmers alike to the
+beauty of functional programming, starting with the simplest building blocks of
+software. You’ll need a computer, basic proficiency in the command line, a text editor, and an internet connection. By the end of this series, you’ll have a thorough command of the Clojure programming language.</p>
+
+
+<h2><a href="#who-is-this-guide-for" id="who-is-this-guide-for">Who is this guide for?</a></h2>
+              
+            </div>
+          </article>
+        
+      </div>
+    
+  </div>
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

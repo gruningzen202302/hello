@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: logistics</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/311-clojure-from-the-ground-up-logistics" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/311-clojure-from-the-ground-up-logistics">Clojure from the ground up: logistics</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Feb 15, 2014, 1:20:40 PM" pubdate>
+          2014-02-15
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p><em>Previously, we covered <a href="http://aphyr.com/posts/306-clojure-from-the-ground-up-state">state and mutability</a>.</em></p>
+<p>Up until now, we’ve been programming primarily at the REPL. However, the
+REPL is a limited tool. While it lets us explore a problem interactively, that
+interactivity comes at a cost: changing an expression requires retyping the
+entire thing, editing multi-line expressions is awkward, and our work vanishes
+when we restart the REPL–so we can’t share our programs with others, or run
+them again later. Moreover, programs in the REPL are hard to organize. To solve
+large problems, we need a way of writing programs <em>durably</em>–so they can be read
+and evaluated later.</p>
+<p>In addition to the code itself, we often want to store <em>ancillary</em>
+information. <em>Tests</em> verify the correctness of the program. <em>Resources</em> like
+precomputed databases, lookup tables, images, and text files provide other data
+the program needs to run. There may be <em>documentation</em>: instructions for how to use and understand the software. A program may also depend on code from <em>other</em> programs, which we call <em>libraries</em>, <em>packages</em>, or <em>dependencies</em>. In Clojure, we have a standardized way to bind together all these parts into a single directory, called a <em>project</em>.</p>
+<h2><a href="#project-structure" id="project-structure">Project structure</a></h2>
+<p>We created a project at the start of this book by using Leiningen, the Clojure
+project tool.</p>
+<pre><code><span></span>$ lein new scratch
+</code></pre>
+<p><code>scratch</code> is the name of the project, and also the name of the directory where the project’s files live. Inside the project are a few files.</p>
+<pre><code><span></span>$ <span class="nb">cd</span> scratch<span class="p">;</span> ls
+doc  project.clj  README.md  resources  src  target  <span class="nb">test</span>
+</code></pre>
+<p><code>project.clj</code> defines the project: its name, its version, dependencies, and so
+on. Notice the name of the project (<code>scratch</code>) comes first, followed by the
+version (<code>0.1.0-SNAPSHOT</code>). <code>-SNAPSHOT</code> versions are for development; you can
+change them at any time, and any projects which depend on the snapshot will
+pick up the most recent changes. A version which does <em>not</em> end in <code>-SNAPSHOT</code>
+is fixed: once published, it always points to the same version of the project.
+This allows projects to specify precisely which projects they depend on. For
+example, scratch’s <code>project.clj</code> says scratch depends on <code>org.clojure/clojure</code>
+version <code>1.5.1</code>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defproject </span><span class="nv">scratch</span> <span class="s">&quot;0.1.0-SNAPSHOT&quot;</span>
+  <span class="ss">:description</span> <span class="s">&quot;FIXME: write description&quot;</span>
+  <span class="ss">:url</span> <span class="s">&quot;http://example.com/FIXME&quot;</span>
+  <span class="ss">:license</span> <span class="p">{</span><span class="ss">:name</span> <span class="s">&quot;Eclipse Public License&quot;</span>
+            <span class="ss">:url</span> <span class="s">&quot;http://www.eclipse.org/legal/epl-v10.html&quot;</span><span class="p">}</span>
+  <span class="ss">:dependencies</span> <span class="p">[[</span><span class="nv">org.clojure/clojure</span> <span class="s">&quot;1.5.1&quot;</span><span class="p">]</span> <span class="p">])</span>
+</code></pre>
+<p><code>README.md</code> is the first file most people open when they look at a new project,
+and Lein generates a generic readme for you to fill in later. We call this kind
+of scaffolding or example a “stub”; it’s just there to remind you what sort of
+things to write yourself. You’ll notice the readme includes the name of the
+project, some notes on what it does and how to use it, a copyright notice where
+your name should go, and a license, which sets the legal terms for the use of
+the project. By default, Leiningen suggests the Eclipse Public License, which
+allows everyone to use and modify the software, so long as they preserve the
+license information.</p>
+<p>The <code>doc</code> directory is for documentation; sometimes hand-written, sometimes
+automatically generated from the source code. <code>resources</code> is for additional
+files, like images. <code>src</code> is where Clojure code lives, and <code>test</code> contains the
+corresponding tests. Finally, <code>target</code> is where Leiningen stores compiled code,
+built packages, and so on.</p>
+<h2><a href="#namespaces" id="namespaces">Namespaces</a></h2>
+<p>Every lein project starts out with a stub namespace containing a simple function. Let’s take a look at that namespace now–it lives in <code>src/scratch/core.clj</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.core</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">foo</span>
+  <span class="s">&quot;I don't do a whole lot.&quot;</span>
+  <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">println </span><span class="nv">x</span> <span class="s">&quot;Hello, World!&quot;</span><span class="p">))</span>
+</code></pre>
+<p>The first part of this file defines the <em>namespace</em> we’ll be working in. The <code>ns</code> macro lets the Clojure compiler know that all following code belongs in the <code>scratch.core</code> namespace. Remember, <code>scratch</code> is the name of our project. <code>scratch.core</code> is for the core functions and definitions of the scratch project. As projects expand, we might add new namespaces to <em>separate</em> our work into smaller, more understandable pieces. For instance, Clojure’s primary functions live in <code>clojure.core</code>, but there are auxiliary functions for string processing in <code>clojure.string</code>, functions for interoperating with Java’s input-output system in <code>clojure.java.io</code>, for printing values in <code>clojure.pprint</code>, and so on.</p>
+<p><code>def</code>, <code>defn</code>, and peers always work in the scope of a particular <em>namespace</em>. The function <code>foo</code> in <code>scratch.core</code> is <em>different</em> from the function <code>foo</code> in <code>scratch.pad</code>.</p>
+<pre><code><span></span><span class="nv">scratch.foo=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.core</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">scratch.core=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">foo</span> <span class="s">&quot;I'm in core&quot;</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'scratch.core/foo</span>
+<span class="nv">scratch.core=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.pad</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">scratch.pad=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">foo</span> <span class="s">&quot;I'm in pad!&quot;</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'scratch.pad/foo</span>
+</code></pre>
+<p>Notice the full names of these vars are different: <code>scratch.core/foo</code> vs <code>scratch.pad/foo</code>. You can always refer to a var by its fully qualified name: the namespace, followed by a slash <code>/</code>, followed by the short name.</p>
+<p>Inside a namespace, symbols resolve to variables which are defined in that namespace. So in <code>scratch.pad</code>, <code>foo</code> refers to <code>scratch.pad/foo</code>.</p>
+<pre><code><span></span><span class="nv">scratch.pad=&gt;</span> <span class="nv">foo</span>
+<span class="s">&quot;I'm in pad!&quot;</span>
+</code></pre>
+<p>Namespaces automatically include <code>clojure.core</code> by default; which is where all the standard functions, macros, and special forms come from. <code>let</code>, <code>defn</code>, <code>filter</code>, <code>vector</code>, etc: all live in <code>clojure.core</code>, but are automatically <em>included</em> in new namespaces so we can refer to them by their short names.</p>
+<p>Notice that the values for <code>foo</code> we defined in <code>scratch.pad</code> and <code>scratch.core</code> aren’t available in other namespaces, like <code>user</code>.</p>
+<pre><code><span></span><span class="nv">scratch.pad=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">user</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">foo</span>
+
+<span class="nv">CompilerException</span> <span class="nv">java.lang.RuntimeException</span><span class="err">:</span> <span class="nv">Unable</span> <span class="nv">to</span> <span class="nb">resolve </span><span class="nv">symbol</span><span class="err">:</span> <span class="nv">foo</span> <span class="nv">in</span> <span class="nv">this</span> <span class="nv">context</span>, <span class="nv">compiling</span><span class="err">:</span><span class="p">(</span><span class="nf">NO_SOURCE_PATH</span><span class="ss">:1:602</span><span class="p">)</span>
+</code></pre>
+<p>To access things from other namespaces, we have to <em>require</em> them in the namespace definition.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">user</span> <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">scratch.core</span><span class="p">]))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">scratch.core/foo</span>
+<span class="s">&quot;I'm in core&quot;</span>
+</code></pre>
+<p>The <code>:require</code> part of the <code>ns</code> declaration told the compiler that the <code>user</code> namespace needed access to <code>scratch.core</code>. We could then refer to the fully qualified name <code>scratch.core/foo</code>.</p>
+<p>Often, writing out the full namespace is cumbersome–so you can give a short alias for a namespace like so:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">user</span> <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">scratch.core</span> <span class="ss">:as</span> <span class="nv">c</span><span class="p">]))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">c/foo</span>
+<span class="s">&quot;I'm in core&quot;</span>
+</code></pre>
+<p>The <code>:as</code> directive indicates that anywhere we write <code>c/something</code>, the compiler should expand that to <code>scratch.core/something</code>. If you plan on using a var from another namespace often, you can <em>refer</em> it to the local namespace–which means you may omit the namespace qualifier entirely.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">user</span> <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">scratch.core</span> <span class="ss">:refer</span> <span class="p">[</span><span class="nv">foo</span><span class="p">]]))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">foo</span>
+<span class="s">&quot;I'm in core&quot;</span>
+</code></pre>
+<p>You can refer functions into the current namespace by listing them: <code>[foo bar ...]</code>. Alternatively, you can suck in <em>every</em> function from another namespace by saying <code>:refer :all</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">ns </span><span class="nv">user</span> <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">scratch.core</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">foo</span>
+<span class="s">&quot;I'm in core&quot;</span>
+</code></pre>
+<p>Namespaces <em>control complexity</em> by isolating code into more understandable, related pieces. They make it easier to read code by keeping similar things together, and unrelated things apart. By making dependencies between namespaces explicit, they make it clear how groups of functions relate to one another.</p>
+<p>If you’ve worked with Erlang, Modula-2, Haskell, Perl, or ML, you’ll find namespaces analogous to <em>modules</em> or <em>packages</em>. Namespaces are often large, encompassing hundreds of functions; and most projects use only a handful of namespaces.</p>
+<p>By contrast, object-oriented programming languages like Java, Scala, Ruby, and Objective C organize code in <em>classes</em>, which combine <em>names</em> and <em>state</em> in a single construct. Because all functions in a class operate on the same state, object-oriented languages tend to have <em>many</em> classes with <em>fewer</em> functions in each. It’s not uncommon for a typical Java project to define hundreds or thousands of classes containing only one or two functions each. If you come from an object-oriented language, it can feel a bit unusual to combine so many functions in a single scope–but because functional programs isolate state differently, this is <em>normal</em>. If, on the other hand, you move <em>to</em> an object-oriented language after Clojure, remember that OO languages compose differently. Objects with hundreds of functions are usually considered unwieldy and should be split into smaller pieces.</p>
+<h2><a href="#code-and-tests" id="code-and-tests">Code and tests</a></h2>
+<p>It’s perfectly fine to test small programs in the REPL. We’ve written
+and refined hundreds of functions that way: by calling the function and seeing
+what happens. However, as programs grow in scope and complexity, testing them
+by hand becomes harder and harder. If you change the behavior of a function
+which ten other functions rely on, you may have to re-test <em>all ten</em> by hand. In real programs, a small change can alter thousands of distinct behaviors, all of which should be verified.</p>
+<p>Wherever possible, we want to <em>automate</em> software tests–making the test itself
+<em>another program</em>. If the test suite runs in a matter of seconds, we can make
+changes freely–re-running the tests continuously to verify that everything
+still works.</p>
+<p>As a simple example, let’s write and test a single function in <code>src/scratch/core.clj</code>. How about exponentiation–raising a number to the given power?</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.core</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">pow</span>
+  <span class="s">&quot;Raises base to the given power. For instance, (pow 3 2) returns three squared, or nine.&quot;</span>
+  <span class="p">[</span><span class="nv">base</span> <span class="nv">power</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">apply * </span><span class="p">(</span><span class="nb">repeat </span><span class="nv">base</span> <span class="nv">power</span><span class="p">)))</span>
+</code></pre>
+<p>So we <em>repeat</em> the base <em>power</em> times, then call <code>*</code> with that sequence of bases to multiply them all together. Seems straightforward enough. Now we need to test it.</p>
+<p>By default, all lein projects come with a simple test stub. Let’s see it in action by running <code>lein test</code>.</p>
+<pre><code><span></span>aphyr@waterhouse:~/scratch$ lein <span class="nb">test</span>
+
+lein <span class="nb">test</span> scratch.core-test
+
+lein <span class="nb">test</span> :only scratch.core-test/a-test
+
+FAIL in <span class="o">(</span>a-test<span class="o">)</span> <span class="o">(</span>core_test.clj:7<span class="o">)</span>
+FIXME, I fail.
+expected: <span class="o">(=</span> <span class="m">0</span> <span class="m">1</span><span class="o">)</span>
+  actual: <span class="o">(</span>not <span class="o">(=</span> <span class="m">0</span> <span class="m">1</span><span class="o">))</span>
+
+Ran <span class="m">1</span> tests containing <span class="m">1</span> assertions.
+<span class="m">1</span> failures, <span class="m">0</span> errors.
+Tests failed.
+</code></pre>
+<p>A <em>failure</em> is when a test returns the wrong value. An <em>error</em> is when a test throws an exception. In this case, the test named <code>a-test</code>, in the file <code>core_test.clj</code>, on line 7, failed. That test expected zero to be equal to one–but found that 0 and 1 were (in point of fact) not equal. Let’s take a look at that test, in <code>test/scratch/core_test.clj</code>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.core-test</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">clojure.test</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]</span>
+            <span class="p">[</span><span class="nv">scratch.core</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="nf">deftest</span> <span class="nv">a-test</span>
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;FIXME, I fail.&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">0</span> <span class="mi">1</span><span class="p">))))</span>
+</code></pre>
+<p>These tests live in a namespace too! Notice that namespaces and file names match up: <code>scratch.core</code> lives in <code>src/scratch/core.clj</code>, and <code>scratch.core-test</code> lives in <code>test/scratch/core_test.clj</code>. Dashes (<code>-</code>) in namespaces correspond to underscores (<code>_</code>) in filenames, and dots (<code>.</code>) correspond to directory separators (<code>/</code>).</p>
+<p>The <code>scratch.core-test</code> namespace is responsible for testing things in <code>scratch.core</code>. Notice that it requires two namespaces: <code>clojure.test</code>, which provides testing functions and macros, and <code>scratch.core</code>, which is the namespace we want to test.</p>
+<p>Then we define a test using <code>deftest</code>. <code>deftest</code> takes a symbol as a test name, and then any number of expressions to evaluate. We can use <code>testing</code> to split up tests into smaller pieces. If a test fails, <code>lein test</code> will print out the enclosing <code>deftest</code> and <code>testing</code> names, to make it easier to figure out what went wrong.</p>
+<p>Let’s change this test so that it passes. 0 should equal 0.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">deftest</span> <span class="nv">a-test</span>
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;Numbers are equal to themselves, right?&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">0</span> <span class="mi">0</span><span class="p">))))</span>
+</code></pre>
+<pre><code><span></span>aphyr@waterhouse:~/scratch$ lein <span class="nb">test</span>
+
+lein <span class="nb">test</span> scratch.core-test
+
+Ran <span class="m">1</span> tests containing <span class="m">1</span> assertions.
+<span class="m">0</span> failures, <span class="m">0</span> errors.
+</code></pre>
+<p>Wonderful! Now let’s test the <code>pow</code> function. I like to start with a really basic case and work my way up to more complicated ones. 1^1 is 1, so:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">deftest</span> <span class="nv">pow-test</span>
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;unity&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">1</span> <span class="p">(</span><span class="nf">pow</span> <span class="mi">1</span> <span class="mi">1</span><span class="p">)))))</span>
+</code></pre>
+<pre><code><span></span>aphyr@waterhouse:~/scratch$ lein <span class="nb">test</span>
+
+lein <span class="nb">test</span> scratch.core-test
+
+Ran <span class="m">1</span> tests containing <span class="m">1</span> assertions.
+<span class="m">0</span> failures, <span class="m">0</span> errors.
+</code></pre>
+<p>Excellent. How about something harder?</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">deftest</span> <span class="nv">pow-test</span>
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;unity&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">1</span> <span class="p">(</span><span class="nf">pow</span> <span class="mi">1</span> <span class="mi">1</span><span class="p">))))</span>
+  
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;square integers&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">9</span> <span class="p">(</span><span class="nf">pow</span> <span class="mi">3</span> <span class="mi">2</span><span class="p">)))))</span>
+</code></pre>
+<pre><code><span></span>aphyr@waterhouse:~/scratch$ lein <span class="nb">test</span>
+
+lein <span class="nb">test</span> scratch.core-test
+
+lein <span class="nb">test</span> :only scratch.core-test/pow-test
+
+FAIL in <span class="o">(</span>pow-test<span class="o">)</span> <span class="o">(</span>core_test.clj:10<span class="o">)</span>
+square integers
+expected: <span class="o">(=</span> <span class="m">9</span> <span class="o">(</span>pow <span class="m">3</span> <span class="m">2</span><span class="o">))</span>
+  actual: <span class="o">(</span>not <span class="o">(=</span> <span class="m">9</span> <span class="m">8</span><span class="o">))</span>
+
+Ran <span class="m">1</span> tests containing <span class="m">2</span> assertions.
+<span class="m">1</span> failures, <span class="m">0</span> errors.
+Tests failed.
+</code></pre>
+<p>That’s odd. 3^2 should be 9, not 8. Let’s double-check our code in the REPL. <code>base</code> was 3, and <code>power</code> was 2, so…</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">repeat </span><span class="mi">3</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">2</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="mi">2</span> <span class="mi">2</span><span class="p">)</span>
+<span class="mi">8</span>
+</code></pre>
+<p>Ah, there’s the problem. We’re mis-using <code>repeat</code>. Instead of repeating 3 twice, we repeated 2 thrice.</p>
+<pre><code>user=&gt; (doc repeat)
+-------------------------
+clojure.core/repeat
+([x] [n x])
+  Returns a lazy (infinite!, or length n if supplied) sequence of xs.
+</code></pre>
+<p>Let’s redefine <code>pow</code> with the correct arguments to <code>repeat</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">pow</span>
+  <span class="s">&quot;Raises base to the given power. For instance, (pow 3 2) returns three</span>
+<span class="s">  squared, or nine.&quot;</span>
+  <span class="p">[</span><span class="nv">base</span> <span class="nv">power</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">apply * </span><span class="p">(</span><span class="nb">repeat </span><span class="nv">power</span> <span class="nv">base</span><span class="p">)))</span>
+</code></pre>
+<p>How about 0^0? By convention, mathematicians define 0^0 as 1.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">deftest</span> <span class="nv">pow-test</span>
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;unity&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">1</span> <span class="p">(</span><span class="nf">pow</span> <span class="mi">1</span> <span class="mi">1</span><span class="p">))))</span>
+
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;square integers&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">9</span> <span class="p">(</span><span class="nf">pow</span> <span class="mi">3</span> <span class="mi">2</span><span class="p">))))</span>
+  
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;0^0&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="mi">1</span> <span class="p">(</span><span class="nf">pow</span> <span class="mi">0</span> <span class="mi">0</span><span class="p">)))))</span>
+</code></pre>
+<pre><code>aphyr@waterhouse:~/scratch$ lein test
+
+lein test scratch.core-test
+
+Ran 1 tests containing 3 assertions.
+0 failures, 0 errors.
+</code></pre>
+<p>Hey, what do you know? It works! But <em>why</em>?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">repeat </span><span class="mi">0</span> <span class="mi">0</span><span class="p">)</span>
+<span class="p">()</span>
+</code></pre>
+<p>What happens when we call <code>*</code> with an <em>empty</em> list of arguments?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">*</span><span class="p">)</span>
+<span class="mi">1</span>
+</code></pre>
+<p>Remember when we talked about how the zero-argument forms of <code>+</code>, and <code>*</code> made some definitions simpler? This is one of those times. We didn’t have to define a special exception for zero powers because <code>(*)</code> returns the multiplicative identity 1, by convention.</p>
+<h2><a href="#exploring-data" id="exploring-data">Exploring data</a></h2>
+<p>The last bit of logistics we need to talk about is <em>working with other people’s code</em>. Clojure projects, like most modern programming environments, are built to work together. We can use libraries to parse data, solve mathematical problems, render graphics, perform simulations, talk to robots, or predict the weather. As a quick example, I’d like to imagine that you and I are public-health researchers trying to identify the best location for an ad campaign to reduce drunk driving.</p>
+<p>The FBI’s <a href="http://www.fbi.gov/about-us/cjis/ucr/ucr">Uniform Crime Reporting</a> database tracks the annual tally of different types of arrests, broken down by county–but the data files provided by the FBI are a mess to work with. Helpfully, <a href="http://emdasheveryone.wordpress.com/">Matt Aliabadi</a> has organized the UCR’s somewhat complex format into nice, normalized files in a data format called JSON, and made them available <a href="https://github.com/maliabadi/ucr-json">on Github</a>. Let’s download the most recent year’s <a href="https://raw2.github.com/maliabadi/ucr-json/master/data/parsed/normalized/2008.json">normalized data</a>, and save it in the <code>scratch</code> directory.</p>
+<p>What’s <em>in</em> this file, anyway? Let’s take a look at the first few lines using <code>head</code>:</p>
+<pre><code><span></span><span class="err">aphyr@waterhouse:~/scratch$</span> <span class="err">head</span> <span class="mi">2008</span><span class="err">.json</span>
+<span class="p">[</span>
+  <span class="p">{</span>
+    <span class="nt">&quot;icpsr_study_number&quot;</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span>
+    <span class="nt">&quot;icpsr_edition_number&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;icpsr_part_number&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;icpsr_sequential_case_id_number&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;fips_state_code&quot;</span><span class="p">:</span> <span class="s2">&quot;01&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fips_county_code&quot;</span><span class="p">:</span> <span class="s2">&quot;001&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;county_population&quot;</span><span class="p">:</span> <span class="mi">52417</span><span class="p">,</span>
+    <span class="nt">&quot;number_of_agencies_in_county&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+</code></pre>
+<p>This is a data format called <a href="http://json.org/">JSON</a>, and it looks a lot like Clojure’s data structures. That’s the start of a vector on the first line, and the second line starts a map. Then we’ve got string keys like <code>&quot;icpsr_study_number&quot;</code>, and values which look like <code>null</code> (<code>nil</code>), numbers, or strings. But in order to <em>work</em> with this file, we’ll need to <em>parse</em> it into Clojure data structures. For that, we can use a JSON parsing library, like <a href="https://github.com/dakrone/cheshire">Cheshire</a>.</p>
+<p>Cheshire, like most Clojure libraries, is published on an internet repository called <a href="http://clojars.org">Clojars</a>. To include it in our scratch project, all we have to do is add open <code>project.clj</code> in a text editor, and add a line specifying that we want to use a particular version of Cheshire.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defproject </span><span class="nv">scratch</span> <span class="s">&quot;0.1.0-SNAPSHOT&quot;</span>
+  <span class="ss">:description</span> <span class="s">&quot;Just playing around&quot;</span>
+  <span class="ss">:url</span> <span class="s">&quot;http://example.com/FIXME&quot;</span>
+  <span class="ss">:license</span> <span class="p">{</span><span class="ss">:name</span> <span class="s">&quot;Eclipse Public License&quot;</span>
+            <span class="ss">:url</span> <span class="s">&quot;http://www.eclipse.org/legal/epl-v10.html&quot;</span><span class="p">}</span>
+  <span class="ss">:dependencies</span> <span class="p">[[</span><span class="nv">org.clojure/clojure</span> <span class="s">&quot;1.5.1&quot;</span><span class="p">]</span>
+                 <span class="p">[</span><span class="nv">cheshire</span> <span class="s">&quot;5.3.1&quot;</span><span class="p">]])</span>
+</code></pre>
+<p>Now we’ll exit the REPL with Control+D (^D), and restart it with <code>lein repl</code>. Leiningen, the Clojure package manager, will automatically download Cheshire from Clojars and make it available in the new REPL session.</p>
+<p>Now let’s figure out how to parse the JSON file. Looking at <a href="https://github.com/dakrone/cheshire">Cheshire’s README</a> shows an example that looks helpful:</p>
+<pre><code><span></span><span class="c1">;; parse some json and get keywords back</span>
+<span class="p">(</span><span class="nf">parse-string</span> <span class="s">&quot;{\&quot;foo\&quot;:\&quot;bar\&quot;}&quot;</span> <span class="nv">true</span><span class="p">)</span>
+<span class="c1">;; =&gt; {:foo &quot;bar&quot;}</span>
+</code></pre>
+<p>So Cheshire includes a parse-string function which can take a string and return a data structure. How can we get a string out of a file? Using <code>slurp</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'cheshire.core</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="s">&quot;2008.json&quot;</span><span class="p">))</span>
+<span class="nv">...</span>
+</code></pre>
+<p>Woooow, that’s a lot of data! Let’s chop it down to something more manageable. How about the first entry?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">first </span><span class="p">(</span><span class="nf">parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="s">&quot;2008.json&quot;</span><span class="p">)))</span>
+<span class="p">{</span><span class="s">&quot;syntheticdrug_salemanufacture&quot;</span> <span class="mi">1</span>, <span class="s">&quot;all_other_offenses_except_traffic&quot;</span> <span class="mi">900</span>, <span class="s">&quot;arson&quot;</span> <span class="mi">3</span>, <span class="nv">...</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="s">&quot;2008.json&quot;</span> <span class="nb">slurp </span><span class="nv">parse-string</span> <span class="nv">first</span><span class="p">)</span>
+</code></pre>
+<p>It’d be nicer if this data used keywords instead of strings for its keys. Let’s use the second argument to Chesire’s <code>parse-string</code> to convert all the keys in maps to keywords.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">first </span><span class="p">(</span><span class="nf">parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="s">&quot;2008.json&quot;</span><span class="p">)</span> <span class="nv">true</span><span class="p">))</span>
+<span class="p">{</span><span class="ss">:other_assaults</span> <span class="mi">288</span>, <span class="ss">:gambling_all_other</span> <span class="mi">0</span>, <span class="ss">:arson</span> <span class="mi">3</span>, <span class="nv">...</span> <span class="ss">:drunkenness</span> <span class="mi">108</span><span class="p">}</span>
+</code></pre>
+<p>Since we’re going to be working with this dataset over and over again, let’s bind it to a variable for easy re-use.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">data</span> <span class="p">(</span><span class="nf">parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="s">&quot;2008.json&quot;</span><span class="p">)</span> <span class="nv">true</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/data</span>
+</code></pre>
+<p>Now we’ve got a big long vector of counties, each represented by a map–but we’re just interested in the <em>DUIs</em> of each one. What does that look like? Let’s <em>map</em> each county to its <code>:driving_under_influence</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">map </span><span class="ss">:driving_under_influence</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">198</span> <span class="mi">1095</span> <span class="mi">114</span> <span class="mi">98</span> <span class="mi">135</span> <span class="mi">4</span> <span class="mi">122</span> <span class="mi">587</span> <span class="mi">204</span> <span class="mi">53</span> <span class="mi">177</span> <span class="nv">...</span>
+</code></pre>
+<p>What’s the most any county has ever reported?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">map </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="p">(</span><span class="nb">apply </span><span class="nv">max</span><span class="p">))</span>
+<span class="mi">45056</span>
+</code></pre>
+<p>45056 counts in one year? Wow! What about the second-worst county? The easiest way to find the <em>top n</em> counties is to <em>sort</em> the list, then look at the final elements.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">map </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="nb">sort </span><span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">8589</span> <span class="mi">10432</span> <span class="mi">10443</span> <span class="mi">10814</span> <span class="mi">11439</span> <span class="mi">13983</span> <span class="mi">17572</span> <span class="mi">18562</span> <span class="mi">26235</span> <span class="mi">45056</span><span class="p">)</span>
+</code></pre>
+<p>So the top 10 counties range from 8549 counts to 45056 counts. What’s the <em>most common</em> count? Clojure comes with a built-in function called <code>frequencies</code> which takes a sequence of elements, and returns a map from each element to how many times it appeared in the sequence.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">map </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="nv">frequencies</span><span class="p">)</span>
+<span class="p">{</span><span class="mi">0</span> <span class="mi">227</span>, <span class="mi">1024</span> <span class="mi">1</span>, <span class="mi">45056</span> <span class="mi">1</span>, <span class="mi">32</span> <span class="mi">15</span>, <span class="mi">2080</span> <span class="mi">1</span>, <span class="mi">64</span> <span class="mi">12</span> <span class="nv">...</span>
+</code></pre>
+<p>Now let’s take those [drunk-driving, frequency] pairs and sort them by key to produce a <em>histogram</em>. <code>sort-by</code> takes a function to apply to each element in the collection–in this case, a key-value pair–and returns something that can be sorted, like a number. We’ll choose the <code>key</code> function to extract the key from each key-value pair, effectively sorting the counties by number of reported incidents.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">map </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="nv">frequencies</span> <span class="p">(</span><span class="nb">sort-by </span><span class="nv">key</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">([</span><span class="mi">0</span> <span class="mi">227</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">1</span> <span class="mi">24</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">2</span> <span class="mi">17</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">3</span> <span class="mi">20</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">4</span> <span class="mi">17</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">5</span> <span class="mi">24</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">6</span> <span class="mi">23</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">7</span> <span class="mi">23</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">8</span> <span class="mi">17</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">9</span> <span class="mi">19</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">10</span> <span class="mi">29</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">11</span> <span class="mi">20</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">12</span> <span class="mi">18</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">13</span> <span class="mi">21</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">14</span> <span class="mi">25</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">15</span> <span class="mi">13</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">16</span> <span class="mi">18</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">17</span> <span class="mi">16</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">18</span> <span class="mi">17</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">19</span> <span class="mi">11</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">20</span> <span class="mi">8</span><span class="p">]</span>
+ <span class="nv">...</span>
+</code></pre>
+<p>So a ton of counties (227 out of 3172 total) report no drunk driving; a few hundred have one incident, a moderate number have 10-20, and it falls off from there. This is a common sort of shape in statistics; often a hallmark of an exponential distribution.</p>
+<p>How about the 10 worst counties, all the way out on the end of the curve?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">map </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="nv">frequencies</span> <span class="p">(</span><span class="nb">sort-by </span><span class="nv">key</span><span class="p">)</span> <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">([</span><span class="mi">8589</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">10432</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">10443</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">10814</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">11439</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">13983</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">17572</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">18562</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">26235</span> <span class="mi">1</span><span class="p">]</span>
+ <span class="p">[</span><span class="mi">45056</span> <span class="mi">1</span><span class="p">])</span>
+</code></pre>
+<p>So it looks like 45056 is high, but there are 8 other counties with tens of thousands of reports too. Let’s back up to the original dataset, and sort it by DUIs:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">sort-by </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">({</span><span class="ss">:other_assaults</span> <span class="mi">3096</span>,
+  <span class="ss">:gambling_all_other</span> <span class="mi">3</span>,
+  <span class="ss">:arson</span> <span class="mi">106</span>,
+  <span class="ss">:have_stolen_property</span> <span class="mi">698</span>,
+  <span class="ss">:syntheticdrug_salemanufacture</span> <span class="mi">0</span>,
+  <span class="ss">:icpsr_sequential_case_id_number</span> <span class="mi">220</span>,
+  <span class="ss">:drug_abuse_salemanufacture</span> <span class="mi">1761</span>,
+  <span class="nv">...</span>
+</code></pre>
+<p>What we’re looking for is the county names, but it’s a little hard to read these enormous maps. Let’s take a look at just the keys that define each county, and see which ones might be useful. We’ll take this list of counties, map each one to a list of its keys, and concatenate those lists together into one big long list. <code>mapcat</code> maps and concatenates in a single step. We expect the same keys to show up over and over again, so we’ll remove duplicates by merging all those keys <code>into</code> a <code>sorted-set</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">sort-by </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="nb">mapcat </span><span class="nv">keys</span><span class="p">)</span> <span class="p">(</span><span class="nb">into </span><span class="p">(</span><span class="nf">sorted-set</span><span class="p">))</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{</span><span class="ss">:aggravated_assaults</span> <span class="ss">:all_other_offenses_except_traffic</span> <span class="ss">:arson</span>
+  <span class="ss">:auto_thefts</span> <span class="ss">:bookmaking_horsesport</span> <span class="ss">:burglary</span> <span class="ss">:county_population</span>
+  <span class="ss">:coverage_indicator</span> <span class="ss">:curfew_loitering_laws</span> <span class="ss">:disorderly_conduct</span>
+  <span class="ss">:driving_under_influence</span> <span class="ss">:drug_abuse_salemanufacture</span>
+  <span class="ss">:drug_abuse_violationstotal</span> <span class="ss">:drug_possession_other</span>
+  <span class="ss">:drug_possession_subtotal</span> <span class="ss">:drunkenness</span> <span class="ss">:embezzlement</span>
+  <span class="ss">:fips_county_code</span> <span class="ss">:fips_state_code</span> <span class="ss">:forgerycounterfeiting</span> <span class="ss">:fraud</span>
+  <span class="ss">:gambling_all_other</span> <span class="ss">:gambling_total</span> <span class="ss">:grand_total</span>
+  <span class="ss">:have_stolen_property</span> <span class="ss">:icpsr_edition_number</span> <span class="ss">:icpsr_part_number</span>
+  <span class="ss">:icpsr_sequential_case_id_number</span> <span class="ss">:icpsr_study_number</span> <span class="ss">:larceny</span>
+  <span class="ss">:liquor_law_violations</span> <span class="ss">:marijuana_possession</span>
+  <span class="ss">:marijuanasalemanufacture</span> <span class="ss">:multicounty_jurisdiction_flag</span> <span class="ss">:murder</span>
+  <span class="ss">:number_of_agencies_in_county</span> <span class="ss">:numbers_lottery</span>
+  <span class="ss">:offenses_against_family_child</span> <span class="ss">:opiumcocaine_possession</span>
+  <span class="ss">:opiumcocainesalemanufacture</span> <span class="ss">:other_assaults</span> <span class="ss">:otherdang_nonnarcotics</span>
+  <span class="ss">:part_1_total</span> <span class="ss">:property_crimes</span> <span class="ss">:prostitutioncomm_vice</span> <span class="ss">:rape</span> <span class="ss">:robbery</span>
+  <span class="ss">:runaways</span> <span class="ss">:sex_offenses</span> <span class="ss">:suspicion</span> <span class="ss">:synthetic_narcoticspossession</span>
+  <span class="ss">:syntheticdrug_salemanufacture</span> <span class="ss">:vagrancy</span> <span class="ss">:vandalism</span> <span class="ss">:violent_crimes</span>
+  <span class="ss">:weapons_violations</span><span class="p">}</span>
+</code></pre>
+<p>Ah, <code>:fips_county_code</code> and <code>:fips_state_code</code> look promising. Let’s compact the dataset to just drunk driving and those codes, using <code>select-keys</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">data</span> <span class="p">(</span><span class="nb">sort-by </span><span class="ss">:driving_under_influence</span><span class="p">)</span> <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="nb">map </span><span class="o">#</span><span class="p">(</span><span class="nb">select-keys </span><span class="nv">%</span> <span class="p">[</span><span class="ss">:driving_under_influence</span> <span class="ss">:fips_county_code</span> <span class="ss">:fips_state_code</span><span class="p">]))</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">({</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;067&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">8589</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;48&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;201&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">10432</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;32&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;003&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">10443</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;065&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">10814</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;53&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;033&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">11439</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;071&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">13983</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;059&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">17572</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;073&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">18562</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;04&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;013&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">26235</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;037&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">45056</span><span class="p">})</span>
+</code></pre>
+<p>Now we’re getting somewhere–but we need a way to interpret these state and county codes. Googling for “FIPS” led me to Wikipedia’s account of the <a href="http://en.wikipedia.org/wiki/FIPS_county_code">FIPS county code system</a>, and the NOAA’s ERDDAP service, which has a table <a href="http://coastwatch.pfeg.noaa.gov/erddap/convert/fipscounty.html">mapping FIPS codes to state and county names</a>. Let’s save that file as <a href="http://coastwatch.pfeg.noaa.gov/erddap/convert/fipscounty.json">fips.json</a>.</p>
+<p>Now we’ll slurp that file into the REPL and parse it, just like we did with the crime dataset.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">fips</span> <span class="p">(</span><span class="nf">parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="s">&quot;fips.json&quot;</span><span class="p">)</span> <span class="nv">true</span><span class="p">))</span>
+</code></pre>
+<p>Let’s take a quick look at the structure of this data:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">keys </span><span class="nv">fips</span><span class="p">)</span>
+<span class="p">(</span><span class="ss">:table</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">keys </span><span class="p">(</span><span class="ss">:table</span> <span class="nv">fips</span><span class="p">))</span>
+<span class="p">(</span><span class="ss">:columnNames</span> <span class="ss">:columnTypes</span> <span class="ss">:rows</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">fips</span> <span class="ss">:table</span> <span class="ss">:columnNames</span><span class="p">)</span>
+<span class="p">[</span><span class="s">&quot;FIPS&quot;</span> <span class="s">&quot;Name&quot;</span><span class="p">]</span>
+</code></pre>
+<p>Great, so we expect the rows to be a list of FIPS code and Name.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">fips</span> <span class="ss">:table</span> <span class="ss">:rows</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">([</span><span class="s">&quot;02000&quot;</span> <span class="s">&quot;AK&quot;</span><span class="p">]</span>
+ <span class="p">[</span><span class="s">&quot;02013&quot;</span> <span class="s">&quot;AK, Aleutians East&quot;</span><span class="p">]</span>
+ <span class="p">[</span><span class="s">&quot;02016&quot;</span> <span class="s">&quot;AK, Aleutians West&quot;</span><span class="p">])</span>
+</code></pre>
+<p>Perfect. Now that’s we’ve done some exploratory work in the REPL, let’s shift back to an editor. Create a new file in <code>src/scratch/crime.clj</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.crime</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">cheshire.core</span> <span class="ss">:as</span> <span class="nv">json</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">fips</span>
+  <span class="s">&quot;A map of FIPS codes to their county names.&quot;</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">json/parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="s">&quot;fips.json&quot;</span><span class="p">)</span> <span class="nv">true</span><span class="p">)</span>
+       <span class="ss">:table</span>
+       <span class="ss">:rows</span>
+       <span class="p">(</span><span class="nb">into </span><span class="p">{})))</span>
+</code></pre>
+<p>We’re just taking a snippet we wrote in the REPL–parsing the FIPS dataset–and writing it down for use as a part of a bigger program. We use <code>(into {})</code> to convert the sequence of <code>[fips, name]</code> pairs into a map, just like we used <code>into (sorted-set)</code> to merge a list of keywords into a set earlier. <code>into</code> works just like <code>conj</code>, repeated over and over again, and is an incredibly useful tool for building up collections of things.</p>
+<p>Back in the REPL, let’s check if that worked:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.crime</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">fips</span> <span class="s">&quot;10001&quot;</span><span class="p">)</span>
+<span class="s">&quot;DE, Kent&quot;</span>
+</code></pre>
+<p>Remember, maps act like functions in Clojure, so we can use the <code>fips</code> map to look up the names of counties efficiently.</p>
+<p>We also have to load the UCR crime file–so let’s split that load-and-parse code into its own function:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">load-json</span>
+  <span class="s">&quot;Given a filename, reads a JSON file and returns it, parsed, with keywords.&quot;</span>
+  <span class="p">[</span><span class="nv">file</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">json/parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="nv">file</span><span class="p">)</span> <span class="nv">true</span><span class="p">))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">fips</span>
+  <span class="s">&quot;A map of FIPS codes to their county names.&quot;</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="s">&quot;fips.json&quot;</span>
+       <span class="nv">load-json</span>
+       <span class="ss">:table</span>
+       <span class="ss">:rows</span>
+       <span class="p">(</span><span class="nb">into </span><span class="p">{})))</span>
+</code></pre>
+<p>Now we can re-use <code>load-json</code> to load the UCR crime file.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">most-duis</span>
+  <span class="s">&quot;Given a JSON filename of UCR crime data for a particular year, finds the</span>
+<span class="s">  counties with the most DUIs.&quot;</span>
+  <span class="p">[</span><span class="nv">file</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">file</span>
+       <span class="nv">load-json</span>
+       <span class="p">(</span><span class="nb">sort-by </span><span class="ss">:driving_under_influence</span><span class="p">)</span>
+       <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span>
+       <span class="p">(</span><span class="nb">map </span><span class="o">#</span><span class="p">(</span><span class="nb">select-keys </span><span class="nv">%</span> <span class="p">[</span><span class="ss">:driving_under_influence</span>
+                             <span class="ss">:fips_county_code</span>
+                             <span class="ss">:fips_state_code</span><span class="p">]))))</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.crime</span> <span class="ss">:reload</span><span class="p">)</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nf">most-duis</span> <span class="s">&quot;2008.json&quot;</span><span class="p">))</span>
+<span class="nv">nil</span>
+<span class="p">({</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;067&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">8589</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;48&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;201&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">10432</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;32&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;003&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">10443</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;065&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">10814</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;53&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;033&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">11439</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;071&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">13983</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;059&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">17572</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;073&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">18562</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;04&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;013&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">26235</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;06&quot;</span>,
+  <span class="ss">:fips_county_code</span> <span class="s">&quot;037&quot;</span>,
+  <span class="ss">:driving_under_influence</span> <span class="mi">45056</span><span class="p">})</span>
+</code></pre>
+<p>Almost there. We need to join together the state and county FIPS codes into a single string, because that’s how <code>fips</code> represents the county code:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">fips-code</span>
+  <span class="s">&quot;Given a county (a map with :fips_state_code and :fips_county_code keys),</span>
+<span class="s">   returns the five-digit FIPS code for the county, as a string.&quot;</span>
+  <span class="p">[</span><span class="nv">county</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">str </span><span class="p">(</span><span class="ss">:fips_state_code</span> <span class="nv">county</span><span class="p">)</span> <span class="p">(</span><span class="ss">:fips_county_code</span> <span class="nv">county</span><span class="p">)))</span>
+</code></pre>
+<p>Let’s write a quick test in <code>test/scratch/crime_test.clj</code> to verify that function works correctly:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.crime-test</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">clojure.test</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]</span>
+            <span class="p">[</span><span class="nv">scratch.crime</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="nf">deftest</span> <span class="nv">fips-code-test</span>
+  <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="s">&quot;12345&quot;</span> <span class="p">(</span><span class="nf">fips-code</span> <span class="p">{</span><span class="ss">:fips_state_code</span> <span class="s">&quot;12&quot;</span> <span class="ss">:fips_county_code</span> <span class="s">&quot;345&quot;</span><span class="p">}))))</span>
+</code></pre>
+<pre><code>aphyr@waterhouse:~/scratch$ lein test scratch.crime-test
+
+lein test scratch.crime-test
+
+Ran 1 tests containing 1 assertions.
+0 failures, 0 errors.
+</code></pre>
+<p>Great. Note that <code>lein test some-namespace</code> runs only the tests in that particular namespace. For the last step, let’s take the <code>most-duis</code> function and, using <code>fips</code> and <code>fips-code</code>, construct a map of county names to DUI reports.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">most-duis</span>
+  <span class="s">&quot;Given a JSON filename of UCR crime data for a particular year, finds the</span>
+<span class="s">  counties with the most DUIs.&quot;</span>
+  <span class="p">[</span><span class="nv">file</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">file</span>
+       <span class="nv">load-json</span>
+       <span class="p">(</span><span class="nb">sort-by </span><span class="ss">:driving_under_influence</span><span class="p">)</span>
+       <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span>
+       <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">county</span><span class="p">]</span>
+              <span class="p">[(</span><span class="nf">fips</span> <span class="p">(</span><span class="nf">fips-code</span> <span class="nv">county</span><span class="p">))</span>
+               <span class="p">(</span><span class="ss">:driving_under_influence</span> <span class="nv">county</span><span class="p">)]))</span>
+       <span class="p">(</span><span class="nb">into </span><span class="p">{})))</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.crime</span> <span class="ss">:reload</span><span class="p">)</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nf">most-duis</span> <span class="s">&quot;2008.json&quot;</span><span class="p">))</span>
+<span class="nv">nil</span>
+<span class="p">{</span><span class="s">&quot;CA, Orange&quot;</span> <span class="mi">17572</span>,
+ <span class="s">&quot;CA, San Bernardino&quot;</span> <span class="mi">13983</span>,
+ <span class="s">&quot;CA, Los Angeles&quot;</span> <span class="mi">45056</span>,
+ <span class="s">&quot;CA, Riverside&quot;</span> <span class="mi">10814</span>,
+ <span class="s">&quot;NV, Clark&quot;</span> <span class="mi">10443</span>,
+ <span class="s">&quot;WA, King&quot;</span> <span class="mi">11439</span>,
+ <span class="s">&quot;AZ, Maricopa&quot;</span> <span class="mi">26235</span>,
+ <span class="s">&quot;CA, San Diego&quot;</span> <span class="mi">18562</span>,
+ <span class="s">&quot;TX, Harris&quot;</span> <span class="mi">10432</span>,
+ <span class="s">&quot;CA, Sacramento&quot;</span> <span class="mi">8589</span><span class="p">}</span>
+</code></pre>
+<p>Our question is, at least in part, answered: Los Angeles and Maricopa counties, in California and Arizona, have the most reports of drunk driving out of any counties in the 2008 Uniform Crime Reporting database. These might be good counties for a PSA campaign. California has either lots of drunk drivers, or aggressive enforcement, or both! Remember, this only tells us about <em>reports</em> of crimes; not the crimes themselves. Numbers vary based on how the state enforces the laws!</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.crime</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">cheshire.core</span> <span class="ss">:as</span> <span class="nv">json</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">load-json</span>
+  <span class="s">&quot;Given a filename, reads a JSON file and returns it, parsed, with keywords.&quot;</span>
+  <span class="p">[</span><span class="nv">file</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">json/parse-string</span> <span class="p">(</span><span class="nb">slurp </span><span class="nv">file</span><span class="p">)</span> <span class="nv">true</span><span class="p">))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">fips</span>
+  <span class="s">&quot;A map of FIPS codes to their county names.&quot;</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="s">&quot;fips.json&quot;</span>
+       <span class="nv">load-json</span>
+       <span class="ss">:table</span>
+       <span class="ss">:rows</span>
+       <span class="p">(</span><span class="nb">into </span><span class="p">{})))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">fips-code</span>
+  <span class="s">&quot;Given a county (a map with :fips_state_code and :fips_county_code keys),</span>
+<span class="s">  returns the five-digit FIPS code for the county, as a string.&quot;</span>
+  <span class="p">[</span><span class="nv">county</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">str </span><span class="p">(</span><span class="ss">:fips_state_code</span> <span class="nv">county</span><span class="p">)</span> <span class="p">(</span><span class="ss">:fips_county_code</span> <span class="nv">county</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">most-duis</span>
+  <span class="s">&quot;Given a JSON filename of UCR crime data for a particular year, finds the</span>
+<span class="s">  counties with the most DUIs.&quot;</span>
+  <span class="p">[</span><span class="nv">file</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">file</span>
+       <span class="nv">load-json</span>
+       <span class="p">(</span><span class="nb">sort-by </span><span class="ss">:driving_under_influence</span><span class="p">)</span>
+       <span class="p">(</span><span class="nf">take-last</span> <span class="mi">10</span><span class="p">)</span>
+       <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">county</span><span class="p">]</span>
+              <span class="p">[(</span><span class="nf">fips</span> <span class="p">(</span><span class="nf">fips-code</span> <span class="nv">county</span><span class="p">))</span>
+               <span class="p">(</span><span class="ss">:driving_under_influence</span> <span class="nv">county</span><span class="p">)]))</span>
+       <span class="p">(</span><span class="nb">into </span><span class="p">{})))</span>
+</code></pre>
+<h2><a href="#recap" id="recap">Recap</a></h2>
+<p>In this chapter, we expanded beyond transient programs written in the REPL. We learned how <em>projects</em> combine static resources, code, and tests into a single package, and how projects can relate to one another through <em>dependencies</em>. We learned the basics of Clojure’s namespace system, which isolates distinct chunks of code from one another, and how to include definitions from one namespace in another via <code>require</code> and <code>use</code>. We learned how to write and run <em>tests</em> to verify our code’s correctness, and how to move seamlessly between the repl and code in <code>.clj</code> files. We made use of Cheshire, a Clojure library published on Clojars, to parse JSON–a common data format. Finally, we brought together our knowledge of Clojure’s basic grammar, immutable data structures, core functions, sequences, threading macros, and vars to explore a real-world problem.</p>
+<h2><a href="#exercises" id="exercises">Exercises</a></h2>
+<ol>
+<li>
+<p><code>most-duis</code> tells us about the raw number of reports, but doesn’t account for differences in county population. One would naturally expect counties with more people to have more crime! Divide the <code>:driving_under_influence</code> of each county by its <code>:county_population</code> to find a <em>prevalence</em> of DUIs, and take the top ten counties based on prevalence. How should you handle counties with a population of zero?</p>
+</li>
+<li>
+<p>How do the prevalence counties compare to the original counties? Expand most-duis to return vectors of <code>[county-name, prevalence, report-count, population]</code> What are the populations of the high-prevalence counties? Why do you suppose the data looks this way? If you were leading a public-health campaign to reduce drunk driving, would you target your intervention based on <em>report count</em> or <em>prevalence</em>? Why?</p>
+</li>
+<li>
+<p>We can <em>generalize</em> the <code>most-duis</code> function to handle <em>any</em> type of crime. Write a function <code>most-prevalent</code> which takes a file and a field name, like <code>:arson</code>, and finds the counties where that field is most often reported, per capita.</p>
+</li>
+<li>
+<p>Write a test to verify that <code>most-prevalent</code> is correct.</p>
+</li>
+</ol>
+<p>Next up: <a href="https://aphyr.com/posts/312-clojure-from-the-ground-up-modeling">modeling</a>.</p>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1824"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a198879c03effd0d1e0cd73b5b38b751?r=pg&s=96&d=identicon" alt="Jeremy" title="Jeremy" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jeremy
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1824">
+            <time datetime="Feb 24, 2014, 7:44:15 AM" pubdate>
+              2014-02-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I think I can sort of clean an answer from how you used it here, but do you have a general guideline for when to use the -&gt;&gt; macro?   I think that, coming from Ruby, I’d be tempted to lean on it too much.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1825"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1825">
+            <time datetime="Feb 24, 2014, 1:14:33 PM" pubdate>
+              2014-02-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I shift to <code>-&gt;&gt;</code> whenever I’m doing a linear sequence of computations, and I lean on it more heavily in the REPL, where matching parens is a little more cumbersome. It’s usually shorter for anything over 3 function calls. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1826"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1826">
+            <time datetime="Feb 24, 2014, 1:15:23 PM" pubdate>
+              2014-02-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Think I finally convinced myself to fix the comment formatting code, haha. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1827"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a198879c03effd0d1e0cd73b5b38b751?r=pg&s=96&d=identicon" alt="Jeremy" title="Jeremy" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jeremy
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1827">
+            <time datetime="Feb 24, 2014, 2:05:06 PM" pubdate>
+              2014-02-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Cool, thanks.  Really enjoying this series!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1828"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1828">
+            <time datetime="Feb 24, 2014, 7:24:57 PM" pubdate>
+              2014-02-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you! :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1862"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/dbf7e6364a56f5b98607b86dcc18db7d?r=pg&s=96&d=identicon" alt="Tom" title="Tom" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Tom
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1862">
+            <time datetime="May 10, 2014, 4:04:34 PM" pubdate>
+              2014-05-10
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is brilliantly written. Thank you very much for your effort in producing it.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1880"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a462b227d14ac376a3eb1d0576a813e7?r=pg&s=96&d=identicon" alt="Samridh" title="Samridh" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Samridh
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1880">
+            <time datetime="May 22, 2014, 10:22:04 PM" pubdate>
+              2014-05-22
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi! Really love the series of posts.
+Just a tiny nit:
+(repeat n x): repeats x, n times
+so pow should be defined as:
+(defn pow
+  “Raises base to the given power. For instance, (pow 3 2) returns three squared, or nine.”
+  <a rel="nofollow">base power</a>))
+Right?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1881"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a462b227d14ac376a3eb1d0576a813e7?r=pg&s=96&d=identicon" alt="Samridh" title="Samridh" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Samridh
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1881">
+            <time datetime="May 22, 2014, 10:26:33 PM" pubdate>
+              2014-05-22
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Well, now I feel stupid :) Just read the whole thing. Ignore my comment.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1991"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a1ea60b344309f25069867fa629aaf1d?r=pg&s=96&d=identicon" alt="Bruno" title="Bruno" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Bruno
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1991">
+            <time datetime="Dec 7, 2014, 1:43:09 PM" pubdate>
+              2014-12-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This tutorial is bookmarked in my browser for a long time now. Please, just… keep it up!</p>
+
+<p>Cheers!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1996"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/818072198759cdf40d3c3888f733dae5?r=pg&s=96&d=identicon" alt="R0B" title="R0B" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://mdf0.blogpspot.com" rel="nofollow">
+              R0B
+            </a>
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-1996">
+            <time datetime="Dec 19, 2014, 7:01:25 AM" pubdate>
+              2014-12-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Although I have not read any post yet I finished saving them to my drive. I say thanks for your open intro and support for the ladies. Great job man and continue the good fight. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2018"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/b6b8952ea62c016fb9598eb888a819ef?r=pg&s=96&d=identicon" alt="Peter" title="Peter" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Peter
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-2018">
+            <time datetime="Dec 26, 2014, 11:46:20 AM" pubdate>
+              2014-12-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>There is no link here to the next chapter!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2423"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/66652fb6340ab3747d9b58292ebeb687?r=pg&s=96&d=identicon" alt="Dinesh" title="Dinesh" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Dinesh
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-2423">
+            <time datetime="Jun 7, 2015, 12:53:46 AM" pubdate>
+              2015-06-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p><code>(defn pow
+  "Raises base to the given power. For instance, (pow 3 2) returns three squared, or nine."
+  [base power]
+  (apply * (repeat base power)))</code></p>
+
+<p><em>This should be</em> 
+<code>(repeat power base)</code></p>
+
+<p>(repeat 2 3)
+(3  3)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2428"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/ff5399a04f9f34bd69aaaf460dbac21f?r=pg&s=96&d=identicon" alt="Tedwed" title="Tedwed" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://tedwed.com/product/jurassic-world-2015-chris-pratt-vest.html" rel="nofollow">
+              Tedwed
+            </a>
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-2428">
+            <time datetime="Jun 17, 2015, 1:41:34 AM" pubdate>
+              2015-06-17
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Educational post! The involved analysis is very knowledgeable and a lot to know about this. Keep sharing here!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2658"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/9b94ecf0d927c6786fd1f9da2cb7dddb?r=pg&s=96&d=identicon" alt="miles" title="miles" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            miles
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-2658">
+            <time datetime="Jun 9, 2016, 12:30:28 PM" pubdate>
+              2016-06-09
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey, just wanted to let you know that link to UCR data (in “Exploring data” section: “Let’s download the most recent year’s <em>normalized data</em> (…)”) is 404 and should probably be ‘<a href="https://raw.githubusercontent.com/maliabadi/ucr-json/master/data/parsed/normalized/2008.json" rel="nofollow">https://raw.githubusercontent.com/maliabadi/ucr-json/master/data/parsed/normalized/2008.json</a>’</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3018"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4d0707c0df8f05939b6c058d2420c8fd?r=pg&s=96&d=identicon" alt="billwang" title="billwang" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            billwang
+          
+          
+          on
+          <a href="/posts/311-clojure-from-the-ground-up-logistics#comment-3018">
+            <time datetime="May 22, 2019, 6:12:40 PM" pubdate>
+              2019-05-22
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>awsome</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="311" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

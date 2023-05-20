@@ -1,0 +1,2773 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: sequences</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="eeGVEdO9KjEPf1pSKVGutI3JU64gFttts/EKdoprXxA1GdY8SusDAX2VbaUc7ntEZ30HcBLyda2+nosu" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/304-clojure-from-the-ground-up-sequences" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/304-clojure-from-the-ground-up-sequences">Clojure from the ground up: sequences</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Nov 18, 2013, 10:57:30 AM" pubdate>
+          2013-11-18
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>In <a href="/posts/303-clojure-from-the-ground-up-functions">Chapter 3</a>, we discovered functions as a way to <em>abstract</em> expressions; to
+rephrase a particular computation with some parts missing. We used functions to
+transform a single value. But what if we want to apply a function to <em>more than
+one</em> value at once? What about sequences?</p>
+<p>For example, we know that <code>(inc 2)</code> increments the number 2. What if we wanted to increment <em>every number</em> in the vector <code>[1 2 3]</code>, producing <code>[2 3 4]</code>?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nv">ClassCastException</span> <span class="nv">clojure.lang.PersistentVector</span> <span class="nv">cannot</span> <span class="nv">be</span> <span class="nb">cast </span><span class="nv">to</span> <span class="nv">java.lang.Number</span>  <span class="nv">clojure.lang.Numbers.inc</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:110</span><span class="p">)</span>
+</code></pre>
+<p>Clearly <code>inc</code> can only work on numbers, not on vectors. We need a different
+kind of tool.</p>
+<h2><a href="#a-direct-approach" id="a-direct-approach">A direct approach</a></h2>
+<p>Let’s think about the problem in concrete terms. We want to increment each of
+three elements: the first, second, and third. We know how to get an element
+from a sequence by using nth, so let’s start with the first number, at index 0:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">numbers</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="o">#</span><span class="ss">'user/numbers</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">0</span><span class="p">)</span>
+<span class="mi">1</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">0</span><span class="p">))</span>
+<span class="mi">2</span>
+</code></pre>
+<p>So there’s the first element incremented. Now we can do the second:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">1</span><span class="p">))</span>
+<span class="mi">3</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">2</span><span class="p">))</span>
+<span class="mi">4</span>
+</code></pre>
+<p>And it should be straightforward to combine these into a vector…</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">[(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">0</span><span class="p">))</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">1</span><span class="p">))</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">2</span><span class="p">))]</span>
+<span class="p">[</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">]</span>
+</code></pre>
+<p>Success! We’ve incremented each of the numbers in the list! How about a list with only two elements?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">numbers</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">])</span>
+<span class="o">#</span><span class="ss">'user/numbers</span>
+<span class="nv">user=&gt;</span> <span class="p">[(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">0</span><span class="p">))</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">1</span><span class="p">))</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">nth </span><span class="nv">numbers</span> <span class="mi">2</span><span class="p">))]</span>
+
+<span class="nv">IndexOutOfBoundsException</span>   <span class="nv">clojure.lang.PersistentVector.arrayFor</span> <span class="p">(</span><span class="nf">PersistentVector.java</span><span class="ss">:107</span><span class="p">)</span>
+</code></pre>
+<p>Shoot. We tried to get the element at index 2, but <em>couldn’t</em>, because
+<code>numbers</code> only has indices 0 and 1. Clojure calls that “index out of bounds”.</p>
+<p>We could just leave off the third expression in the vector; taking only
+elements 0 and 1. But the problem actually gets much worse, because we’d need
+to make this change <em>every</em> time we wanted to use a different sized vector. And
+what of a vector with 1000 elements? We’d need 1000 <code>(inc (nth numbers ...))</code>
+expressions! Down this path lies madness.</p>
+<p>Let’s back up a bit, and try a slightly smaller problem.</p>
+<h2><a href="#recursion" id="recursion">Recursion</a></h2>
+<p>What if we just incremented the <em>first</em> number in the vector? How would that
+work? We know that <code>first</code> finds the first element in a sequence, and <code>rest</code>
+finds all the remaining ones.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">first </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="mi">1</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">rest </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p>So there’s the <em>pieces</em> we’d need. To glue them back together, we can use a
+function called <code>cons</code>, which says “make a list beginning with the first
+argument, followed by all the elements in the second argument”.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">1</span> <span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">1</span> <span class="p">[</span><span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">1</span> <span class="p">[</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre>
+<p>OK so we can split up a sequence, increment the first part, and join them back together. Not so hard, right?</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">inc-first</span> <span class="p">[</span><span class="nv">nums</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">cons </span><span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">first </span><span class="nv">nums</span><span class="p">))</span>
+        <span class="p">(</span><span class="nb">rest </span><span class="nv">nums</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-first</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre>
+<p>Hey, there we go! First element changed. Will it work with any length list?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-first</span> <span class="p">[</span><span class="mi">5</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-first</span> <span class="p">[])</span>
+
+<span class="nv">NullPointerException</span>   <span class="nv">clojure.lang.Numbers.ops</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:942</span><span class="p">)</span>
+</code></pre>
+<p>Shoot. We can’t increment the first element of this empty vector, because it
+doesn’t <em>have</em> a first element.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">first </span><span class="p">[])</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="nv">nil</span><span class="p">)</span>
+
+<span class="nv">NullPointerException</span>   <span class="nv">clojure.lang.Numbers.ops</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:942</span><span class="p">)</span>
+</code></pre>
+<p>So there are really <em>two</em> cases for this function. If there is a first element
+in <code>nums</code>, we’ll increment it as normal. If there’s <em>no</em> such element, we’ll
+return an empty list. To express this kind of conditional behavior, we’ll use a
+Clojure special form called <code>if</code>:</p>
+<pre><code>user=&gt; (doc if)
+-------------------------
+if
+  (if test then else?)
+Special Form
+  Evaluates test. If not the singular values nil or false,
+  evaluates and yields then, otherwise, evaluates and yields else. If
+  else is not supplied it defaults to nil.
+
+  Please see http://clojure.org/special_forms#if
+</code></pre>
+<p>To confirm our intuition:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">if </span><span class="nv">true</span> <span class="ss">:a</span> <span class="ss">:b</span><span class="p">)</span>
+<span class="ss">:a</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">if </span><span class="nv">false</span> <span class="ss">:a</span> <span class="ss">:b</span><span class="p">)</span>
+<span class="ss">:b</span>
+</code></pre>
+<p>Seems straightforward enough.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">inc-first</span> <span class="p">[</span><span class="nv">nums</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">first </span><span class="nv">nums</span><span class="p">)</span>
+    <span class="c1">; If there's a first number, build a new list with cons</span>
+    <span class="p">(</span><span class="nb">cons </span><span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">first </span><span class="nv">nums</span><span class="p">))</span>
+          <span class="p">(</span><span class="nb">rest </span><span class="nv">nums</span><span class="p">))</span>
+    <span class="c1">; If there's no first number, just return an empty list</span>
+    <span class="p">(</span><span class="nf">list</span><span class="p">)))</span>
+
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-first</span> <span class="p">[])</span>
+<span class="p">()</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-first</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p>Success! Now we can handle <em>both</em> cases: empty sequences, and sequences with
+things in them. Now how about incrementing that <em>second</em> number? Let’s stare at
+that code for a bit.</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">rest </span><span class="nv">nums</span><span class="p">)</span>
+</code></pre>
+<p>Hang on. That list–<code>(rest nums)</code>–that’s a list of numbers too.  What if we…
+used our inc-first function on <em>that</em> list, to increment <em>its</em> first number?
+Then we’d have incremented both the first <em>and</em> the second element.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">inc-more</span> <span class="p">[</span><span class="nv">nums</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">first </span><span class="nv">nums</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">cons </span><span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">first </span><span class="nv">nums</span><span class="p">))</span>
+          <span class="p">(</span><span class="nf">inc-more</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">nums</span><span class="p">)))</span>
+    <span class="p">(</span><span class="nf">list</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-more</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)</span>
+</code></pre>
+<p>Odd. That didn’t just increment the first two numbers. It incremented <em>all</em> the
+numbers. We fell into the <em>complete</em> solution entirely by accident.  What
+happened here?</p>
+<p>Well first we… yes, we got the number one, and incremented it. Then we stuck
+that onto <code>(inc-first [2 3 4])</code>, which got two, and incremented it. Then we stuck
+that two onto <code>(inc-first [3 4])</code>, which got three, and then we did the same for
+four. Only <em>that</em> time around, at the very end of the list, <code>(rest [4])</code> would
+have been <em>empty</em>. So when we went to get the first number of the empty list,
+we took the <em>second</em> branch of the <code>if</code>, and returned the empty list.</p>
+<p>Having reached the <em>bottom</em> of the function calls, so to speak, we zip back up
+the chain. We can imagine this function turning into a long string of <code>cons</code>
+calls, like so:</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">cons </span><span class="mi">2</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">3</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">4</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">5</span> <span class="o">'</span><span class="p">()))))</span>
+<span class="p">(</span><span class="nb">cons </span><span class="mi">2</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">3</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">4</span> <span class="o">'</span><span class="p">(</span><span class="mi">5</span><span class="p">))))</span>
+<span class="p">(</span><span class="nb">cons </span><span class="mi">2</span> <span class="p">(</span><span class="nb">cons </span><span class="mi">3</span> <span class="o">'</span><span class="p">(</span><span class="mi">4</span> <span class="mi">5</span><span class="p">)))</span>
+<span class="p">(</span><span class="nb">cons </span><span class="mi">2</span> <span class="o">'</span><span class="p">(</span><span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">))</span>
+<span class="o">'</span><span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)</span>
+</code></pre>
+<p>This technique is called <em>recursion</em>, and it is a fundamental principle in
+working with collections, sequences, trees, or graphs… any problem which has
+small parts linked together. There are two key elements in a recursive program:</p>
+<ol>
+<li>Some part of the problem which has a known solution</li>
+<li>A relationship which connects one part of the problem to the next</li>
+</ol>
+<p>Incrementing the elements of an empty list returns the empty list. This is our
+<em>base case</em>: the ground to build on. Our <em>inductive</em> case, also called the
+<em>recurrence relation</em>, is how we broke the problem up into incrementing the
+<em>first</em> number in the sequence, and incrementing all the numbers in the
+<em>rest</em> of the sequence. The <code>if</code> expression bound these two cases together into
+a single function; a function <em>defined in terms of itself</em>.</p>
+<p>Once the initial step has been taken, <em>every</em> step can be taken.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">inc-more</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span> <span class="mi">10</span> <span class="mi">11</span> <span class="mi">12</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span> <span class="mi">10</span> <span class="mi">11</span> <span class="mi">12</span> <span class="mi">13</span><span class="p">)</span>
+</code></pre>
+<p>This is the beauty of a recursive function; folding an unbounded stream of
+computation over and over, onto itself, until only a single step remains.</p>
+<h2><a href="#generalizing-from-inc" id="generalizing-from-inc">Generalizing from inc</a></h2>
+<p>We set out to increment every number in a vector, but nothing in our solution
+actually depended on <code>inc</code>. It just as well could have been <code>dec</code>, or <code>str</code>, or
+<code>keyword</code>. Let’s <em>parameterize</em> our <code>inc-more</code> function to use <em>any</em>
+transformation of its elements:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">transform-all</span> <span class="p">[</span><span class="nv">f</span> <span class="nv">xs</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">first </span><span class="nv">xs</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">cons </span><span class="p">(</span><span class="nf">f</span> <span class="p">(</span><span class="nb">first </span><span class="nv">xs</span><span class="p">))</span>
+          <span class="p">(</span><span class="nf">transform-all</span> <span class="nv">f</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">xs</span><span class="p">)))</span>
+    <span class="p">(</span><span class="nf">list</span><span class="p">)))</span>
+</code></pre>
+<p>Because we could be talking about <em>any</em> kind of sequence, not just numbers,
+we’ve named the sequence <code>xs</code>, and its first element <code>x</code>. We also take a
+function <code>f</code> as an argument, and that function will be applied to each <code>x</code> in
+turn. So not only can we increment numbers…</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">transform-all</span> <span class="nb">inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)</span>
+</code></pre>
+<p>…but we can turn strings to keywords…</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">transform-all</span> <span class="nb">keyword </span><span class="p">[</span><span class="s">&quot;bell&quot;</span> <span class="s">&quot;hooks&quot;</span><span class="p">])</span>
+<span class="p">(</span><span class="ss">:bell</span> <span class="ss">:hooks</span><span class="p">)</span>
+</code></pre>
+<p>…or wrap every element in a list:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">transform-all</span> <span class="nb">list </span><span class="p">[</span><span class="ss">:codex</span> <span class="ss">:book</span> <span class="ss">:manuscript</span><span class="p">])</span>
+<span class="p">((</span><span class="ss">:codex</span><span class="p">)</span> <span class="p">(</span><span class="ss">:book</span><span class="p">)</span> <span class="p">(</span><span class="ss">:manuscript</span><span class="p">))</span>
+</code></pre>
+<p>In short, this function expresses a sequence in which each element is some
+function applied to the corresponding element in the underlying sequence.
+This idea is so important that it has its own name, in mathematics, Clojure, and other languages. We call it <code>map</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">map inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">)</span>
+</code></pre>
+<p>You might remember maps as a datatype in Clojure, too–they’re dictionaries
+that relate keys to values.</p>
+<pre><code><span></span><span class="p">{</span><span class="ss">:year</span>  <span class="mi">1969</span>
+ <span class="ss">:event</span> <span class="s">&quot;moon landing&quot;</span><span class="p">}</span>
+</code></pre>
+<p>The <em>function</em> <code>map</code> relates one sequence to another. The <em>type</em> map relates
+keys to values. There is a deep symmetry between the two: maps are usually
+sparse, and the relationships between keys and values may be arbitrarily
+complex. The map function, on the other hand, usually expresses the <em>same</em> type
+of relationship, applied to a series of elements in <em>fixed order</em>.</p>
+<h2><a href="#building-sequences" id="building-sequences">Building sequences</a></h2>
+<p>Recursion can do more than just <code>map</code>. We can use it to expand a single value
+into a sequence of values, each related by some function. For
+instance:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">expand</span> <span class="p">[</span><span class="nv">f</span> <span class="nv">x</span> <span class="nv">count</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">when </span><span class="p">(</span><span class="nb">pos? </span><span class="nv">count</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">cons </span><span class="nv">x</span> <span class="p">(</span><span class="nf">expand</span> <span class="nv">f</span> <span class="p">(</span><span class="nf">f</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nb">dec </span><span class="nv">count</span><span class="p">)))))</span>
+</code></pre>
+<p>Our base case is <code>nil</code>, returned when <code>count</code> is zero, and <code>(pos? count)</code> fails. Our inductive case returns a list of x, followed by the expansion starting with (f x), and a count <em>one smaller</em>. This means the first element of our list will be x, the second (f x), the third (f (f x)), and so on.
+Each time we call <code>expand</code>, we count down by one using <code>dec</code>. Once the count is zero,
+the <code>if</code> returns <code>nil</code>, and evaluation stops. If we start with the number 0 and
+use inc as our function:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">expand</span> <span class="nb">inc </span><span class="mi">0</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre>
+<p>Clojure has a more general form of this function, called <code>iterate</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre>
+<p>Since this sequence is <em>infinitely</em> long, we’re using <code>take</code> to select only the
+first 10 elements. We can construct more complex sequences by using more
+complex functions:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="p">(</span><span class="nb">iterate </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">odd?</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">x</span> <span class="mi">2</span><span class="p">)))</span> <span class="mi">10</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">10</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">2</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<p>Or build up strings:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">5</span> <span class="p">(</span><span class="nb">iterate </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">str </span><span class="nv">x</span> <span class="s">&quot;o&quot;</span><span class="p">))</span> <span class="s">&quot;y&quot;</span><span class="p">))</span>
+<span class="p">(</span><span class="s">&quot;y&quot;</span> <span class="s">&quot;yo&quot;</span> <span class="s">&quot;yoo&quot;</span> <span class="s">&quot;yooo&quot;</span> <span class="s">&quot;yoooo&quot;</span><span class="p">)</span>
+</code></pre>
+<p><code>iterate</code> is extremely handy for working with infinite sequences, and has some
+partners in crime. <code>repeat</code>, for instance, constructs a sequence where every
+element is the same.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="p">(</span><span class="nb">repeat </span><span class="ss">:hi</span><span class="p">))</span>
+<span class="p">(</span><span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span> <span class="ss">:hi</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">repeat </span><span class="mi">3</span> <span class="ss">:echo</span><span class="p">)</span>
+<span class="p">(</span><span class="ss">:echo</span> <span class="ss">:echo</span> <span class="ss">:echo</span><span class="p">)</span>
+</code></pre>
+<p>And its close relative <code>repeatedly</code> simply calls a function <code>(f)</code> to generate an
+infinite sequence of values, over and over again, without any relationship
+between elements. For an infinite sequence of random numbers:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">rand</span><span class="p">)</span>
+<span class="mf">0.9002678382322784</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">rand</span><span class="p">)</span>
+<span class="mf">0.12375594203332863</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span> <span class="p">(</span><span class="nf">repeatedly</span> <span class="nv">rand</span><span class="p">))</span>
+<span class="p">(</span><span class="mf">0.44442397843046755</span> <span class="mf">0.33668691162169784</span> <span class="mf">0.18244875487846746</span><span class="p">)</span>
+</code></pre>
+<p>Notice that calling <code>(rand)</code> returns a different number each time. We say that
+<code>rand</code> is an <em>impure</em> function, because it cannot simply be replaced by the
+same value every time. It does something different each time it’s called.</p>
+<p>There’s another very handy sequence function specifically for numbers: <code>range</code>,
+which generates a sequence of numbers between two points. <code>(range n)</code> gives n
+successive integers starting at 0. <code>(range n m)</code> returns integers from n to
+m-1. <code>(range n m step)</code> returns integers from n to m, but separated by <code>step</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">range </span><span class="mi">5</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">range </span><span class="mi">2</span> <span class="mi">10</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">range </span><span class="mi">0</span> <span class="mi">100</span> <span class="mi">5</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">5</span> <span class="mi">10</span> <span class="mi">15</span> <span class="mi">20</span> <span class="mi">25</span> <span class="mi">30</span> <span class="mi">35</span> <span class="mi">40</span> <span class="mi">45</span> <span class="mi">50</span> <span class="mi">55</span> <span class="mi">60</span> <span class="mi">65</span> <span class="mi">70</span> <span class="mi">75</span> <span class="mi">80</span> <span class="mi">85</span> <span class="mi">90</span> <span class="mi">95</span><span class="p">)</span>
+</code></pre>
+<p>To extend a sequence by repeating it forever, use <code>cycle</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="p">(</span><span class="nb">cycle </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]))</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<h2><a href="#transforming-sequences" id="transforming-sequences">Transforming sequences</a></h2>
+<p>Given a sequence, we often want to find a <em>related</em> sequence. <code>map</code>, for
+instance, applies a function to each element–but has a few more tricks up its
+sleeve.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">n</span> <span class="nv">vehicle</span><span class="p">]</span> <span class="p">(</span><span class="nb">str </span><span class="s">&quot;I've got &quot;</span> <span class="nv">n</span> <span class="s">&quot; &quot;</span> <span class="nv">vehicle</span> <span class="s">&quot;s&quot;</span><span class="p">))</span>
+         <span class="p">[</span><span class="mi">0</span> <span class="mi">200</span> <span class="mi">9</span><span class="p">]</span>
+         <span class="p">[</span><span class="s">&quot;car&quot;</span> <span class="s">&quot;train&quot;</span> <span class="s">&quot;kiteboard&quot;</span><span class="p">])</span>
+<span class="p">(</span><span class="s">&quot;I've got 0 cars&quot;</span> <span class="s">&quot;I've got 200 trains&quot;</span> <span class="s">&quot;I've got 9 kiteboards&quot;</span><span class="p">)</span>
+</code></pre>
+<p>If given multiple sequences, <code>map</code> calls its function with one element from each sequence in turn. So the first value will be <code>(f 0 &quot;car&quot;)</code>, the second <code>(f 200 &quot;train&quot;)</code>, and so on. Like a zipper, map folds together corresponding elements
+from multiple collections. To sum three vectors, column-wise:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">map + </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span>
+              <span class="p">[</span><span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span><span class="p">]</span>
+              <span class="p">[</span><span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">12</span> <span class="mi">15</span> <span class="mi">18</span><span class="p">)</span>
+</code></pre>
+<p>If one sequence is bigger than another, map stops at the end of the smaller
+one. We can exploit this to combine finite and infinite sequences. For example, to number the elements in a vector:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nb">index </span><span class="nv">element</span><span class="p">]</span> <span class="p">(</span><span class="nb">str index </span><span class="s">&quot;. &quot;</span> <span class="nv">element</span><span class="p">))</span>
+            <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">)</span>
+            <span class="p">[</span><span class="s">&quot;erlang&quot;</span> <span class="s">&quot;ruby&quot;</span> <span class="s">&quot;haskell&quot;</span><span class="p">])</span>
+<span class="p">(</span><span class="s">&quot;0. erlang&quot;</span> <span class="s">&quot;1. ruby&quot;</span> <span class="s">&quot;2. haskell&quot;</span><span class="p">)</span>
+</code></pre>
+<p>Transforming elements together with their indices is so common that Clojure has
+a special function for it: <code>map-indexed</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">map-indexed</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nb">index </span><span class="nv">element</span><span class="p">]</span> <span class="p">(</span><span class="nb">str index </span><span class="s">&quot;. &quot;</span> <span class="nv">element</span><span class="p">))</span>
+                    <span class="p">[</span><span class="s">&quot;erlang&quot;</span> <span class="s">&quot;ruby&quot;</span> <span class="s">&quot;haskell&quot;</span><span class="p">])</span>
+<span class="p">(</span><span class="s">&quot;0. erlang&quot;</span> <span class="s">&quot;1. ruby&quot;</span> <span class="s">&quot;2. haskell&quot;</span><span class="p">)</span>
+</code></pre>
+<p>You can also tack one sequence onto the end of another, like so:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">concat </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span> <span class="ss">:c</span><span class="p">]</span> <span class="p">[</span><span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="ss">:a</span> <span class="ss">:b</span> <span class="ss">:c</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span><span class="p">)</span>
+</code></pre>
+<p>Another way to combine two sequences is to riffle them together, using
+<code>interleave</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">interleave </span><span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span> <span class="ss">:c</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="ss">:a</span> <span class="mi">1</span> <span class="ss">:b</span> <span class="mi">2</span> <span class="ss">:c</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p>And if you want to insert a specific element between each successive pair in a
+sequence, try <code>interpose</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">interpose</span> <span class="ss">:and</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="ss">:and</span> <span class="mi">2</span> <span class="ss">:and</span> <span class="mi">3</span> <span class="ss">:and</span> <span class="mi">4</span><span class="p">)</span>
+</code></pre>
+<p>To reverse a sequence, use <code>reverse</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">reverse </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">3</span> <span class="mi">2</span> <span class="mi">1</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">reverse </span><span class="s">&quot;woolf&quot;</span><span class="p">)</span>
+<span class="p">(</span><span class="sc">\f</span> <span class="sc">\l</span> <span class="sc">\o</span> <span class="sc">\o</span> <span class="sc">\w</span><span class="p">)</span>
+</code></pre>
+<p>Strings are sequences too! Each element of a string is a <em>character</em>, written <code>\f</code>. You can rejoin those characters into a string with <code>apply str</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">apply str </span><span class="p">(</span><span class="nb">reverse </span><span class="s">&quot;woolf&quot;</span><span class="p">))</span>
+<span class="s">&quot;floow&quot;</span>
+</code></pre>
+<p>…and break strings up into sequences of chars with <code>seq</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">seq </span><span class="s">&quot;sato&quot;</span><span class="p">)</span>
+<span class="p">(</span><span class="sc">\s</span> <span class="sc">\a</span> <span class="sc">\t</span> <span class="sc">\o</span><span class="p">)</span>
+</code></pre>
+<p>To randomize the order of a sequence, use <code>shuffle</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">shuffle</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">[</span><span class="mi">3</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">4</span><span class="p">]</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">apply str </span><span class="p">(</span><span class="nf">shuffle</span> <span class="p">(</span><span class="nb">seq </span><span class="s">&quot;abracadabra&quot;</span><span class="p">)))</span>
+<span class="s">&quot;acaadabrrab&quot;</span>
+</code></pre>
+<h2><a href="#subsequences" id="subsequences">Subsequences</a></h2>
+<p>We’ve already seen <code>take</code>, which selects the first n elements. There’s also
+<code>drop</code>, which removes the first n elements.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">drop </span><span class="mi">3</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre>
+<p>And for slicing apart the other end of the sequence, we have <code>take-last</code> and <code>drop-last</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">take-last</span> <span class="mi">3</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">drop-last</span> <span class="mi">3</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span><span class="p">)</span>
+</code></pre>
+<p><code>take-while</code> and <code>drop-while</code> work just like <code>take</code> and <code>drop</code>, but use a function to decide when to cut.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take-while pos? </span><span class="p">[</span><span class="mi">3</span> <span class="mi">2</span> <span class="mi">1</span> <span class="mi">0</span> <span class="mi">-1</span> <span class="mi">-2</span> <span class="mi">10</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">3</span> <span class="mi">2</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<p>In general, one can cut a sequence in twain by using <code>split-at</code>, and giving it
+a particular index. There’s also <code>split-with</code>, which uses a function to decide
+when to cut.</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">split-at </span><span class="mi">4</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">))</span>
+<span class="p">[(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span> <span class="p">(</span><span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)]</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">split-with </span><span class="nv">number?</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="ss">:mark</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="ss">:mark</span> <span class="mi">7</span><span class="p">])</span>
+<span class="p">[(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span> <span class="p">(</span><span class="ss">:mark</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="ss">:mark</span> <span class="mi">7</span><span class="p">)]</span>
+</code></pre>
+<p>Notice that because indexes start at zero, sequence functions tend to have
+predictable numbers of elements. <code>(split-at 4)</code> yields <em>four</em> elements in the
+first collection, and ensures the second collection <em>begins at index four</em>.
+<code>(range 10)</code> has ten elements, corresponding to the first ten indices in a
+sequence. <code>(range 3 5)</code> has two (since 5 - 3 is two) elements. These choices simplify the
+definition of recursive functions as well.</p>
+<p>We can select particular elements from a sequence by applying a function. To
+find all positive numbers in a list, use <code>filter</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">filter pos? </span><span class="p">[</span><span class="mi">1</span> <span class="mi">5</span> <span class="mi">-4</span> <span class="mi">-7</span> <span class="mi">3</span> <span class="mi">0</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">5</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p><code>filter</code> looks at each element in turn, and includes it in the resulting
+sequence <em>only</em> if <code>(f element)</code> returns a truthy value. Its complement is
+<code>remove</code>, which only includes those elements where <code>(f element)</code> is <code>false</code> or <code>nil</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">remove string? </span><span class="p">[</span><span class="mi">1</span> <span class="s">&quot;turing&quot;</span> <span class="ss">:apple</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="ss">:apple</span><span class="p">)</span>
+</code></pre>
+<p>Finally, one can group a sequence into chunks using <code>partition</code>,
+<code>partition-all</code>, or <code>partition-by</code>. For instance, one might group alternating
+values into pairs:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="p">[</span><span class="ss">:cats</span> <span class="mi">5</span> <span class="ss">:bats</span> <span class="mi">27</span> <span class="ss">:crocodiles</span> <span class="mi">0</span><span class="p">])</span>
+<span class="p">((</span><span class="ss">:cats</span> <span class="mi">5</span><span class="p">)</span> <span class="p">(</span><span class="ss">:bats</span> <span class="mi">27</span><span class="p">)</span> <span class="p">(</span><span class="ss">:crocodiles</span> <span class="mi">0</span><span class="p">))</span>
+</code></pre>
+<p>Or separate a series of numbers into negative and positive runs:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">user=&gt;</span> <span class="p">(</span><span class="nf">partition-by</span> <span class="nb">neg? </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">2</span> <span class="mi">1</span> <span class="mi">-1</span> <span class="mi">-2</span> <span class="mi">-3</span> <span class="mi">-2</span> <span class="mi">-1</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">])</span>
+<span class="p">((</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">2</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="mi">-1</span> <span class="mi">-2</span> <span class="mi">-3</span> <span class="mi">-2</span> <span class="mi">-1</span><span class="p">)</span> <span class="p">(</span><span class="mi">1</span> <span class="mi">2</span><span class="p">))</span>
+</code></pre>
+<h2><a href="#collapsing-sequences" id="collapsing-sequences">Collapsing sequences</a></h2>
+<p>After transforming a sequence, we often want to collapse it in some way; to
+derive some smaller value. For instance, we might want the number of times each element appears in a sequence:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">frequencies</span> <span class="p">[</span><span class="ss">:meow</span> <span class="ss">:mrrrow</span> <span class="ss">:meow</span> <span class="ss">:meow</span><span class="p">])</span>
+<span class="p">{</span><span class="ss">:meow</span> <span class="mi">3</span>, <span class="ss">:mrrrow</span> <span class="mi">1</span><span class="p">}</span>
+</code></pre>
+<p>Or to group elements by some function:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nf">group-by</span> <span class="ss">:first</span> <span class="p">[{</span><span class="ss">:first</span> <span class="s">&quot;Li&quot;</span>    <span class="ss">:last</span> <span class="s">&quot;Zhou&quot;</span><span class="p">}</span>
+                                 <span class="p">{</span><span class="ss">:first</span> <span class="s">&quot;Sarah&quot;</span> <span class="ss">:last</span> <span class="s">&quot;Lee&quot;</span><span class="p">}</span>
+                                 <span class="p">{</span><span class="ss">:first</span> <span class="s">&quot;Sarah&quot;</span> <span class="ss">:last</span> <span class="s">&quot;Dunn&quot;</span><span class="p">}</span>
+                                 <span class="p">{</span><span class="ss">:first</span> <span class="s">&quot;Li&quot;</span>    <span class="ss">:last</span> <span class="s">&quot;O'Toole&quot;</span><span class="p">}]))</span>
+<span class="p">{</span><span class="s">&quot;Li&quot;</span>    <span class="p">[{</span><span class="ss">:last</span> <span class="s">&quot;Zhou&quot;</span>, <span class="ss">:first</span> <span class="s">&quot;Li&quot;</span><span class="p">}</span>   <span class="p">{</span><span class="ss">:last</span> <span class="s">&quot;O'Toole&quot;</span>, <span class="ss">:first</span> <span class="s">&quot;Li&quot;</span><span class="p">}]</span>,
+ <span class="s">&quot;Sarah&quot;</span> <span class="p">[{</span><span class="ss">:last</span> <span class="s">&quot;Lee&quot;</span>, <span class="ss">:first</span> <span class="s">&quot;Sarah&quot;</span><span class="p">}</span> <span class="p">{</span><span class="ss">:last</span> <span class="s">&quot;Dunn&quot;</span>, <span class="ss">:first</span> <span class="s">&quot;Sarah&quot;</span><span class="p">}]}</span>
+</code></pre>
+<p>Here we’ve taken a sequence of people with first and last names, and used the
+<code>:first</code> keyword (which can act as a function!) to look up those first names.
+<code>group-by</code> used that function to produce a <em>map</em> of first names to lists of
+people–kind of like an index.</p>
+<p>In general, we want to <em>combine</em> elements together in some way, using a
+function. Where <code>map</code> treated each element independently, reducing a sequence
+requires that we bring some information along. The most general way to collapse a sequence is <code>reduce</code>.</p>
+<pre><code>user=&gt; (doc reduce)
+-------------------------
+clojure.core/reduce
+([f coll] [f val coll])
+  f should be a function of 2 arguments. If val is not supplied,
+  returns the result of applying f to the first 2 items in coll, then
+  applying f to that result and the 3rd item, etc. If coll contains no
+  items, f must accept no arguments as well, and reduce returns the
+  result of calling f with no arguments.  If coll has only 1 item, it
+  is returned and f is not called.  If val is supplied, returns the
+  result of applying f to val and the first item in coll, then
+  applying f to that result and the 2nd item, etc. If coll contains no
+  items, returns val and f is not called.
+</code></pre>
+<p>That’s a little complicated, so we’ll start small. We need a function, <code>f</code>,
+which combines successive elements of the sequence. <code>(f state element)</code> will
+return the state for the <em>next</em> invocation of <code>f</code>. As <code>f</code> moves along the
+sequence, it carries some changing state with it. The final state is the return
+value of <code>reduce</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">reduce + </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="mi">10</span>
+</code></pre>
+<p><code>reduce</code> begins by calling <code>(+ 1 2)</code>, which yields the state <code>3</code>. Then it calls
+<code>(+ 3 3)</code>, which yields <code>6</code>. Then <code>(+ 6 4)</code>, which returns <code>10</code>. We’ve taken a
+function over <em>two</em> elements, and used it to combine <em>all</em> the elements. Mathematically, we could write:</p>
+<pre><code>1 + 2 + 3 + 4
+    3 + 3 + 4
+        6 + 4
+           10
+</code></pre>
+<p>So another way to look at <code>reduce</code> is like sticking a function <em>between</em> each
+pair of elements. To see the reducing process in action, we can use
+<code>reductions</code>, which returns a sequence of all the intermediate states.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">reductions</span> <span class="nb">+ </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">3</span> <span class="mi">6</span> <span class="mi">10</span><span class="p">)</span>
+</code></pre>
+<p>Oftentimes we include a <em>default</em> state to start with. For instance, we could
+start with an empty set, and add each element to it as we go along:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">reduce conj </span><span class="o">#</span><span class="p">{}</span> <span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span> <span class="ss">:b</span> <span class="ss">:b</span> <span class="ss">:a</span> <span class="ss">:a</span><span class="p">])</span>
+<span class="o">#</span><span class="p">{</span><span class="ss">:a</span> <span class="ss">:b</span><span class="p">}</span>
+</code></pre>
+<p>Reducing elements into a collection has its own name: <code>into</code>. We can conj <code>[key value]</code> vectors into a map, for instance, or build up a list:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">into </span><span class="p">{}</span> <span class="p">[[</span><span class="ss">:a</span> <span class="mi">2</span><span class="p">]</span> <span class="p">[</span><span class="ss">:b</span> <span class="mi">3</span><span class="p">]])</span>
+<span class="p">{</span><span class="ss">:a</span> <span class="mi">2</span>, <span class="ss">:b</span> <span class="mi">3</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">into </span><span class="p">(</span><span class="nf">list</span><span class="p">)</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">(</span><span class="mi">4</span> <span class="mi">3</span> <span class="mi">2</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<p>Because elements added to a list appear at the <em>beginning</em>, not the end, this
+expression reverses the sequence. Vectors <code>conj</code> onto the end, so to emit the
+elements in order, using <code>reduce</code>, we might try:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">reduce conj </span><span class="p">[]</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">])</span>
+<span class="p">(</span><span class="nb">reduce conj </span><span class="p">[]</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">])</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">]</span>
+</code></pre>
+<p>Which brings up an interesting thought: this looks an awful lot like <code>map</code>. All that’s missing is some kind of transformation applied to each element.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">my-map</span> <span class="p">[</span><span class="nv">f</span> <span class="nv">coll</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">reduce </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">output</span> <span class="nv">element</span><span class="p">]</span>
+            <span class="p">(</span><span class="nb">conj </span><span class="nv">output</span> <span class="p">(</span><span class="nf">f</span> <span class="nv">element</span><span class="p">)))</span>
+          <span class="p">[]</span>
+          <span class="nv">coll</span><span class="p">))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">my-map</span> <span class="nb">inc </span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">])</span>
+<span class="p">[</span><span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span><span class="p">]</span>
+</code></pre>
+<p>Huh. <code>map</code> is just a special kind of <code>reduce</code>. What about, say, <code>take-while</code>?</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">my-take-while</span> <span class="p">[</span><span class="nv">f</span> <span class="nv">coll</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">reduce </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">out</span> <span class="nv">elem</span><span class="p">]</span>
+            <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">f</span> <span class="nv">elem</span><span class="p">)</span>
+              <span class="p">(</span><span class="nb">conj </span><span class="nv">out</span> <span class="nv">elem</span><span class="p">)</span>
+              <span class="p">(</span><span class="nf">reduced</span> <span class="nv">out</span><span class="p">)))</span>
+          <span class="p">[]</span>
+          <span class="nv">coll</span><span class="p">))</span>
+</code></pre>
+<p>We’re using a special function here, <code>reduced</code>, to indicate that we’ve
+completed our reduction <em>early</em> and can skip the rest of the sequence.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">my-take-while</span> <span class="nb">pos? </span><span class="p">[</span><span class="mi">2</span> <span class="mi">1</span> <span class="mi">0</span> <span class="mi">-1</span> <span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">])</span>
+<span class="p">[</span><span class="mi">2</span> <span class="mi">1</span><span class="p">]</span>
+</code></pre>
+<p><code>reduce</code> really is the uberfunction over sequences. Almost any
+operation on a sequence can be expressed in terms of a reduce–though for
+various reasons, many of the Clojure sequence functions are not written this
+way. For instance, <code>take-while</code> is <em>actually</em> defined like so:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">source</span> <span class="nv">take-while</span><span class="p">)</span>
+<span class="p">(</span><span class="kd">defn </span><span class="nv">take-while</span>
+  <span class="s">&quot;Returns a lazy sequence of successive items from coll while</span>
+<span class="s">  (pred item) returns true. pred must be free of side-effects.&quot;</span>
+  <span class="p">{</span><span class="ss">:added</span> <span class="s">&quot;1.0&quot;</span>
+   <span class="ss">:static</span> <span class="nv">true</span><span class="p">}</span>
+  <span class="p">[</span><span class="nv">pred</span> <span class="nv">coll</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">lazy-seq</span>
+   <span class="p">(</span><span class="nb">when-let </span><span class="p">[</span><span class="nv">s</span> <span class="p">(</span><span class="nb">seq </span><span class="nv">coll</span><span class="p">)]</span>
+       <span class="p">(</span><span class="nb">when </span><span class="p">(</span><span class="nf">pred</span> <span class="p">(</span><span class="nb">first </span><span class="nv">s</span><span class="p">))</span>
+         <span class="p">(</span><span class="nb">cons </span><span class="p">(</span><span class="nb">first </span><span class="nv">s</span><span class="p">)</span> <span class="p">(</span><span class="nb">take-while </span><span class="nv">pred</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">s</span><span class="p">)))))))</span>
+</code></pre>
+<p>There’s a few new pieces here, but the structure is <em>essentially</em> the same as
+our initial attempt at writing <code>map</code>. When the predicate matches the first
+element, cons the first element onto <code>take-while</code>, applied to the rest of the
+sequence. That <code>lazy-seq</code> construct allows Clojure to compute this sequence <em>as
+required</em>, instead of right away. It defers execution to a later time.</p>
+<p>Most of Clojure’s sequence functions are lazy. They don’t do anything until
+needed. For instance, we can increment every number from zero to infinity:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">infseq</span> <span class="p">(</span><span class="nb">map inc </span><span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">)))</span>
+<span class="o">#</span><span class="ss">'user/infseq</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">realized?</span> <span class="nv">infseq</span><span class="p">)</span>
+<span class="nv">false</span>
+</code></pre>
+<p>That function returned <em>immediately</em>. Because it hasn’t done any work yet, we
+say the sequence is <em>unrealized</em>. It doesn’t increment any numbers at all until
+we ask for them:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="nv">infseq</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span> <span class="mi">10</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">realized?</span> <span class="nv">infseq</span><span class="p">)</span>
+<span class="nv">true</span>
+</code></pre>
+<p>Lazy sequences also <em>remember</em> their contents, once evaluated, for faster
+access.</p>
+<h2><a href="#putting-it-all-together" id="putting-it-all-together">Putting it all together</a></h2>
+<p>We’ve seen how recursion generalizes a function over <em>one</em> thing into a
+function over <em>many</em> things, and discovered a rich landscape of recursive
+functions over sequences. Now let’s use our knowledge of sequences to solve a
+more complex problem: find the sum of the products of consecutive pairs of the
+first 1000 odd integers.</p>
+<p>First, we’ll need the integers. We can start with 0, and work our way up to
+infinity. To save time printing an infinite number of integers, we’ll start
+with just the first 10.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre>
+<p>Now we need to find only the ones which are odd. Remember, <code>filter</code> pares down
+a sequence to only those elements which pass a test.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">)))</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">3</span> <span class="mi">5</span> <span class="mi">7</span> <span class="mi">9</span> <span class="mi">11</span> <span class="mi">13</span> <span class="mi">15</span> <span class="mi">17</span> <span class="mi">19</span><span class="p">)</span>
+</code></pre>
+<p>For consecutive pairs, we want to take <code>[1 3 5 7 ...]</code> and find a sequence like <code>([1 3] [3 5] [5 7] ...)</code>. That sounds like a job for <code>partition</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span> <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">))))</span>
+<span class="p">((</span><span class="mi">1</span> <span class="mi">3</span><span class="p">)</span> <span class="p">(</span><span class="mi">5</span> <span class="mi">7</span><span class="p">)</span> <span class="p">(</span><span class="mi">9</span> <span class="mi">11</span><span class="p">))</span>
+</code></pre>
+<p>Not quite right–this gave us non-overlapping pairs, but we wanted overlapping
+ones too. A quick check of <code>(doc partition)</code> reveals the <code>step</code> parameter:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span> <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="mi">1</span> <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">))))</span>
+<span class="p">((</span><span class="mi">1</span> <span class="mi">3</span><span class="p">)</span> <span class="p">(</span><span class="mi">3</span> <span class="mi">5</span><span class="p">)</span> <span class="p">(</span><span class="mi">5</span> <span class="mi">7</span><span class="p">))</span>
+</code></pre>
+<p>Now we need to find the product for each pair. Given a pair, multiply the two
+pieces together… yes, that sounds like <code>map</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span> <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">pair</span><span class="p">]</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="nb">first </span><span class="nv">pair</span><span class="p">)</span> <span class="p">(</span><span class="nb">second </span><span class="nv">pair</span><span class="p">)))</span>
+                    <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="mi">1</span> <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">)))))</span>
+<span class="p">(</span><span class="mi">3</span> <span class="mi">15</span> <span class="mi">35</span><span class="p">)</span>
+</code></pre>
+<p>Getting a bit unwieldy, isn’t it? Only one final step: sum all those products.
+We’ll adjust the <code>take</code> to include the first 1000, not the first 3, elements.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">reduce </span><span class="nv">+</span>
+               <span class="p">(</span><span class="nb">take </span><span class="mi">1000</span>
+                     <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">pair</span><span class="p">]</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="nb">first </span><span class="nv">pair</span><span class="p">)</span> <span class="p">(</span><span class="nb">second </span><span class="nv">pair</span><span class="p">)))</span>
+                          <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="mi">1</span>
+                                    <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span>
+                                            <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">)))))</span>
+<span class="mi">1335333000</span>
+</code></pre>
+<p>The sum of the first thousand products of consecutive pairs of the odd integers
+starting at 0. See how each part leads to the next? This expression looks a lot
+like the way we phrased the problem in English–but both English and Lisp
+expressions are sort of backwards, in a way. The part that <em>happens first</em>
+appears <em>deepest</em>, <em>last</em>, in the expression. In a chain of reasoning like
+this, it’d be nicer to write it in order.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="mi">0</span>
+            <span class="p">(</span><span class="nb">iterate </span><span class="nv">inc</span><span class="p">)</span>
+            <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span><span class="p">)</span>
+            <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">pair</span><span class="p">]</span>
+                   <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="nb">first </span><span class="nv">pair</span><span class="p">)</span> <span class="p">(</span><span class="nb">second </span><span class="nv">pair</span><span class="p">))))</span>
+            <span class="p">(</span><span class="nb">take </span><span class="mi">1000</span><span class="p">)</span>
+            <span class="p">(</span><span class="nb">reduce </span><span class="nv">+</span><span class="p">))</span>
+<span class="mi">1335333000</span>
+</code></pre>
+<p>Much easier to read: now everything flows in order, from top to bottom, and
+we’ve flattened out the deeply nested expressions into a single level. This is
+how object-oriented languages structure their expressions: as a chain of
+function invocations, each acting on the previous value.</p>
+<p>But how is this possible? Which expression gets evaluated first? <code>(take 1000)</code>
+isn’t even a valid call–where’s its second argument? How are <em>any</em> of these
+forms evaluated?</p>
+<p>What kind of arcane function <em>is</em> <code>-&gt;&gt;</code>?</p>
+<p>All these mysteries, and more, in <a href="/posts/305-clojure-from-the-ground-up-macros">Chapter 5: Macros</a>.</p>
+<h2><a href="#problems" id="problems">Problems</a></h2>
+<ol>
+<li>Write a function to find out if a string is a palindrome–that is, if it
+looks the same forwards and backwards.</li>
+<li>Find the number of ’c’s in “abracadabra”.</li>
+<li>Write your own version of <code>filter</code>.</li>
+<li>Find the first 100 prime numbers: 2, 3, 5, 7, 11, 13, 17, ….</li>
+</ol>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1742"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/ab3859e14af1de8343e3dd7cb825aa4e?r=pg&s=96&d=identicon" alt="Bridget" title="Bridget" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Bridget
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1742">
+            <time datetime="Nov 18, 2013, 11:59:25 AM" pubdate>
+              2013-11-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you! This is a great resource. Please keep it going. Let us know how we can help support you.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1744"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8309770d0c07a8fb7c8d0009c1a13bae?r=pg&s=96&d=identicon" alt="Greg" title="Greg" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Greg
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1744">
+            <time datetime="Nov 18, 2013, 1:55:37 PM" pubdate>
+              2013-11-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Are you sure the implementation of inc-more is correct? I believe it should call itself recursively instead of inc-first.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1745"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1745">
+            <time datetime="Nov 18, 2013, 4:10:45 PM" pubdate>
+              2013-11-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks Greg, that is a typo. Fixed now. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1749"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="wuschel" title="wuschel" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            wuschel
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1749">
+            <time datetime="Nov 21, 2013, 6:00:02 PM" pubdate>
+              2013-11-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you for posting this.</p>
+
+<p>I am looking into Lisp based languages these days, and as such I find it always good to get more basic information on language semantics.</p>
+
+<p>There are a couple of things however that make a transition to Clojure very hard, and I think it would do some good if more information about these obstacles could be written down:</p>
+
+<p>1) A lot of work needs to be invested to get a IDE going. I wasted a lot of time with emacs and Sublime Text 2/SublimeREPL before settling for Light Table. Note: I find the first two choices to be excellent editors, it is just that it is hard to get them going the way one wants to.</p>
+
+<p>2) The JVM is said to be one of Clojures greatest assets. For me - I started programming with Python - reading java lingo error tracebacks and browsing the source code of JVM packages is very unpleasent experience.</p>
+
+<p>An introduction on how to tackle the JVM library ‘problem’ in an efficient way a la Python would be great.</p>
+
+<p>3) Compilation to JAR, running a service on GAE/Amazon without loosing much time on JVM startup and other practical things might be a nice to have in your guide.</p>
+
+<p>4) Since multithreading is one of the key characteristics that sets Clojure apart from other lisp/scheme based languages e.g. the easy but great Chicken Scheme, it would be great to have a good look on parallel computing in the tutorial.</p>
+
+<p>Cheers!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1750"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/1788568147f6e1540bd46ae7b2792571?r=pg&s=96&d=identicon" alt="Bryan Lott" title="Bryan Lott" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Bryan Lott
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1750">
+            <time datetime="Nov 22, 2013, 2:37:20 PM" pubdate>
+              2013-11-22
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you for posting this!!!  This is the first tutorial I’ve done on Clojure that I feel has actually gotten me comfortable with the language.  Can’t wait for the next installment :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1751"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e02e10bf82e7b1eee699a9d8631b752f?r=pg&s=96&d=identicon" alt="John Sanda" title="John Sanda" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            John Sanda
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1751">
+            <time datetime="Nov 23, 2013, 1:10:57 PM" pubdate>
+              2013-11-23
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is a great series. Content and delivery are both excellent! I have one question on the section about the infseq lazy sequence. How come that couldn’t simply be expressed as (take 10 (iterate inc 0))?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1752"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0484037770a20f913d97a865eb3322ad?r=pg&s=96&d=identicon" alt="Boyan Stoyanov" title="Boyan Stoyanov" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://www.boyanstoyanov.com/" rel="nofollow">
+              Boyan Stoyanov
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1752">
+            <time datetime="Nov 23, 2013, 2:00:37 PM" pubdate>
+              2013-11-23
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>As a beginner in Clojure (and LISP in general), I could say that this is the most inspiring tutorial I know of for now! Looking forward for the next article.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1754"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="" title="" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            anonymous
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1754">
+            <time datetime="Nov 27, 2013, 2:33:05 PM" pubdate>
+              2013-11-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>How come that couldn’t simply be expressed as (take 10 (iterate inc 0))?</p>
+</blockquote>
+
+<p>Just demonstrating that lazy operations can be chained together. We’ll talk more about execution order and side effects in a later chapter. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1765"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/85847e68ae13eeb341e5e3add7bb3633?r=pg&s=96&d=identicon" alt="Metin Amiroff" title="Metin Amiroff" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://Amiroff.com" rel="nofollow">
+              Metin Amiroff
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1765">
+            <time datetime="Dec 6, 2013, 9:43:58 AM" pubdate>
+              2013-12-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Wow, what an expressive and powerful language Clojure is! The last code example really nailed it for me. Thanks for these series, as others already pointed out, they’re the best on the net. Keep them coming please…</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1786"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/47c852fc2e90f1a8485472950de2dfc5?r=pg&s=96&d=identicon" alt="Harish N" title="Harish N" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Harish N
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1786">
+            <time datetime="Dec 22, 2013, 3:40:09 PM" pubdate>
+              2013-12-22
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you for this Clojure series
+The exercises are also a great help as they do test one’s learnings</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1794"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/76a48cdbd74de8da5e8bc417a1b84fbe?r=pg&s=96&d=identicon" alt="Scott Feeney" title="Scott Feeney" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://scott.mn" rel="nofollow">
+              Scott Feeney
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1794">
+            <time datetime="Dec 24, 2013, 9:14:33 PM" pubdate>
+              2013-12-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey, great tutorial! I’ve been programming Clojure for a little while, but I’m always looking for resources I can point people to who want to learn, and this is perfect. You also mentioned a few neat functions I didn’t know about (split-with, map-indexed, reductions, and reduced).</p>
+
+<p>If you’ll pardon my nitpicking, I believe the solution to the problem under “Putting it all together” is incorrect. You state the problem as relating to “consecutive pairs of the first 1000 odd integers”, but your code operates on “the first 1000 consecutive pairs of odd integers”. That is, you include the pair ‘(1999 2001), even though 2001 is the 1001st odd integer. This could be fixed either by changing the problem statement, or by moving “(take 1000)” before/inside the “(partition …)”, yielding the answer 1331333001.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1797"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/08cff047d246096cee251b541594a52f?r=pg&s=96&d=identicon" alt="Marko Bonaci" title="Marko Bonaci" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://github.com/mbonaci" rel="nofollow">
+              Marko Bonaci
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1797">
+            <time datetime="Jan 1, 2014, 7:30:27 AM" pubdate>
+              2014-01-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I stumbled upon this tutorial via your superb talks on distributed systems. 
+Now I’m learning Clojure and currently going through “The joy of Clojure” book. </p>
+
+<p>IMHO, <code>recur</code> would fit so nicely within the recursion topic. It’s interesting because I never came across something similar in Java, Scala nor (of course) in JS (maybe it’s there somewhere, but it’s certainly not widely used).</p>
+
+<p>BTW, inspiring tutorial intro.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1809"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/2deb4308b31391e3fe3b55cb3116bb6f?r=pg&s=96&d=identicon" alt="Tim McCoy" title="Tim McCoy" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Tim McCoy
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1809">
+            <time datetime="Jan 12, 2014, 12:56:16 PM" pubdate>
+              2014-01-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Well I am new to Clojure. I started with “Clojure Programming” - but this introduction is just what I was looking for. 
+Suggested edit - “The type map relates keys to values.” perhaps could read “The type map relates a set of keys to list of values.”</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1821"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="karri" title="karri" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            karri
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1821">
+            <time datetime="Feb 17, 2014, 10:38:10 AM" pubdate>
+              2014-02-17
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Brilliant. Excellent series on introduction to clojure.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1848"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/c9c5ec4a938031d6d914b86c359be743?r=pg&s=96&d=identicon" alt="Zvi" title="Zvi" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://twitter.com/nivertech" rel="nofollow">
+              Zvi
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1848">
+            <time datetime="Mar 19, 2014, 5:55:37 PM" pubdate>
+              2014-03-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>What’s more idiomatic:</p>
+
+<p>(fn <a rel="nofollow">pair</a> (second pair))</p>
+
+<p>or</p>
+
+<p>#(apply * %)</p>
+
+<p>?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1849"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/1aab36c9c6bcd7962cb23f7114bae38a?r=pg&s=96&d=identicon" alt="Marc" title="Marc" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://github.com/falzm" rel="nofollow">
+              Marc
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1849">
+            <time datetime="Mar 21, 2014, 7:47:14 AM" pubdate>
+              2014-03-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi Kyle</p>
+
+<p>Thank you for these very nice series of article on Clojure. Could you give us “the” solution — or the more idiomatic one — to the problems you list at the end of this article? I started solving them, but I’m kind of stuck on the third  :/ <a href="https://gist.github.com/falzm/9543903" rel="nofollow">https://gist.github.com/falzm/9543903</a></p>
+
+<p>Cheers,</p>
+
+<p>m.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1894"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1894">
+            <time datetime="Jun 9, 2014, 1:58:13 PM" pubdate>
+              2014-06-09
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Marc: Your version is just fine for this stage of the book. More idiomatically, you can use (mapcat …) in place of (apply concat (map …)). Probably the <em>cleanest</em> solution given the tools we’ve explored so far in the book would be</p>
+<code class="block"><span class="p">(</span><span class="kd">defn </span><span class="nb">filter </span><span class="p">[</span><span class="nv">f</span> <span class="nv">coll</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">reduce </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">results</span> <span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">f</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">results</span> <span class="nv">x</span><span class="p">)</span> <span class="nv">results</span><span class="p">))</span> <span class="nv">coll</span><span class="p">))</span>
+</code>
+<p>But if I were writing this in idiomatic Clojure, I’d use a recursive lazy-seq, which we haven’t covered yet. ;-)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1943"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="ajay" title="ajay" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            ajay
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1943">
+            <time datetime="Aug 6, 2014, 2:06:17 AM" pubdate>
+              2014-08-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you for this great tutorial.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1950"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/56aebe7431dc8cfec47697da54426a21?r=pg&s=96&d=identicon" alt="larrylv" title="larrylv" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://larrylv.com" rel="nofollow">
+              larrylv
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1950">
+            <time datetime="Sep 6, 2014, 5:29:27 AM" pubdate>
+              2014-09-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi Kyle</p>
+
+<p>I think your solution given above might be missing a default value for <code>results</code>.</p>
+<code class="block"><span class="p">(</span><span class="kd">defn </span><span class="nv">my-filter</span> <span class="p">[</span><span class="nv">f</span> <span class="nv">coll</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">reduce </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">results</span> <span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">f</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">results</span> <span class="nv">x</span><span class="p">)</span> <span class="nv">results</span><span class="p">))</span> <span class="p">[]</span> <span class="nv">coll</span><span class="p">))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1951"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/56aebe7431dc8cfec47697da54426a21?r=pg&s=96&d=identicon" alt="larrylv" title="larrylv" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://larrylv.com" rel="nofollow">
+              larrylv
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1951">
+            <time datetime="Sep 6, 2014, 5:31:05 AM" pubdate>
+              2014-09-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>And, just forgot to say. Thanks for this series of article on Clojure! Learned a lot from them.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1974"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="m" title="m" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            m
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1974">
+            <time datetime="Oct 30, 2014, 9:51:37 PM" pubdate>
+              2014-10-30
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is my favorite intro to recursion example I’ve seen so far!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1980"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0e129c3fa7d426e1fe73fed159ac70b4?r=pg&s=96&d=identicon" alt="nowherekai" title="nowherekai" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            nowherekai
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-1980">
+            <time datetime="Nov 7, 2014, 9:20:53 PM" pubdate>
+              2014-11-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>these articles about clojure are awesome,  most clojure book is hard to study for beginners of clojure, help me a lot.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2051"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="hil" title="hil" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            hil
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2051">
+            <time datetime="Jan 23, 2015, 6:08:41 AM" pubdate>
+              2015-01-23
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>great!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2159"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f6992d2102fd30c7e2bd9d4d73a03df8?r=pg&s=96&d=identicon" alt="Ron" title="Ron" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ron
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2159">
+            <time datetime="Mar 19, 2015, 1:07:49 AM" pubdate>
+              2015-03-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great Work.  I can tell you it’s not easy to find the clear explanations for a newbie. Most people lose track of what you need to know first when you don’t know.  Their stuff is good once your going but it’s a rare teacher who can GET you going so you start to intuit how programming goes.  Many THX</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2163"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a140ea65cedaf06eae65aed3bbf15641?r=pg&s=96&d=identicon" alt="ignace" title="ignace" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            ignace
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2163">
+            <time datetime="Mar 21, 2015, 11:28:25 AM" pubdate>
+              2015-03-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>-&gt;&gt;
+(Kyle)
+(Awesome)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2193"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/c5f3e1b6edacfb4d44a3af35b24e8313?r=pg&s=96&d=identicon" alt="joe" title="joe" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            joe
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2193">
+            <time datetime="Mar 29, 2015, 1:02:24 PM" pubdate>
+              2015-03-29
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey,
+I was wondering about tail optimization since Clojure is based on the JVM.
+So I tried the “transform-all” example on a very big vector and as excepted I got a StackOverflowError.
+I’ve since read that “recur” is aimed to circumvent this but I’m still learning about it so I can’t explain any further :)
+Maybe that’s something that could interest your readers (or it is mentionned later in the tutorial and haven’t read it yet)</p>
+
+<p>Un gros merci pour ce beau tutoriel !
+Jo </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2466"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/6250ca31b04574c3ca2e4226a05706c7?r=pg&s=96&d=identicon" alt="Ashutosh Pandit" title="Ashutosh Pandit" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ashutosh Pandit
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2466">
+            <time datetime="Jul 11, 2015, 9:26:52 AM" pubdate>
+              2015-07-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is how tutorials should be. Precise and crisp!
+Thank you! This is my official “learn clojure in 3 days” guide :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2474"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7fb0d2d54d7c059e5eb3eda8378dc33e?r=pg&s=96&d=identicon" alt="Betty" title="Betty" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Betty
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2474">
+            <time datetime="Aug 3, 2015, 6:33:44 AM" pubdate>
+              2015-08-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi guys,</p>
+
+<p>Here are my solutions to the problems. Hope some of you find them helpful.</p>
+
+<p>1.</p>
+
+<p>(defn palindrome? [x]</p>
+<code class="block">(= (seq x) (reverse (seq x)) )</code>
+<p>)</p>
+
+<p>2.</p>
+
+<p>(
+  (frequencies (seq “abracadabra”))
+  \c
+)</p>
+
+<p>3.</p>
+
+<p>(defn my-filter [f x]
+    (reduce (fn [output element]</p>
+<code class="block">(if (f element)
+      (conj output element)
+      output
+    )
+  )
+[]
+x
+)</code>
+<p>)</p>
+
+<p>4.</p>
+
+<p>(defn isprime? <a rel="nofollow">n</a>) (range 2 n)))))</p>
+
+<p>(take  10 (filter isprime? (iterate inc 0)))</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2492"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Jeff" title="Jeff" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jeff
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2492">
+            <time datetime="Aug 19, 2015, 8:06:13 PM" pubdate>
+              2015-08-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi Kyle,</p>
+
+<p>Thanks for the amazing clojure tutorial; I’m really enjoying it so far!</p>
+
+<p>One question about the complex problem at the end of this one: I’m pretty sure that in your solution, you’re taking the first 1000 pairs of odd integers rather than pairing the first 1000 odd integers. From my understanding, the solution to the problem as stated should read:</p>
+<code class="block"><span class="p">(</span><span class="nb">reduce + </span>
+  <span class="p">(</span><span class="nb">map </span>
+    <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">pair</span><span class="p">]</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="nb">first </span><span class="nv">pair</span><span class="p">)</span> <span class="p">(</span><span class="nb">second </span><span class="nv">pair</span><span class="p">)))</span> 
+    <span class="p">(</span><span class="nf">partition</span> <span class="mi">2</span> <span class="mi">1</span> 
+      <span class="p">(</span><span class="nb">take </span><span class="mi">1000</span> 
+        <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span> 
+          <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">))))))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2567"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="John C" title="John C" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            John C
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2567">
+            <time datetime="Nov 21, 2015, 8:03:57 AM" pubdate>
+              2015-11-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I also want to say how much I appreciate these tutorials, this sequence-page alone has given me a lot of insight into how Clojure works. (In fact it’s the only page I’ve read so far, it came up when I was googling sequences - I definitely look forward to the rest of the articles).</p>
+
+<p>I thought I’d post my solution to writing a filter also - not because it’s especially <em>good</em> code, but because it’s bad - or at least very <em>procedural</em>. </p>
+<code class="block"><span class="p">(</span><span class="kd">defn </span><span class="nv">my_filter</span> <span class="p">[</span><span class="nv">func</span> <span class="nv">coll</span><span class="p">]</span>
+    <span class="p">(</span><span class="k">loop </span><span class="p">[</span><span class="nv">output</span> <span class="p">[]</span> <span class="nv">new_coll</span> <span class="nv">coll</span><span class="p">]</span>
+        <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">empty?</span> <span class="nv">new_coll</span><span class="p">)</span>
+            <span class="p">(</span><span class="nb">println </span><span class="s">"output is "</span> <span class="nv">output</span><span class="p">)</span>
+            <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">func</span> <span class="p">(</span><span class="nb">first </span><span class="nv">new_coll</span><span class="p">))</span>
+                <span class="p">(</span><span class="nf">recur</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">output</span> <span class="p">(</span><span class="nb">first </span><span class="nv">new_coll</span><span class="p">))</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">new_coll</span><span class="p">))</span>
+                <span class="p">(</span><span class="nf">recur</span> <span class="nv">output</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">new_coll</span><span class="p">))))))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2644"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="not chuck" title="not chuck" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            not chuck
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2644">
+            <time datetime="May 14, 2016, 4:34:09 PM" pubdate>
+              2016-05-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Check for palindrome:</p>
+
+<p>(defn Palin? <a rel="nofollow">s</a>))))</p>
+
+<p>Returns true if the word is a palindrome, otherwise false.</p>
+
+<p>Lovin' the tutorial. Coming from over 20 years of C style syntax this is really easing the learning curve. Thanks!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2648"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="" title="" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            anonymous
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2648">
+            <time datetime="May 14, 2016, 4:38:15 PM" pubdate>
+              2016-05-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <code class="block"><span class="p">(</span><span class="kd">defn </span><span class="nv">Palin?</span> <span class="p">[</span><span class="nv">s</span><span class="p">]</span> <span class="p">(</span><span class="nb">zero? </span><span class="p">(</span><span class="nf">compare</span> <span class="nv">s</span> <span class="p">(</span><span class="nb">apply str </span><span class="p">(</span><span class="nb">reverse </span><span class="nv">s</span><span class="p">)))))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2649"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="not chuck" title="not chuck" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            not chuck
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2649">
+            <time datetime="May 14, 2016, 4:40:59 PM" pubdate>
+              2016-05-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Sorry for making such a mess above. I failed to read the fine print before posting and then didn’t follow through on the first attempt.</p>
+
+<p>Still lovin' the tutorial…</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2672"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/5527f305f7e0912de4e7ce197e1bc03a?r=pg&s=96&d=identicon" alt="leordev" title="leordev" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://leordev.github.io/portfolio" rel="nofollow">
+              leordev
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2672">
+            <time datetime="Jul 6, 2016, 9:56:24 PM" pubdate>
+              2016-07-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey Not Chuck, why not just do this?</p>
+
+<p>(defn Palin? <a rel="nofollow">s</a>)))</p>
+
+<p>;)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2673"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/5527f305f7e0912de4e7ce197e1bc03a?r=pg&s=96&d=identicon" alt="leordev" title="leordev" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://leordev.github.io/portfolio" rel="nofollow">
+              leordev
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2673">
+            <time datetime="Jul 6, 2016, 9:59:23 PM" pubdate>
+              2016-07-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>(sorry for the mess above) This is the correct piece of code to simplify your function:</p>
+<code class="block"><span class="p">(</span><span class="kd">defn </span><span class="nv">palin?</span>
+  <span class="s">"returns true if its a palindrome, otherwise false"</span>
+  <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">= </span><span class="nv">x</span> <span class="p">(</span><span class="nb">apply str </span><span class="p">(</span><span class="nb">reverse </span><span class="nv">x</span><span class="p">))))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2701"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8ae1c0eb4d330eb21f2f348c164dfc7b?r=pg&s=96&d=identicon" alt="Chad Stovern" title="Chad Stovern" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://www.chadstovern.com" rel="nofollow">
+              Chad Stovern
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2701">
+            <time datetime="Oct 7, 2016, 2:37:21 PM" pubdate>
+              2016-10-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey Kyle, loving this series so far.  Any feedback on my version of filter?</p>
+<code class="block"><span class="p">(</span><span class="kd">defn </span><span class="nv">my-filter</span>
+  <span class="s">"takes a predicate and a collection,</span>
+<span class="s">   applies the predicate to each item in the collection,</span>
+<span class="s">   returns a collection of all items that return true."</span>
+  <span class="p">[</span><span class="nv">predicate</span> <span class="nv">collection</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">item</span> <span class="p">(</span><span class="nb">first </span><span class="nv">collection</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">true-item</span> <span class="p">(</span><span class="nf">predicate</span> <span class="nv">item</span><span class="p">)]</span>
+      <span class="p">(</span><span class="nb">cons </span><span class="nv">item</span> <span class="p">(</span><span class="nf">my-filter</span> <span class="nv">predicate</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">collection</span><span class="p">)))</span>
+      <span class="p">(</span><span class="nf">my-filter</span> <span class="nv">predicate</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">collection</span><span class="p">)))</span>
+    <span class="nv">collection</span><span class="p">))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2702"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8ae1c0eb4d330eb21f2f348c164dfc7b?r=pg&s=96&d=identicon" alt="Chad Stovern" title="Chad Stovern" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://www.chadstovern.com" rel="nofollow">
+              Chad Stovern
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2702">
+            <time datetime="Oct 7, 2016, 2:48:21 PM" pubdate>
+              2016-10-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>^ just realized i wasn’t using <code>true-item</code> and changed that <code>if-let</code> to an <code>if</code></p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2703"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2703">
+            <time datetime="Oct 7, 2016, 6:43:45 PM" pubdate>
+              2016-10-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Looks good, Chad. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-2807"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/c657555ce4338dd8a5e8605cbf0460f0?r=pg&s=96&d=identicon" alt="Bansari" title="Bansari" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Bansari
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2807">
+            <time datetime="Apr 4, 2017, 3:34:06 PM" pubdate>
+              2017-04-04
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you so much for sharing this tutorial. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2946"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/acb14839281bb4dd08b561eccfa2f529?r=pg&s=96&d=identicon" alt="Radu" title="Radu" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Radu
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2946">
+            <time datetime="Apr 2, 2018, 12:06:09 PM" pubdate>
+              2018-04-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Awesome guide! Thanks!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2965"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/58e8c06ae19b3b6d880e097cf2460eda?r=pg&s=96&d=identicon" alt="Lutz" title="Lutz" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Lutz
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2965">
+            <time datetime="Jul 5, 2018, 7:52:25 AM" pubdate>
+              2018-07-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks again for the nice tutorial.</p>
+
+<p>I want to suggest an improvement that is purely aesthetic (subject to personal taste).</p>
+
+<p>I suggest replacing the sequence in this expression:
+<code>(take 10 (iterate (fn [x] (if (odd? x) (+ 1 x) (/ x 2))) 10))</code>
+by the much more interesting <a href="https://en.wikipedia.org/wiki/Collatz_conjecture" rel="nofollow">Collatz sequence</a>:
+<code>(take 10 (iterate (fn [x] (if (odd? x) (+ 1 (* 3 x)) (/ x 2))) 10))</code></p>
+
+<p>We don’t know if this sequence ends in <code>...2 1 2 1 2 1</code> for each initial value eventually, whereas for the first sequence that is pretty easy to prove.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2973"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/78f1e9630a8ec156aaab02737e772a39?r=pg&s=96&d=identicon" alt="bartuka" title="bartuka" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://bartuka.com" rel="nofollow">
+              bartuka
+            </a>
+          
+          
+          on
+          <a href="/posts/304-clojure-from-the-ground-up-sequences#comment-2973">
+            <time datetime="Aug 5, 2018, 9:49:26 PM" pubdate>
+              2018-08-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi, very nice tutorial!! Thanks for very clear approach in the right pace.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="304" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="eeGVEdO9KjEPf1pSKVGutI3JU64gFttts/EKdoprXxA1GdY8SusDAX2VbaUc7ntEZ30HcBLyda2+nosu" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

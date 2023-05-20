@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: macros</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/305-clojure-from-the-ground-up-macros" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/305-clojure-from-the-ground-up-macros">Clojure from the ground up: macros</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Nov 26, 2013, 2:03:55 AM" pubdate>
+          2013-11-26
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>In <a href="/posts/301-clojure-from-the-ground-up-welcome">Chapter 1</a>, I asserted that the grammar of Lisp is uniform: every expression is a list, beginning with a verb, and followed by some arguments. Evaluation proceeds from left to right, and every element of the list must be evaluated <em>before</em> evaluating the list itself. Yet we just saw, at the end of <a href="/posts/304-clojure-from-the-ground-up-sequences">Sequences</a>, an expression which seemed to <em>violate</em> these rules.</p>
+<p>Clearly, this is not the whole story.</p>
+<h2><a href="#macroexpansion" id="macroexpansion">Macroexpansion</a></h2>
+<p>There is another phase to evaluating an expression; one which takes place before the rules we’ve followed so far. That process is called <em>macro-expansion</em>. During macro-expansion, the <em>code itself</em> is restructured according to some set of rules–rules which you, the programmer, can define.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmacro </span><span class="nv">ignore</span>
+  <span class="s">&quot;Cancels the evaluation of an expression, returning nil instead.&quot;</span>
+  <span class="p">[</span><span class="nv">expr</span><span class="p">]</span>
+  <span class="nv">nil</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">ignore</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">))</span>
+<span class="nv">nil</span>
+</code></pre>
+<p><code>defmacro</code> looks a lot like <code>defn</code>: it has a name, an optional documentation string, an argument vector, and a body–in this case, just <code>nil</code>. In this case, it looks like it simply ignored the expr <code>(+ 1 2)</code> and returned <code>nil</code>–but it’s actually deeper than that. <code>(+ 1 2)</code> was <em>never evaluated at all</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="mi">1</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="nv">x</span>
+<span class="mi">1</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">ignore</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="mi">2</span><span class="p">))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">x</span>
+<span class="mi">1</span>
+</code></pre>
+<p><code>def</code> should have defined <code>x</code> to be <code>2</code> <em>no matter what</em>–but that never happened. At macroexpansion time, the expression <code>(ignore (+ 1 2))</code> was <em>replaced</em> by the expression <code>nil</code>, which was then evaluated to <code>nil</code>. Where functions rewrite <em>values</em>, macros rewrite <em>code</em>.</p>
+<p>To see these different layers in play, let’s try a macro which reverses the order of arguments to a function.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmacro </span><span class="nv">rev</span> <span class="p">[</span><span class="nv">fun</span> <span class="o">&amp;</span> <span class="nv">args</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">cons </span><span class="nv">fun</span> <span class="p">(</span><span class="nb">reverse </span><span class="nv">args</span><span class="p">)))</span>
+</code></pre>
+<p>This macro, named <code>rev</code>, takes one mandatory argument: a function. Then it takes any number of arguments, which are collected in the list <code>args</code>. It constructs a new list, starting with the function, and followed by the arguments, in reverse order.</p>
+<p>First, we macro-expand:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">macroexpand </span><span class="o">'</span><span class="p">(</span><span class="nf">rev</span> <span class="nb">str </span><span class="s">&quot;hi&quot;</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="p">(</span><span class="nb">str </span><span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)</span> <span class="s">&quot;hi&quot;</span><span class="p">)</span>
+</code></pre>
+<p>So the <code>rev</code> macro took <code>str</code> as the function, and <code>&quot;hi&quot;</code> and <code>(+ 1 2)</code> as the arguments; then constructed a new list with the same function, but the arguments reversed. When we <em>evaluate</em> that expression, we get:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">eval </span><span class="p">(</span><span class="nb">macroexpand </span><span class="o">'</span><span class="p">(</span><span class="nf">rev</span> <span class="nb">str </span><span class="s">&quot;hi&quot;</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">))))</span>
+<span class="s">&quot;3hi&quot;</span>
+</code></pre>
+<p><code>macroexpand</code> takes an expression and returns that expression with all macros expanded. <code>eval</code> takes an expression and evaluates it. When you type an unquoted expression into the REPL, Clojure macroexpands, then evaluates. Two stages–the first transforming <em>code</em>, the second transforming <em>values</em>.</p>
+<h2><a href="#across-languages" id="across-languages">Across languages</a></h2>
+<p>Some languages have a <em>metalanguage</em>: a language for extending the language itself. In C, for example, macros are implemented by the <a href="http://www.rt-embedded.com/blog/archives/macros-in-the-c-programming-language/">C preprocessor</a>, which has its own syntax for defining expressions, matching patterns in the source code’s text, and replacing that text with other text. But that preprocessor is <em>not</em> C–it is a separate language entirely, with special limitations. In Clojure, the metalanguage is <em>Clojure itself</em>–the full power of the language is available to restructure programs. This is called a <em>procedural</em> macro system. Some Lisps, like Scheme, use a macro system based on templating expressions, and still others use more powerful models like <em>f-expressions</em>–but that’s a discussion for a later time.</p>
+<p>There is another key difference between Lisp macros and many other macro systems: in Lisp, the macros operate on <em>expressions</em>: the data structure of the code itself. Because Lisp code is <em>written</em> explicitly as a data structure, a tree made out of lists, this transformation is natural. You can <em>see</em> the structure of the code, which makes it easy to reason about its transformation. In the C preprocessor, macros operate only on <em>text</em>: there is no understanding of the underlying syntax. Even in languages like Scala which have syntactic macros, the fact that the code looks <em>nothing like</em> the syntax tree makes it <a href="http://docs.scala-lang.org/overviews/macros/overview.html">cumbersome</a> to truly restructure expressions.</p>
+<p>When people say that Lisp’s syntax is “more elegant”, or “more beautiful”, or “simpler”, this is part of what they they mean. By choosing to represent the program directly as a a data structure, we make it much easier to define complex transformations of code itself.</p>
+<h2><a href="#defining-new-syntax" id="defining-new-syntax">Defining new syntax</a></h2>
+<p>What kind of transformations are best expressed with macros?</p>
+<p>Most languages encode special syntactic forms–things like “define a function”, “call a function”, “define a local variable”, “if this, then that”, and so on. In Clojure, these are called <em>special forms</em>. <code>if</code> is a special form, for instance. Its definition is built into the language core itself; it cannot be reduced into smaller parts.</p>
+<pre><code><span></span><span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&lt; </span><span class="mi">3</span> <span class="nv">x</span><span class="p">)</span>
+  <span class="s">&quot;big&quot;</span>
+  <span class="s">&quot;small&quot;</span><span class="p">)</span>
+</code></pre>
+<p>Or in Javascript:</p>
+<pre><code><span></span><span class="k">if</span> <span class="p">(</span><span class="mi">3</span> <span class="o">&lt;</span> <span class="nx">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="s2">&quot;big&quot;</span><span class="p">;</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="s2">&quot;small&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre>
+<p>In Javascript, Ruby, and many other languages, these special forms are <em>fixed</em>. You cannot define your own syntax. For instance, one cannot define <code>or</code> in a language like JS or Ruby: it must be defined <em>for</em> you by the language author.</p>
+<p>In Clojure, <code>or</code> is just a macro.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">source</span> <span class="nv">or</span><span class="p">)</span>
+<span class="p">(</span><span class="kd">defmacro </span><span class="nv">or</span>
+  <span class="s">&quot;Evaluates exprs one at a time, from left to right. If a form</span>
+<span class="s">  returns a logical true value, or returns that value and doesn't</span>
+<span class="s">  evaluate any of the other expressions, otherwise it returns the</span>
+<span class="s">  value of the last expression. (or) returns nil.&quot;</span>
+  <span class="p">{</span><span class="ss">:added</span> <span class="s">&quot;1.0&quot;</span><span class="p">}</span>
+  <span class="p">([]</span> <span class="nv">nil</span><span class="p">)</span>
+  <span class="p">([</span><span class="nv">x</span><span class="p">]</span> <span class="nv">x</span><span class="p">)</span>
+  <span class="p">([</span><span class="nv">x</span> <span class="o">&amp;</span> <span class="nv">next</span><span class="p">]</span>
+      <span class="o">`</span><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">or#</span> <span class="o">~</span><span class="nv">x</span><span class="p">]</span>
+         <span class="p">(</span><span class="k">if </span><span class="nv">or#</span> <span class="nv">or#</span> <span class="p">(</span><span class="nb">or </span><span class="o">~@</span><span class="nv">next</span><span class="p">)))))</span>
+<span class="nv">nil</span>
+</code></pre>
+<p>That <code>`</code> operator–that’s called <em>syntax-quote</em>. It works just like regular quote–preventing evaluation of the following list–but with a twist: we can escape the quoting rule and substitute in regularly evaluated expressions using <em>unquote</em> (<code>~</code>), and <em>unquote-splice</em> (<code>~@</code>). Think of a syntax-quoted expression like a <em>template</em> for code, with some parts filled in by evaluated forms.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="mi">2</span><span class="p">]</span> <span class="o">`</span><span class="p">(</span><span class="nb">inc </span><span class="nv">x</span><span class="p">))</span>
+<span class="p">(</span><span class="nf">clojure.core/inc</span> <span class="nv">user/x</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="mi">2</span><span class="p">]</span> <span class="o">`</span><span class="p">(</span><span class="nb">inc </span><span class="o">~</span><span class="nv">x</span><span class="p">))</span>
+<span class="p">(</span><span class="nf">clojure.core/inc</span> <span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<p>See the difference? <code>~x</code> <em>substitutes</em> the value of x, instead of using <code>x</code> as an unevaluated symbol. This code is essentially just shorthand for something like</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="mi">2</span><span class="p">]</span> <span class="p">(</span><span class="nb">list </span><span class="ss">'clojure.core/inc</span> <span class="nv">x</span><span class="p">))</span>
+<span class="p">(</span><span class="nb">inc </span><span class="mi">2</span><span class="p">)</span>
+</code></pre>
+<p>… where we explicitly constructed a new list with the quoted symbol <code>'inc</code> and the current value of <code>x</code>. Syntax quote just makes it easier to read the code, since the quoted and expanded expressions have similar shapes.</p>
+<p>The <code>~@</code> unquote splice works just like <code>~</code>, except it explodes a list into <em>multiple</em> expressions in the resulting form:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="o">`</span><span class="p">(</span><span class="nf">foo</span> <span class="o">~</span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="nf">user/foo</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="nv">user=&gt;</span> <span class="o">`</span><span class="p">(</span><span class="nf">foo</span> <span class="o">~@</span><span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">])</span>
+<span class="p">(</span><span class="nf">user/foo</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p><code>~@</code> is particularly useful when a function or macro takes an <em>arbitrary</em> number of arguments. In the definition of <code>or</code>, it’s used to expand <code>(or a b c)</code> <em>recursively</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nb">macroexpand </span><span class="o">'</span><span class="p">(</span><span class="nb">or </span><span class="nv">a</span> <span class="nv">b</span> <span class="nv">c</span> <span class="nv">d</span><span class="p">)))</span>
+<span class="p">(</span><span class="nf">let*</span>
+ <span class="p">[</span><span class="nv">or__3943__auto__</span> <span class="nv">a</span><span class="p">]</span>
+ <span class="p">(</span><span class="k">if </span><span class="nv">or__3943__auto__</span> <span class="nv">or__3943__auto__</span> <span class="p">(</span><span class="nf">clojure.core/or</span> <span class="nv">b</span> <span class="nv">c</span> <span class="nv">d</span><span class="p">)))</span>
+</code></pre>
+<p>We’re using <code>pprint</code> (for “pretty print”) to make this expression easier to read. <code>(or a b c d)</code> is defined in terms of <em>if</em>: if the first element is truthy we return it; otherwise we evaluate <code>(or b c d)</code> instead, and so on.</p>
+<p>The final piece of the puzzle here is that weirdly named symbol: <code>or__3943__auto__</code>. That variable was <em>automatically generated</em> by Clojure, to prevent <em>conflicts</em> with an existing variable name. Because macros rewrite code, they have to be careful not to interfere with local variables, or it could get very confusing. Whenever we need a new variable in a macro, we use <code>gensym</code> to <em>generate a new symbol</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">gensym </span><span class="s">&quot;hi&quot;</span><span class="p">)</span>
+<span class="nv">hi326</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">gensym </span><span class="s">&quot;hi&quot;</span><span class="p">)</span>
+<span class="nv">hi329</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">gensym </span><span class="s">&quot;hi&quot;</span><span class="p">)</span>
+<span class="nv">hi332</span>
+</code></pre>
+<p>Each symbol is different! If we tack on a <code>#</code> to the end of a symbol in a syntax-quoted expression, it’ll be expanded to a particular gensym:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="o">`</span><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x#</span> <span class="mi">2</span><span class="p">]</span> <span class="nv">x#</span><span class="p">)</span>
+<span class="p">(</span><span class="nf">clojure.core/let</span> <span class="p">[</span><span class="nv">x__339__auto__</span> <span class="mi">2</span><span class="p">]</span> <span class="nv">x__339__auto__</span><span class="p">)</span>
+</code></pre>
+<p>Note that you can always escape this safety feature if you <em>want</em> to override local variables. That’s called <em>symbol capture</em>, or an <em>anaphoric</em> or <em>unhygenic</em> macro. To override local symbols, just use <code>~'foo</code> instead of <code>foo#</code>.</p>
+<p>With all the pieces on the board, let’s compare the <code>or</code> macro and its expansion:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defmacro </span><span class="nv">or</span>
+  <span class="s">&quot;Evaluates exprs one at a time, from left to right. If a form</span>
+<span class="s">  returns a logical true value, or returns that value and doesn't</span>
+<span class="s">  evaluate any of the other expressions, otherwise it returns the</span>
+<span class="s">  value of the last expression. (or) returns nil.&quot;</span>
+  <span class="p">{</span><span class="ss">:added</span> <span class="s">&quot;1.0&quot;</span><span class="p">}</span>
+  <span class="p">([]</span> <span class="nv">nil</span><span class="p">)</span>
+  <span class="p">([</span><span class="nv">x</span><span class="p">]</span> <span class="nv">x</span><span class="p">)</span>
+  <span class="p">([</span><span class="nv">x</span> <span class="o">&amp;</span> <span class="nv">next</span><span class="p">]</span>
+      <span class="o">`</span><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">or#</span> <span class="o">~</span><span class="nv">x</span><span class="p">]</span>
+         <span class="p">(</span><span class="k">if </span><span class="nv">or#</span> <span class="nv">or#</span> <span class="p">(</span><span class="nb">or </span><span class="o">~@</span><span class="nv">next</span><span class="p">)))))</span>
+
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nf">clojure.walk/macroexpand-all</span>
+                 <span class="o">'</span><span class="p">(</span><span class="nb">or </span><span class="p">(</span><span class="nf">mossy?</span> <span class="nv">stone</span><span class="p">)</span> <span class="p">(</span><span class="nf">cool?</span> <span class="nv">stone</span><span class="p">)</span> <span class="p">(</span><span class="nf">wet?</span> <span class="nv">stone</span><span class="p">))))</span>
+<span class="p">(</span><span class="nf">let*</span>
+ <span class="p">[</span><span class="nv">or__3943__auto__</span> <span class="p">(</span><span class="nf">mossy?</span> <span class="nv">stone</span><span class="p">)]</span>
+ <span class="p">(</span><span class="nf">if</span>
+  <span class="nv">or__3943__auto__</span>
+  <span class="nv">or__3943__auto__</span>
+  <span class="p">(</span><span class="nf">let*</span>
+   <span class="p">[</span><span class="nv">or__3943__auto__</span> <span class="p">(</span><span class="nf">cool?</span> <span class="nv">stone</span><span class="p">)]</span>
+   <span class="p">(</span><span class="k">if </span><span class="nv">or__3943__auto__</span> <span class="nv">or__3943__auto__</span> <span class="p">(</span><span class="nf">wet?</span> <span class="nv">stone</span><span class="p">)))))</span>
+</code></pre>
+<p>See how the macro’s syntax-quoted <code>(let ...</code> has the same shape as the resulting code? <code>or#</code> is expanded to a variable named <code>or__3943__auto__</code>, which is bound to the expression <code>(mossy? stone)</code>. If that variable is truthy, we return it. Otherwise, we (and here’s the recursive part) rebind <code>or__3943__auto__</code> to <code>(cool? stone)</code> and try again. If <em>that</em> fails, we fall back to evaluating <code>(wet? stone)</code>–thanks to the base case, the single-argument form of the <code>or</code> macro.</p>
+<h2><a href="#control-flow" id="control-flow">Control flow</a></h2>
+<p>We’ve seen that <code>or</code> is a macro written in terms of the special form <code>if</code>–and because of the way the macro is structured, it does <em>not</em> obey the normal execution order. In <code>(or a b c)</code>, only <code>a</code> is evaluated first–then, only if it is <code>false</code> or <code>nil</code>, do we evaluate <code>b</code>. This is called <em>short-circuiting</em>, and it works for <code>and</code> as well.</p>
+<p>Changing the order of evaluation in a language is called <em>control flow</em>, and lets programs make decisions based on varying circumstances. We’ve already seen <code>if</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">= </span><span class="mi">2</span> <span class="mi">2</span><span class="p">)</span> <span class="ss">:a</span> <span class="ss">:b</span><span class="p">)</span>
+<span class="ss">:a</span>
+</code></pre>
+<p><code>if</code> takes a predicate and two expressions, and only evaluates one of them, depending on whether the predicate evaluates to a truthy or falsey value. Sometimes you want to evaluate <em>more than one</em> expression in order. For this, we have <code>do</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">pos? </span><span class="mi">-5</span><span class="p">)</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;-5 is positive&quot;</span><span class="p">)</span>
+         <span class="p">(</span><span class="nf">do</span>
+           <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;-5 is negative&quot;</span><span class="p">)</span>
+           <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;Who would have thought?&quot;</span><span class="p">)))</span>
+<span class="s">&quot;-5 is negative&quot;</span>
+<span class="s">&quot;Who would have thought?&quot;</span>
+<span class="nv">nil</span>
+</code></pre>
+<p><code>prn</code> is a function which has a <em>side effect</em>: it prints a message to the screen, and returns <code>nil</code>. We wanted to print <em>two</em> messages, but <code>if</code> only takes a single expression per branch–so in our false branch, we used <code>do</code> to wrap up two <code>prn</code>s into a single expression, and evaluate them in order. <code>do</code> returns the value of the final expression, which happens to be <code>nil</code> here.</p>
+<p>When you only want to take one branch of an <code>if</code>, you can use <code>when</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">when </span><span class="nv">false</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="ss">:hi</span><span class="p">)</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="ss">:there</span><span class="p">))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">when </span><span class="nv">true</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="ss">:hi</span><span class="p">)</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="ss">:there</span><span class="p">))</span>
+<span class="ss">:hi</span>
+<span class="ss">:there</span>
+<span class="nv">nil</span>
+</code></pre>
+<p>Because there is only one path to take, <code>when</code> takes any number of expressions, and evaluates them only when the predicate is truthy. If the predicate evaluates to <code>nil</code> or <code>false</code>, <code>when</code> does not evaluate its body, and returns <code>nil</code>.</p>
+<p>Both <code>when</code> and <code>if</code> have complementary forms, <code>when-not</code> and <code>if-not</code>, which simply invert the sense of their predicate.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">when-not </span><span class="p">(</span><span class="nf">number?</span> <span class="s">&quot;a string&quot;</span><span class="p">)</span>
+         <span class="ss">:here</span><span class="p">)</span>
+<span class="ss">:here</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">if-not </span><span class="p">(</span><span class="nb">vector? </span><span class="p">(</span><span class="nb">list </span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">))</span>
+         <span class="ss">:a</span>
+         <span class="ss">:b</span><span class="p">)</span>
+<span class="ss">:a</span>
+</code></pre>
+<p>Often, you want to perform some operation, and if it’s truthy, re-use that value without recomputing it. For this, we have <code>when-let</code> and <code>if-let</code>. These work just like <code>when</code> and <code>let</code> combined.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">when-let </span><span class="p">[</span><span class="nv">x</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span><span class="p">)]</span>
+         <span class="p">(</span><span class="nb">str </span><span class="nv">x</span><span class="p">))</span>
+<span class="s">&quot;10&quot;</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">when-let </span><span class="p">[</span><span class="nv">x</span> <span class="p">(</span><span class="nb">first </span><span class="p">[])]</span>
+         <span class="p">(</span><span class="nb">str </span><span class="nv">x</span><span class="p">))</span>
+<span class="nv">nil</span>
+</code></pre>
+<p><code>while</code> evaluates an expression so long as its predicate is truthy. This is generally useful only for side effects, like <code>prn</code> or <code>def</code>; things that change the state of the world.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="mi">0</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">while</span> <span class="p">(</span><span class="nb">&lt; </span><span class="nv">x</span> <span class="mi">5</span><span class="p">)</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">prn </span><span class="nv">x</span><span class="p">)</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nb">inc </span><span class="nv">x</span><span class="p">)))</span>
+<span class="mi">0</span>
+<span class="mi">1</span>
+<span class="mi">2</span>
+<span class="mi">3</span>
+<span class="mi">4</span>
+<span class="nv">nil</span>
+</code></pre>
+<p><code>cond</code> (for “conditional”) is like a multiheaded <code>if</code>: it takes <em>any number</em> of test/expression pairs, and tries each test in turn. The first test which evaluates truthy causes the following expression to be evaluated; then <code>cond</code> returns that expression’s value.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cond</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">= </span><span class="mi">2</span> <span class="mi">5</span><span class="p">)</span> <span class="ss">:nope</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">= </span><span class="mi">3</span> <span class="mi">3</span><span class="p">)</span> <span class="ss">:yep</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">= </span><span class="mi">5</span> <span class="mi">5</span><span class="p">)</span> <span class="ss">:cant-get-here</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="ss">:else</span>   <span class="ss">:a-default-value</span><span class="p">)</span>
+<span class="ss">:yep</span>
+</code></pre>
+<p>If you find yourself making several similar decisions based on a value, try <code>condp</code>, for “cond with predicate”. For instance, we might categorize a number based on some ranges:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">category</span>
+  <span class="s">&quot;Determines the Saffir-Simpson category of a hurricane, by wind speed in meters/sec&quot;</span>
+  <span class="p">[</span><span class="nv">wind-speed</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">condp</span> <span class="nb">&lt;= </span><span class="nv">wind-speed</span>
+    <span class="mi">70</span> <span class="ss">:F5</span>
+    <span class="mi">58</span> <span class="ss">:F4</span>
+    <span class="mi">49</span> <span class="ss">:F3</span>
+    <span class="mi">42</span> <span class="ss">:F2</span>
+       <span class="ss">:F1</span><span class="p">))</span> <span class="c1">; Default value</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">category</span> <span class="mi">10</span><span class="p">)</span>
+<span class="ss">:F1</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">category</span> <span class="mi">50</span><span class="p">)</span>
+<span class="ss">:F3</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">category</span> <span class="mi">100</span><span class="p">)</span>
+<span class="ss">:F5</span>
+</code></pre>
+<p><code>condp</code> generates code which combines the predicate <code>&lt;=</code> with each number, and the value of <code>wind-speed</code>, like so:</p>
+<pre><code><span></span><span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&lt;= </span><span class="mi">70</span> <span class="nv">wind-speed</span><span class="p">)</span> <span class="ss">:F5</span>
+  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&lt;= </span><span class="mi">58</span> <span class="nv">wind-speed</span><span class="p">)</span> <span class="ss">:F4</span>
+    <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&lt;= </span><span class="mi">49</span> <span class="nv">wind-speed</span><span class="p">)</span> <span class="ss">:F3</span>
+      <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&lt;= </span><span class="mi">42</span> <span class="nv">wind-speed</span><span class="p">)</span> <span class="ss">:F2</span>
+        <span class="ss">:F1</span><span class="p">))))</span>
+</code></pre>
+<p>Specialized macros like <code>condp</code> are less commonly used than <code>if</code> or <code>when</code>, but they still play an important role in simplifying repeated code. They clarify the meaning of complex expressions, making them easier to read and maintain.</p>
+<p>Finally, there’s <code>case</code>, which works a little bit like a map of keys to values–only the values are <em>code</em>, to be evaluated. You can think of <code>case</code> like <code>(condp = ...)</code>, trying to match an expression to a particular branch for which it is equal.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">with-tax</span>
+  <span class="s">&quot;Computes the total cost, with tax, of a purchase in the given state.&quot;</span>
+  <span class="p">[</span><span class="nv">state</span> <span class="nv">subtotal</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">case</span> <span class="nv">state</span>
+    <span class="ss">:WA</span> <span class="p">(</span><span class="nb">* </span><span class="mf">1.065</span> <span class="nv">subtotal</span><span class="p">)</span>
+    <span class="ss">:OR</span> <span class="nv">subtotal</span>
+    <span class="ss">:CA</span> <span class="p">(</span><span class="nb">* </span><span class="mf">1.075</span> <span class="nv">subtotal</span><span class="p">)</span>
+    <span class="c1">; ... 48 other states ...</span>
+    <span class="nv">subtotal</span><span class="p">))</span> <span class="c1">; a default case</span>
+</code></pre>
+<p>Unlike <code>cond</code> and <code>condp</code>, <code>case</code> does <em>not</em> evaluate its tests in order. It jumps <em>immediately</em> to the matching expression. This makes <code>case</code> much faster when there are many branches to take–at the cost of reduced generality.</p>
+<h2><a href="#recursion" id="recursion">Recursion</a></h2>
+<p>Previously, we defined recursive functions by having those functions call themselves explicitly.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">sum</span> <span class="p">[</span><span class="nv">numbers</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">n</span> <span class="p">(</span><span class="nb">first </span><span class="nv">numbers</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">+ </span><span class="nv">n</span> <span class="p">(</span><span class="nf">sum</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">numbers</span><span class="p">)))</span>
+    <span class="mi">0</span><span class="p">))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">sum</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">))</span>
+<span class="mi">45</span>
+</code></pre>
+<p>But this approach breaks down when we have the function call itself <em>deeply</em>, over and over again.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">sum</span> <span class="p">(</span><span class="nb">range </span><span class="mi">100000</span><span class="p">))</span>
+
+<span class="nv">StackOverflowError</span>   <span class="nv">clojure.core/range/fn--4269</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:2664</span><span class="p">)</span>
+</code></pre>
+<p>Every time you call a function, the arguments for that function are stored in memory, in a region called <em>the stack</em>. They remain there for as long as the function is being called–including any deeper function calls.</p>
+<pre><code><span></span>    <span class="p">(</span><span class="nb">+ </span><span class="nv">n</span> <span class="p">(</span><span class="nf">sum</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">numbers</span><span class="p">)))</span>
+</code></pre>
+<p>In order to add <code>n</code> and <code>(sum (rest numbers))</code>, we have to call <code>sum</code> <em>first</em>–while holding onto the memory for <code>n</code> and <code>numbers</code>. We can’t re-use that memory until <em>every single recursive call</em> has completed. Clojure complains, after tens of thousands of stack frames are in use, that it has run out of space in the stack and can allocate no more.</p>
+<p>But consider this variation on <code>sum</code>:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">sum</span>
+  <span class="p">([</span><span class="nv">numbers</span><span class="p">]</span>
+   <span class="p">(</span><span class="nf">sum</span> <span class="mi">0</span> <span class="nv">numbers</span><span class="p">))</span>
+  <span class="p">([</span><span class="nv">subtotal</span> <span class="nv">numbers</span><span class="p">]</span>
+   <span class="p">(</span><span class="nb">if-let </span><span class="p">[</span><span class="nv">n</span> <span class="p">(</span><span class="nb">first </span><span class="nv">numbers</span><span class="p">)]</span>
+     <span class="p">(</span><span class="nf">recur</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">subtotal</span> <span class="nv">n</span><span class="p">)</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">numbers</span><span class="p">))</span>
+     <span class="nv">subtotal</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">sum</span> <span class="p">(</span><span class="nb">range </span><span class="mi">100000</span><span class="p">))</span>
+<span class="mi">4999950000</span>
+</code></pre>
+<p>We’ve added an additional parameter to the function. In its two-argument form, <code>sum</code> now takes an accumulator, <code>subtotal</code>, which represents the count so far. In addition, <code>recur</code> has taken the place of <code>sum</code>. Notice, however, that the final expression to be evaluated is not <code>+</code>, but <code>sum</code> (viz <code>recur</code>) itself. We don’t need to hang on to any of the variables in this function any more, because the final return value won’t depend on them. <code>recur</code> hints to the Clojure compiler that we <em>don’t need</em> to hold on to the stack, and can re-use that space for other things. This is called a <em>tail-recursive</em> function, and it requires only a single stack frame no matter how deep the recursive calls go.</p>
+<p>Use <code>recur</code> wherever possible. It requires much less memory and is much faster than the explicit recursion.</p>
+<p>You can also use <code>recur</code> within the context of the <code>loop</code> macro, where it acts just like an unnamed recursive function with initial values provided. Think of it, perhaps, like a recursive <code>let</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">loop </span><span class="p">[</span><span class="nv">i</span> <span class="mi">0</span>
+              <span class="nv">nums</span> <span class="p">[]]</span>
+         <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">&lt; </span><span class="mi">10</span> <span class="nv">i</span><span class="p">)</span>
+           <span class="nv">nums</span>
+           <span class="p">(</span><span class="nf">recur</span> <span class="p">(</span><span class="nb">inc </span><span class="nv">i</span><span class="p">)</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">nums</span> <span class="nv">i</span><span class="p">))))</span>
+<span class="p">[</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span> <span class="mi">10</span><span class="p">]</span>
+</code></pre>
+<h2><a href="#laziness" id="laziness">Laziness</a></h2>
+<p>In chapter 4 we mentioned that most of the sequences in Clojure, like <code>map</code>, <code>filter</code>, <code>iterate</code>, <code>repeatedly</code>, and so on, were <em>lazy</em>: they did not evaluate any of their elements until required. This too is provided by a macro, called <code>lazy-seq</code>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">integers</span>
+  <span class="p">[</span><span class="nv">x</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">lazy-seq</span>
+    <span class="p">(</span><span class="nb">cons </span><span class="nv">x</span> <span class="p">(</span><span class="nf">integers</span> <span class="p">(</span><span class="nb">inc </span><span class="nv">x</span><span class="p">)))))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="p">(</span><span class="nf">integers</span> <span class="mi">0</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/xs</span>
+</code></pre>
+<p>This sequence does not terminate; it is <em>infinitely</em> recursive. Yet it returned instantaneously. <code>lazy-seq</code> interrupted that recursion and restructured it into a sequence which constructs elements only when they are requested.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="nv">xs</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre>
+<p>When using <code>lazy-seq</code> and its partner <code>lazy-cat</code>, you don’t have to use <code>recur</code>–or even be tail-recursive. The macros interrupt each level of recursion, preventing stack overflows.</p>
+<p>You can also delay evaluation of some expressions until later, using <code>delay</code> and <code>deref</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nf">delay</span>
+                <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;computing a really big number!&quot;</span><span class="p">)</span>
+                <span class="p">(</span><span class="nb">last </span><span class="p">(</span><span class="nb">take </span><span class="mi">10000000</span> <span class="p">(</span><span class="nb">iterate inc </span><span class="mi">0</span><span class="p">)))))</span>
+<span class="o">#</span><span class="ss">'user/x</span> <span class="c1">; Did nothing, returned immediately</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">x</span><span class="p">)</span>
+<span class="s">&quot;computing a really big number!&quot;</span> <span class="c1">; Now we have to wait!</span>
+<span class="mi">9999999</span>
+</code></pre>
+<h2><a href="#list-comprehensions" id="list-comprehensions">List comprehensions</a></h2>
+<p>Combining recursion and laziness is the <em>list comprehension</em> macro, <code>for</code>. In its simplest form, <code>for</code> works like <code>map</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">for </span><span class="p">[</span><span class="nv">x</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">)]</span> <span class="p">(</span><span class="nb">- </span><span class="nv">x</span><span class="p">))</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">-1</span> <span class="mi">-2</span> <span class="mi">-3</span> <span class="mi">-4</span> <span class="mi">-5</span> <span class="mi">-6</span> <span class="mi">-7</span> <span class="mi">-8</span> <span class="mi">-9</span><span class="p">)</span>
+</code></pre>
+<p>Like <code>let</code>, <code>for</code> takes a vector of <code>bindings</code>. Unlike <code>let</code>, however, <code>for</code> binds its variables to <em>each possible combination of elements in their corresponding sequences</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">for </span><span class="p">[</span><span class="nv">x</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">]</span>
+             <span class="nv">y</span> <span class="p">[</span><span class="ss">:a</span> <span class="ss">:b</span><span class="p">]]</span>
+         <span class="p">[</span><span class="nv">x</span> <span class="nv">y</span><span class="p">])</span>
+<span class="p">([</span><span class="mi">1</span> <span class="ss">:a</span><span class="p">]</span> <span class="p">[</span><span class="mi">1</span> <span class="ss">:b</span><span class="p">]</span> <span class="p">[</span><span class="mi">2</span> <span class="ss">:a</span><span class="p">]</span> <span class="p">[</span><span class="mi">2</span> <span class="ss">:b</span><span class="p">]</span> <span class="p">[</span><span class="mi">3</span> <span class="ss">:a</span><span class="p">]</span> <span class="p">[</span><span class="mi">3</span> <span class="ss">:b</span><span class="p">])</span>
+</code></pre>
+<p>“For each x in the sequence <code>[1 2 3]</code>, and for each <code>y</code> in the sequence <code>[:a :b]</code>, find all <code>[x y]</code> pairs.” Note that the rightmost variable <code>y</code> iterates the fastest.</p>
+<p>Like most sequence functions, the <code>for</code> macro yields lazy sequences. You can filter them with <code>take</code>, <code>filter</code>, et al like any other sequence. Or you can use <code>:while</code> to tell <code>for</code> when to stop, or <code>:when</code> to filter out combinations of elements.</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">for </span><span class="p">[</span><span class="nv">x</span>     <span class="p">(</span><span class="nb">range </span><span class="mi">5</span><span class="p">)</span>
+      <span class="nv">y</span>     <span class="p">(</span><span class="nb">range </span><span class="mi">5</span><span class="p">)</span>
+      <span class="ss">:when</span> <span class="p">(</span><span class="nb">and </span><span class="p">(</span><span class="nf">even?</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nf">odd?</span> <span class="nv">y</span><span class="p">))]</span>
+  <span class="p">[</span><span class="nv">x</span> <span class="nv">y</span><span class="p">])</span>
+<span class="p">([</span><span class="mi">0</span> <span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">0</span> <span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="mi">2</span> <span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">2</span> <span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="mi">4</span> <span class="mi">1</span><span class="p">]</span> <span class="p">[</span><span class="mi">4</span> <span class="mi">3</span><span class="p">])</span>
+</code></pre>
+<p>Clojure includes a rich smörgåsbord of control-flow constructs; we’ll meet new ones throughout the book.</p>
+<h2><a href="#the-threading-macros" id="the-threading-macros">The threading macros</a></h2>
+<p>Sometimes you want to <em>thread</em> a computation through several expressions, like a chain. Object-oriented languages like Ruby or Java are well-suited to this style:</p>
+<pre><code><span></span><span class="mi">1</span><span class="o">.</span><span class="mi">9</span><span class="o">.</span><span class="mi">3</span><span class="n">p385</span> <span class="p">:</span><span class="mo">004</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">0</span><span class="o">..</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:odd?</span><span class="p">)</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="o">&amp;</span><span class="ss">:+</span><span class="p">)</span>
+<span class="mi">25</span>
+</code></pre>
+<p>Start with the range <code>0</code> to <code>10</code>, then call <code>select</code> on that range, with the function <code>odd?</code>. Finally, take <em>that</em> sequence of numbers, and reduce it with the <code>+</code> function.</p>
+<p>The Clojure threading macros do the same by restructuring a sequence of expressions, inserting each expression as the first (or final) argument in the next expression.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nf">clojure.walk/macroexpand-all</span> 
+         <span class="o">'</span><span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span><span class="p">)</span> <span class="p">(</span><span class="nb">reduce </span><span class="nv">+</span><span class="p">))))</span>
+<span class="p">(</span><span class="nb">reduce + </span><span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">)</span> <span class="p">(</span><span class="nb">filter </span><span class="nv">odd?</span><span class="p">)</span> <span class="p">(</span><span class="nb">reduce </span><span class="nv">+</span><span class="p">))</span>
+<span class="mi">25</span>
+</code></pre>
+<p><code>-&gt;&gt;</code> took <code>(range 10)</code> and inserted it at the end of <code>(filter odd?)</code>, forming <code>(filter odd? (range 10))</code>. Then it took <em>that</em> expression and inserted it at the end of <code>(reduce +)</code>. In essence, <code>-&gt;&gt;</code> <em>flattens and reverses</em> a nested chain of operations.</p>
+<p><code>-&gt;</code>, by contrast, inserts each form in as the <em>first</em> argument in the following expression.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pprint</span> <span class="p">(</span><span class="nf">clojure.walk/macroexpand-all</span> 
+         <span class="o">'</span><span class="p">(</span><span class="nb">-&gt; </span><span class="p">{</span><span class="ss">:proton</span> <span class="ss">:fermion</span><span class="p">}</span> <span class="p">(</span><span class="nb">assoc </span><span class="ss">:photon</span> <span class="ss">:boson</span><span class="p">)</span> <span class="p">(</span><span class="nb">assoc </span><span class="ss">:neutrino</span> <span class="ss">:fermion</span><span class="p">))))</span>
+<span class="p">(</span><span class="nb">assoc </span><span class="p">(</span><span class="nb">assoc </span><span class="p">{</span><span class="ss">:proton</span> <span class="ss">:fermion</span><span class="p">}</span> <span class="ss">:photon</span> <span class="ss">:boson</span><span class="p">)</span> <span class="ss">:neutrino</span> <span class="ss">:fermion</span><span class="p">)</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">{</span><span class="ss">:proton</span> <span class="ss">:fermion</span><span class="p">}</span>
+           <span class="p">(</span><span class="nb">assoc </span><span class="ss">:photon</span> <span class="ss">:boson</span><span class="p">)</span>
+           <span class="p">(</span><span class="nb">assoc </span><span class="ss">:neutrino</span> <span class="ss">:fermion</span><span class="p">))</span>
+<span class="p">{</span><span class="ss">:neutrino</span> <span class="ss">:fermion</span>, <span class="ss">:photon</span> <span class="ss">:boson</span>, <span class="ss">:proton</span> <span class="ss">:fermion</span><span class="p">}</span>
+</code></pre>
+<p>Clojure isn’t just <code>function-oriented</code> in its syntax; it can be object-oriented, and stack-oriented, and array-oriented, and so on–and <em>mix all of these styles freely, in a controlled way</em>. If you don’t like the way the language fits a certain problem, you can write a macro which defines a <em>new</em> language, specifically for that subproblem.</p>
+<p><code>cond</code>, <code>condp</code> and <code>case</code>, for example, express a language for branching based on predicates. <code>-&gt;</code>, <code>-&gt;&gt;</code>, and <code>doto</code> express object-oriented and other expression-chaining languages.</p>
+<ul>
+<li><a href="https://github.com/clojure/core.match">core.match</a> is a set of macros which express powerful <em>pattern-matching</em> and substitution languages.</li>
+<li><a href="https://github.com/clojure/core.logic">core.logic</a> expresses syntax for <em>logic programming</em>, for finding values which satisfy complex constraints.</li>
+<li><a href="http://clojure.com/blog/2013/06/28/clojure-core-async-channels.html">core.async</a> restructures Clojure code into <em>asynchronous</em> forms so they can do many things at once.</li>
+<li>For those with a twisted sense of humor, <a href="https://github.com/rplevy/swiss-arrows">Swiss Arrows</a> extends the threading macros into evil–but delightfully concise!–forms.</li>
+</ul>
+<p>We’ll see a plethora of macros, from simple to complex, through the course of this book. Each one shares the common pattern of <em>simplifying code</em>; reducing tangled or verbose expressions into something more concise, more meaningful, better suited to the problem at hand.</p>
+<h2><a href="#when-to-use-macros" id="when-to-use-macros">When to use macros</a></h2>
+<p>While it’s important to be aware of the purpose and behavior of the macro system, you don’t need to write your own macros to be productive with Clojure. For now, you’ll be just fine writing code which uses the existing macros in the language. When you <em>do</em> need to delve deeper, come back to this guide and experiment. It’ll take some time to sink in.</p>
+<p>First, know that writing macros is <em>tricky</em>, even for experts. It requires you to think at two levels simultaneously, and to be mindful of the distinction between <em>expression</em> and underlying <em>evaluation</em>. Writing a macro is essentially extending the language, the compiler, the syntax and evaluation model of Clojure, by restructuring <em>arbitrary</em> expressions into ones the evaluation system understands. This is hard, and it’ll take practice to get used to.</p>
+<p>In addition, Clojure macros come with some important restrictions. Because they’re expanded prior to evaluation, macros are invisible to functions. They can’t be composed functionally–you can’t <code>(map or ...)</code>, for instance.</p>
+<p>So in general, if you <em>can</em> solve a problem without writing a macro, <em>don’t write one</em>. It’ll be easier to debug, easier to understand, and easier to compose later. Only reach for macros when you need <em>new syntax</em>, or when performance demands the code be transformed at compile time.</p>
+<p>When you do write a macro, consider its scope carefully. Keep the transformation simple; and do as much in normal functions as possible. Provide an escape hatch where possible, by doing most of the work in a function, and writing a small wrapper macro which calls that function. Finally, remember the distinction between <em>code</em> and what that code <em>evaluates to</em>. Use <code>let</code> whenever a value is to be re-used, to prevent it being evaluated twice by accident.</p>
+<p>For a deeper exploration of Clojure macros in a real-world application, try <a href="http://aphyr.com/posts/268-language-power">Language Power</a>.</p>
+<h2><a href="#review" id="review">Review</a></h2>
+<p>In Chapter 4, deeply nested expressions led to the desire for a <em>simpler</em>, <em>more direct</em> expression of a chain of sequence operations. We learned that the Clojure compiler first <em>expands</em> expressions before evaluating them, using macros–special functions which take code and return other code. We used macros to define the short-circuiting <code>or</code> operator, and followed that with a tour of basic control flow, recursion, laziness, list comprehensions, and chained expressions. Finally, we learned a bit about when and how to write our own macros.</p>
+<p>Throughout this chapter we’ve brushed against the idea of <em>side effects</em>: things which change the outside world. We might change a var with <code>def</code>, or print a message to the screen with <code>prn</code>. Real languages must model a continually shifting universe, which leads us to <a href="http://aphyr.com/posts/306-clojure-from-the-ground-up-state">Chapter Six: Side effects and state</a>.</p>
+<h2><a href="#problems" id="problems">Problems</a></h2>
+<ol>
+<li>
+<p>Using the control flow constructs we’ve learned, write a <code>schedule</code> function which, given an hour of the day, returns what you’ll be doing at that time. <code>(schedule 18)</code>, for me, returns <code>:dinner</code>.</p>
+</li>
+<li>
+<p>Using the threading macros, find how many numbers from 0 to 9999 are palindromes: identical when written forwards and backwards. <code>121</code> is a palindrome, as is <code>7447</code> and <code>5</code>, but not <code>12</code> or <code>953</code>.</p>
+</li>
+<li>
+<p>Write a macro <code>id</code> which takes a function and a list of args: <code>(id f a b c)</code>, and returns an expression which calls that function with the given args: <code>(f a b c)</code>.</p>
+</li>
+<li>
+<p>Write a macro <code>log</code> which uses a var, <code>logging-enabled</code>, to determine whether or not to print an expression to the console at compile time. If <code>logging-enabled</code> is false, <code>(log :hi)</code> should macroexpand to <code>nil</code>. If <code>logging-enabled</code> is true, <code>(log :hi)</code> should macroexpand to <code>(prn :hi)</code>. Why would you want to do this check during <em>compilation</em>, instead of when running the program? What might you <em>lose</em>?</p>
+</li>
+<li>
+<p>(Advanced) Using the <code>rationalize</code> function, write a macro <code>exact</code> which rewrites any use of <code>+</code>, <code>-</code>, <code>*</code>, or <code>/</code> to force the use of <em>ratios</em> instead of <a href="http://erlang.org/pipermail/erlang-questions/2013-November/076114.html">floating-point numbers</a>. <code>(* 2452.45 100)</code> returns <code>245244.99999999997</code>, but <code>(exact (* 2452.45 100))</code> should return <code>245245N</code></p>
+</li>
+</ol>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1755"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="rptabo" title="rptabo" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            rptabo
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1755">
+            <time datetime="Nov 30, 2013, 3:31:36 PM" pubdate>
+              2013-11-30
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Kyle, this is fantastic stuff - your “blook” is the best Clojure resource I’ve found after lots of seeking, and I’ve enjoyed exploring some of your other posts.</p>
+
+<p>I poked around your site but maybe I missed it: is there any way to sign up for email updates (or some other notification) when you make a new post?  If I must resort to it, I will check back periodically, but ideally I’d love to be notified as soon as you post something so I can devour it immediately!</p>
+
+<p>Again, great stuff…can’t wait for what comes next!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1756"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1756">
+            <time datetime="Nov 30, 2013, 7:24:45 PM" pubdate>
+              2013-11-30
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks rptabo. Glad to hear these posts are working out well for you. :)</p>
+
+<p>The index pages and tag pages have ATOM feeds, linked with the standard headers, but I think browsers have started to drift away from displaying those. If you’ve got an ATOM client, try <a href="http://aphyr.com/tags/Clojure-from-the-ground-up.atom" rel="nofollow">http://aphyr.com/tags/Clojure-from-the-ground-up.atom</a>, or <a href="http://aphyr.com/posts.atom" rel="nofollow">http://aphyr.com/posts.atom</a> for all the posts.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1761"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8ca29123b5669b26f9b6ca2c62d9d215?r=pg&s=96&d=identicon" alt="Wayne Conrad" title="Wayne Conrad" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Wayne Conrad
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1761">
+            <time datetime="Dec 3, 2013, 8:45:33 AM" pubdate>
+              2013-12-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Perfectly paced–not too fast, not too slow, and your explanations are easy to understand.   Thanks for writing these.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1762"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="eigenlicht" title="eigenlicht" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            eigenlicht
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1762">
+            <time datetime="Dec 3, 2013, 3:46:51 PM" pubdate>
+              2013-12-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey Kyle, great post. You mentioned the -&gt; and -&gt;&gt; threading macros. How about mentioning the as-&gt; macro too? One situation where it comes in handy is for example this: <a href="http://dpassen1.github.io/software/2013/11/17/embracing-the-as--macro/" rel="nofollow">http://dpassen1.github.io/software/2013/11/17/embracing-the-as–macro/</a></p>
+
+<p>Also, situations where you’d wrap certain function calls in fn’s, because those one or two function calls don’t fit into the pattern of the others inside the -&gt;/-&gt;&gt; form.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1763"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/b282b4d44b0ef693a215a2c6eac59ee4?r=pg&s=96&d=identicon" alt="x" title="x" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            x
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1763">
+            <time datetime="Dec 4, 2013, 1:07:34 AM" pubdate>
+              2013-12-04
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>+1 from me as well, looking forward to more.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1764"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0c01a983961c34967d0ccedda9eb7d49?r=pg&s=96&d=identicon" alt="Elf M. Sternberg" title="Elf M. Sternberg" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://elfsternberg.com" rel="nofollow">
+              Elf M. Sternberg
+            </a>
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1764">
+            <time datetime="Dec 5, 2013, 12:48:17 AM" pubdate>
+              2013-12-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Kyle, awesome explanation, but one thing is bothering me.  The (defmacro or…) example doesn’t make sense to me.  It shows three expressions in a row.  If ‘or’ already existed, I would understand how the first two (the empty set and a single set) short circuit to their definitions, and the actual quasiquoted stuff doesn’t kick in until we get more than one expression to evaluate, but ‘or’ doesn’t exist, you’re defining it here.</p>
+
+<p>Maybe my LISP is out of date (most of my Lisp experience is within Emacs), but I don’t see how this code resolves.  Does ‘defmacro’ have some kind of pattern matching for resolving these zero-argument and one-argument cases before moving on to the multi-argument case?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1781"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1781">
+            <time datetime="Dec 16, 2013, 5:17:38 PM" pubdate>
+              2013-12-16
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>Does ‘defmacro’ have some kind of pattern matching for resolving these zero-argument and one-argument cases before moving on to the multi-argument case?</p>
+</blockquote>
+
+<p>You’re right, Elf, defmacro (like defn) have arity dispatch provided by the compiler. As for the recursive macro call, where or is defined in terms of itself, that’s also handled by the Clojure compiler. Inside (defn foo [] …), ‘foo is lexically bound to the function itself, by the compiler.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1861"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f8366289a99ffe6e3a6a44e3f279e0e4?r=pg&s=96&d=identicon" alt="Fran Burstall" title="Fran Burstall" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Fran Burstall
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-1861">
+            <time datetime="Apr 27, 2014, 5:31:20 AM" pubdate>
+              2014-04-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great tutorial but a mistake in the delay/deref example: the string that is printed should match the string “computing a really big number!” in the definition of x.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2283"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/dfcca6f0979fa1dfa988fce979cc66eb?r=pg&s=96&d=identicon" alt="ignace" title="ignace" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            ignace
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-2283">
+            <time datetime="Apr 11, 2015, 9:13:07 PM" pubdate>
+              2015-04-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi Kyle,</p>
+
+<p>im stuck with with the log macro (#4), not because i’ve tried ( id did try to get  into what’s asked) but because i’ve a problem understanding the particulars of the question. I don’t want tips. but would it be possible to phrase the problem in another way, like for total new person that wants to learn clojure? </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2919"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="new clojurian" title="new clojurian" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            new clojurian
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-2919">
+            <time datetime="Dec 7, 2017, 8:33:20 AM" pubdate>
+              2017-12-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi,</p>
+
+<p>for the advanced problem i found this solution:</p>
+
+<p><code>(defmacro exact [expr]
+  `(rationalize (float ~expr)))</code></p>
+
+<p>But this solution doesn’t work if you call the macro with a let for example.</p>
+
+<p><code>(let [a 100]
+  (exact (* 2452.45 a)))</code></p>
+
+<p>Can someone give me a solution that works every time plz ?</p>
+
+<p>Thanks you.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2934"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a95db2e273bb6d51a7def374bc166ff7?r=pg&s=96&d=identicon" alt="rubal" title="rubal" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            rubal
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-2934">
+            <time datetime="Feb 7, 2018, 1:51:05 PM" pubdate>
+              2018-02-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great Stuff!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3052"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Sid" title="Sid" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Sid
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3052">
+            <time datetime="Aug 21, 2019, 12:02:14 AM" pubdate>
+              2019-08-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you for writing this book!</p>
+
+<p>Here’s my solution to #5, the <code>exact</code> macro, for those that may want something to compare against. The strategy is to map over the arguments in the expression and replace each <code>arg</code> with <code>(rationalize arg)</code> and then paste that back into the code using the syntax quote and unquote-splice (<code>~@</code>). </p>
+<code class="block"><span class="p">(</span><span class="kd">defmacro </span><span class="nv">exact</span> <span class="p">[</span><span class="nv">expr</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">op</span> <span class="p">(</span><span class="nb">first </span><span class="nv">expr</span><span class="p">)</span>
+        <span class="nv">op_assert</span> <span class="o">`</span><span class="p">(</span><span class="nb">assert </span><span class="p">(</span><span class="o">#</span><span class="p">{</span><span class="nb">* / + </span><span class="nv">-</span><span class="p">}</span> <span class="o">~</span><span class="nv">op</span><span class="p">)</span> <span class="s">"exact only operates on +-*/"</span><span class="p">)</span>
+        <span class="nv">args</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">expr</span><span class="p">)</span>
+        <span class="nv">rationals</span> <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">arg</span><span class="p">]</span> <span class="o">`</span><span class="p">(</span><span class="nf">rationalize</span> <span class="o">~</span><span class="nv">arg</span><span class="p">))</span> <span class="nv">args</span><span class="p">)]</span>
+    <span class="o">`</span><span class="p">((</span><span class="k">do </span><span class="o">~</span><span class="nv">op_assert</span> <span class="o">~</span><span class="nv">op</span><span class="p">)</span> <span class="o">~@</span><span class="nv">rationals</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="nf">exact</span> <span class="p">(</span><span class="nb">* </span><span class="mf">2452.45</span> <span class="mi">100</span><span class="p">))</span>
+<span class="c1">; =&gt; 245245N</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3105"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7dfbaa091349bb59e4076b3c7cdafb6d?r=pg&s=96&d=identicon" alt="Joe Bentley" title="Joe Bentley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Joe Bentley
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3105">
+            <time datetime="Dec 12, 2019, 8:12:01 AM" pubdate>
+              2019-12-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Here’s my solution for the advanced problem. It just walks through the syntax tree and calls <code>rationalize</code> on every number</p>
+<code class="block"><span class="p">(</span><span class="nf">use</span> <span class="ss">'clojure.walk</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defmacro </span><span class="nv">exact</span>
+  <span class="p">[</span><span class="nv">expr</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">prewalk</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">number?</span> <span class="nv">x</span><span class="p">)</span>
+                     <span class="p">(</span><span class="nf">rationalize</span> <span class="nv">x</span><span class="p">)</span>
+                     <span class="nv">x</span><span class="p">))</span>
+        <span class="nv">expr</span><span class="p">))</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3106"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7dfbaa091349bb59e4076b3c7cdafb6d?r=pg&s=96&d=identicon" alt="Joe Bentley" title="Joe Bentley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Joe Bentley
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3106">
+            <time datetime="Dec 12, 2019, 8:13:36 AM" pubdate>
+              2019-12-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Forgot to add examples of the above:</p>
+<code class="block"><span class="p">(</span><span class="nb">macroexpand </span><span class="o">'</span><span class="p">(</span><span class="nf">exact</span> <span class="p">(</span><span class="nb">+ </span><span class="mf">2.8</span> <span class="p">(</span><span class="nb">* </span><span class="mf">3.7</span> <span class="mf">4.3</span> <span class="mf">5.5</span><span class="p">)</span> <span class="p">(</span><span class="nb">/ </span><span class="mf">4.4</span> <span class="mf">5.7</span><span class="p">))))</span>
+<span class="c1">; =&gt; (+ 14/5 (* 37/10 43/10 11/2) (/ 22/5 57/10))</span>
+
+<span class="p">(</span><span class="nf">exact</span> <span class="p">(</span><span class="nb">+ </span><span class="mf">2.8</span> <span class="p">(</span><span class="nb">* </span><span class="mf">3.7</span> <span class="mf">4.3</span> <span class="mf">5.5</span><span class="p">)</span> <span class="p">(</span><span class="nb">/ </span><span class="mf">4.4</span> <span class="mf">5.7</span><span class="p">)))</span>
+<span class="c1">; =&gt; 1038277/11400</span>
+
+<span class="p">(</span><span class="nf">exact</span> <span class="p">(</span><span class="nb">* </span><span class="mf">2452.45</span> <span class="mi">100</span><span class="p">))</span>
+<span class="c1">; =&gt; 245245N</span>
+
+<span class="c1">; works with let</span>
+<span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">a</span> <span class="mi">100</span><span class="p">]</span> <span class="p">(</span><span class="nf">exact</span> <span class="p">(</span><span class="nb">* </span><span class="mf">2452.45</span> <span class="nv">a</span><span class="p">)))</span>
+<span class="c1">; =&gt; 245245N</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3272"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/bb45e19fd908a870f49aa0d9ec776262?r=pg&s=96&d=identicon" alt="Nikolay" title="Nikolay" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Nikolay
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3272">
+            <time datetime="Dec 28, 2020, 3:13:08 AM" pubdate>
+              2020-12-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is what I came up with:</p>
+<code class="block"><span class="p">(</span><span class="kd">defmacro </span><span class="nv">exact</span> <span class="p">[</span><span class="nv">exp</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">f</span> <span class="p">(</span><span class="nb">first </span><span class="nv">exp</span><span class="p">)</span>
+        <span class="nv">args</span> <span class="p">(</span><span class="nb">rest </span><span class="nv">exp</span><span class="p">)]</span>
+  <span class="o">`</span><span class="p">(</span><span class="o">~</span><span class="nv">f</span> <span class="o">~@</span><span class="p">(</span><span class="nb">map </span><span class="nv">rationalize</span> <span class="nv">args</span><span class="p">))))</span>
+</code>
+<p>Not sure if it is correctly written, but it gives the correct results:</p>
+<code class="block"><span class="p">(</span><span class="nb">macroexpand </span><span class="o">`</span><span class="p">(</span><span class="nf">exact</span> <span class="p">(</span><span class="nb">* </span><span class="mf">2452.45</span> <span class="mi">100</span><span class="p">)))</span>
+<span class="c1">;; (clojure.core/* 49049/20 100)</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3274"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3274">
+            <time datetime="Dec 29, 2020, 3:28:06 PM" pubdate>
+              2020-12-29
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>For folks wondering about <code>exact</code>–your solutions are great! This is a deliberately open-ended problem and there are lots of ways to solve it. Simple approaches may run into edge cases. For instance, they may not work well with variables, with recursively nested expressions, or only recur into some types of collections. A more complete solution requires some functions we haven’t talked about yet, but a little googling or reference to the clojure docs might give you enough. Here’s what I might write:</p>
+<code class="block"><span class="p">(</span><span class="k">def </span><span class="nv">exact-fn?</span>
+  <span class="s">"A set of functions which are treated specially by exact."</span>
+  <span class="o">'#</span><span class="p">{</span><span class="nb">+ - * </span><span class="nv">/</span><span class="p">})</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">exact*</span>
+  <span class="s">"Recursive helper for exact"</span>
+  <span class="p">[</span><span class="nv">expr</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">cond </span><span class="c1">; For seqs, we recursively expand, then look for a pattern like (+ x</span>
+        <span class="c1">; y), where + is one of our exact functions.</span>
+        <span class="p">(</span><span class="nb">seq? </span><span class="nv">expr</span><span class="p">)</span>
+        <span class="p">(</span><span class="k">let </span><span class="p">[[</span><span class="nv">f</span> <span class="o">&amp;</span> <span class="nv">args</span><span class="p">]</span> <span class="p">(</span><span class="nb">map </span><span class="nv">exact*</span> <span class="nv">expr</span><span class="p">)]</span>
+          <span class="p">(</span><span class="nb">cons </span><span class="nv">f</span> <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nf">exact-fn?</span> <span class="nv">f</span><span class="p">)</span>
+                    <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial list </span><span class="o">`</span><span class="nv">rationalize</span><span class="p">)</span> <span class="nv">args</span><span class="p">)</span>
+                    <span class="nv">args</span><span class="p">)))</span>
+
+        <span class="c1">; For other collections, we recursively expand them into a collection</span>
+        <span class="c1">; of the same type. You can do this more easily with clojure.walk, but</span>
+        <span class="c1">; we haven't talked about that yet.</span>
+        <span class="p">(</span><span class="nf">coll?</span> <span class="nv">expr</span><span class="p">)</span>
+        <span class="p">(</span><span class="nb">into </span><span class="p">(</span><span class="nf">empty</span> <span class="nv">expr</span><span class="p">)</span> <span class="p">(</span><span class="nb">map </span><span class="nv">exact*</span> <span class="nv">expr</span><span class="p">))</span>
+
+        <span class="c1">; We leave non-collection objects unchanged.</span>
+        <span class="ss">:else</span>
+        <span class="nv">expr</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defmacro </span><span class="nv">exact</span>
+  <span class="s">"Transforms an expression, converting any use of +, -, *, or / to use ratios</span>
+<span class="s">  rather than (potentially) floating-point numbers."</span>
+  <span class="p">[</span><span class="nv">expr</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">exact*</span> <span class="nv">expr</span><span class="p">))</span>
+</code>
+<p>This works with non-literal numbers, and recurs into the major Clojure collections as one might expect. It <em>doesn’t</em> work when <code>+</code>, <code>-</code>, etc. are rebound, but I wouldn’t worry too much about that right now. :-)</p>
+<code class="block"><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="mf">1.1</span><span class="p">]</span> <span class="p">(</span><span class="nf">exact</span> <span class="o">#</span><span class="p">{(</span><span class="nb">+ </span><span class="mf">1.3</span> <span class="p">(</span><span class="nb">- </span><span class="mi">7</span> <span class="nv">x</span><span class="p">))}))</span>
+<span class="c1">; =&gt; #{36/5}</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-3344"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Nitpick" title="Nitpick" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Nitpick
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3344">
+            <time datetime="Apr 28, 2021, 8:47:58 AM" pubdate>
+              2021-04-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great post! Really enjoying your series of posts!
+There is a “sum (viz recur)” in this post, and I guess you meant “sum (via recur)”.
+Thanks.</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3346"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/305-clojure-from-the-ground-up-macros#comment-3346">
+            <time datetime="Apr 28, 2021, 12:15:08 PM" pubdate>
+              2021-04-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you! “Viz” means “in other words”, or “namely”, and is used here to explain that <code>recur</code> can be treated as another name for <code>sum</code>. Different execution semantics, obviously! :-)</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="305" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

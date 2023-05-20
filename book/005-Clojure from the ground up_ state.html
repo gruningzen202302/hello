@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: state</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/306-clojure-from-the-ground-up-state" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/306-clojure-from-the-ground-up-state">Clojure from the ground up: state</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Dec 1, 2013, 2:14:12 AM" pubdate>
+          2013-12-01
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p><em>Previously: <a href="http://aphyr.com/posts/305-clojure-from-the-ground-up-macros">Macros</a>.</em></p>
+<p>Most programs encompass <em>change</em>. People grow up, leave town, fall in love, and take new names. Engines burn through fuel while their parts wear out, and new ones are swapped in. Forests burn down and their logs become nurseries for new trees. Despite these changes, we say “She’s still Nguyen”, “That’s my motorcycle”, “The same woods I hiked through as a child.”</p>
+<p>Identity is a skein we lay across the world of immutable facts; a single entity which encompasses change. In programming, identities unify different values over time. Identity types are <em>mutable references</em> to <em>immutable values</em>.</p>
+<p>In this chapter, we’ll move from immutable references to complex concurrent transactions. In the process we’ll get a taste of <em>concurrency</em> and <em>parallelism</em>, which will motivate the use of more sophisticated identity types. These are not easy concepts, so don’t get discouraged. You don’t have to understand this chapter fully to be a productive programmer, but I do want to hint at <em>why</em> things work this way. As you work with state more, these concepts will solidify.</p>
+<h2><a href="#immutability" id="immutability">Immutability</a></h2>
+<p>The references we’ve used in <code>let</code> bindings and function arguments are <em>immutable</em>: they never change.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="mi">1</span><span class="p">]</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="p">(</span><span class="nb">inc </span><span class="nv">x</span><span class="p">))</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="p">(</span><span class="nb">inc </span><span class="nv">x</span><span class="p">)))</span>
+<span class="mi">2</span>
+<span class="mi">2</span>
+</code></pre>
+<p>The expression <code>(inc x)</code> did not <em>alter</em> <code>x</code>: <code>x</code> remained <code>1</code>. The same applies to strings, lists, vectors, maps, sets, and most everything else in Clojure:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">x</span> <span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]]</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="p">(</span><span class="nb">conj </span><span class="nv">x</span> <span class="ss">:a</span><span class="p">))</span>
+         <span class="p">(</span><span class="nb">prn </span><span class="p">(</span><span class="nb">conj </span><span class="nv">x</span> <span class="ss">:b</span><span class="p">)))</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="ss">:a</span><span class="p">]</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span> <span class="ss">:b</span><span class="p">]</span>
+</code></pre>
+<p>Immutability also extends to <code>let</code> bindings, function arguments, and other symbols. Functions <em>remember</em> the values of those symbols at the time the function was constructed.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">present</span>
+  <span class="p">[</span><span class="nv">gift</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">fn </span><span class="p">[]</span> <span class="nv">gift</span><span class="p">))</span>
+
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">green-box</span> <span class="p">(</span><span class="nf">present</span> <span class="s">&quot;clockwork beetle&quot;</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/green-box</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">red-box</span> <span class="p">(</span><span class="nf">present</span> <span class="s">&quot;plush tiger&quot;</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/red-box</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">red-box</span><span class="p">)</span>
+<span class="s">&quot;plush tiger&quot;</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">green-box</span><span class="p">)</span>
+<span class="s">&quot;clockwork beetle&quot;</span>
+</code></pre>
+<p>The <code>present</code> function <em>creates a new function</em>. That function takes no arguments, and always returns the gift. Which gift? Because <code>gift</code> is not an argument to the inner function, it refers to the value from the <em>outer function body</em>. When we packaged up the red and green boxes, the functions we created carried with them a memory of the <code>gift</code> symbol’s value.</p>
+<p>This is called <em>closing over</em> the <code>gift</code> variable; the inner function is sometimes called <em>a closure</em>. In Clojure, new functions close over <em>all</em> variables except their arguments–the arguments, of course, will be provided when the function is invoked.</p>
+<h2><a href="#delays" id="delays">Delays</a></h2>
+<p>Because functions <em>close over</em> their arguments, they can be used to <em>defer</em> evaluation of expressions. That’s how we introduced functions originally–like <code>let</code> expressions, but with a number (maybe zero!) of symbols <em>missing</em>, to be filled in at a later time.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">do </span><span class="p">(</span><span class="nb">prn </span><span class="s">&quot;Adding&quot;</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">))</span>
+<span class="s">&quot;Adding&quot;</span>
+<span class="mi">3</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">later</span> <span class="p">(</span><span class="k">fn </span><span class="p">[]</span> <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;Adding&quot;</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="o">#</span><span class="ss">'user/later</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">later</span><span class="p">)</span>
+<span class="s">&quot;Adding&quot;</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Evaluating <code>(def later ...)</code> did <em>not</em> evaluate the expressions in the function body. Only when we invoked the function <code>later</code> did Clojure print <code>&quot;Adding&quot;</code> to the screen, and return <code>3</code>. This is the basis of <em>concurrency</em>: evaluating expressions outside their normal, sequential order.</p>
+<p>This pattern of deferring evaluation is so common that there’s a standard macro for it, called <code>delay</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">later</span> <span class="p">(</span><span class="nf">delay</span> <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;Adding&quot;</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="o">#</span><span class="ss">'user/later</span>
+<span class="nv">user=&gt;</span> <span class="nv">later</span>
+<span class="o">#</span><span class="nv">&lt;Delay</span><span class="o">@</span><span class="mi">2</span><span class="nv">dd31aac</span><span class="err">:</span> <span class="ss">:pending&gt;</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">later</span><span class="p">)</span>
+<span class="s">&quot;Adding&quot;</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Instead of a function, <code>delay</code> creates a special type of Delay object: an identity which <em>refers</em> to expressions which should be evaluated later. We extract, or <em>dereference</em>, the value of that identity with <code>deref</code>. Delays follow the same rules as functions, closing over lexical scope–because <code>delay</code> actually macroexpands into an anonymous function.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">source</span> <span class="nv">delay</span><span class="p">)</span>
+<span class="p">(</span><span class="kd">defmacro </span><span class="nv">delay</span>
+  <span class="s">&quot;Takes a body of expressions and yields a Delay object that will</span>
+<span class="s">  invoke the body only the first time it is forced (with force or deref/@), and</span>
+<span class="s">  will cache the result and return it on all subsequent force</span>
+<span class="s">  calls. See also - realized?&quot;</span>
+  <span class="p">{</span><span class="ss">:added</span> <span class="s">&quot;1.0&quot;</span><span class="p">}</span>
+  <span class="p">[</span><span class="o">&amp;</span> <span class="nv">body</span><span class="p">]</span>
+    <span class="p">(</span><span class="nb">list </span><span class="ss">'new</span> <span class="ss">'clojure.lang.Delay</span> <span class="p">(</span><span class="nb">list* </span><span class="o">`^</span><span class="p">{</span><span class="ss">:once</span> <span class="nv">true</span><span class="p">}</span> <span class="nv">fn*</span> <span class="p">[]</span> <span class="nv">body</span><span class="p">)))</span>
+</code></pre>
+<p>Why the <code>Delay</code> object instead of a plain old function? Because unlike function invocation, delays only evaluate their expressions <em>once</em>. They remember their value, after the first evaluation, and return it for every successive <code>deref</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">later</span><span class="p">)</span>
+<span class="mi">3</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">later</span><span class="p">)</span>
+<span class="mi">3</span>
+</code></pre>
+<p>By the way, there’s a shortcut for <code>(deref something)</code>: the wormhole operator <code>@</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="o">@</span><span class="nv">later</span> <span class="c1">; Interpreted as (deref later)</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Remember how <code>map</code> returned a sequence immediately, but didn’t actually perform any computation until we asked for elements? That’s called <em>lazy</em> evaluation. Because delays are lazy, we can avoid doing expensive operations until they’re really needed. Like an IOU, we use delays when we aren’t ready to do something just yet, but when someone calls in the favor, we’ll make sure it happens.</p>
+<h2><a href="#futures" id="futures">Futures</a></h2>
+<p>What if we wanted to <em>opportunistically</em> defer computation? Modern computers have multiple cores, and operating systems let us share a core between two tasks. It would be great if we could use that multitasking ability to say, “I don’t need the result of evaluating these expressions <em>yet</em>, but I’d like it <em>later</em>. Could you start working on it in the meantime?”</p>
+<p>Enter the <em>future</em>: a delay which is evaluated <em>in parallel</em>. Like delays, futures return immediately, and give us an <em>identity</em> which will point to the value of the last expression in the future–in this case, the value of <code>(+ 1 2)</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;hi&quot;</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="s">&quot;hi&quot;</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">x</span><span class="p">)</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Notice how the future printed “hi” right away. That’s because futures are evaluated in a new <em>thread</em>. On multicore computers, two threads can run in <em>parallel</em>, on different cores the same time. When there are more threads than cores, the cores <em>trade off</em> running different threads. Both parallel and non-parallel evaluation of threads are <em>concurrent</em> because expressions from different threads can be evaluated out of order.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">i</span> <span class="mi">5</span><span class="p">]</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nb">prn </span><span class="nv">i</span><span class="p">)))</span>
+<span class="mi">14</span>
+
+<span class="mi">3</span>
+<span class="mi">0</span>
+<span class="mi">2</span>
+<span class="nv">nil</span>
+</code></pre>
+<p>Five threads running at once. Notice that the thread printing <code>1</code> didn’t even get to move to a new line before <code>4</code> showed up–then both threads wrote new lines at the same time. There are techniques to control this concurrent execution so that things happen in some well-defined sequence, like agents and locks, but we’ll discuss those later.</p>
+<p>Just like delays, we can deref a future as many times as we want, and the expressions are only evaluated once.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;hi&quot;</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)))</span>
+<span class="o">#</span><span class="ss">'user/x</span><span class="s">&quot;hi&quot;</span>
+
+<span class="nv">user=&gt;</span> <span class="o">@</span><span class="nv">x</span>
+<span class="mi">3</span>
+<span class="nv">user=&gt;</span> <span class="o">@</span><span class="nv">x</span>
+<span class="mi">3</span>
+</code></pre>
+<p>Futures are the most generic parallel construct in Clojure. You can use futures to do CPU-intensive computation faster, to wait for multiple network requests to complete at once, or to run housekeeping code periodically.</p>
+<h2><a href="#promises" id="promises">Promises</a></h2>
+<p>Delays <em>defer</em> evaluation, and futures <em>parallelize</em> it. What if we wanted to defer something we <em>don’t even have yet</em>? To hand someone an empty box and, later, before they open it, sneak in and replacing its contents with an actual gift? Surely I’m not the only one who does birthday presents this way.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">box</span> <span class="p">(</span><span class="nf">promise</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/box</span>
+<span class="nv">user=&gt;</span> <span class="nv">box</span>
+<span class="o">#</span><span class="nv">&lt;core$promise$reify__6310</span><span class="o">@</span><span class="mi">1</span><span class="nv">d7762e</span><span class="err">:</span> <span class="ss">:pending&gt;</span>
+</code></pre>
+<p>This box is <em>pending</em> a value. Like futures and delays, if we try to open it, we’ll get <em>stuck</em> and have to wait for something to appear inside:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">box</span><span class="p">)</span>
+</code></pre>
+<p>But unlike futures and delays, this box won’t be filled automatically. Hold the <code>Control</code> key and hit <code>c</code> to give up on trying to open that package. Nobody else is in this REPL, so we’ll have to buy our own presents.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">deliver</span> <span class="nv">box</span> <span class="ss">:live-scorpions!</span><span class="p">)</span>
+<span class="o">#</span><span class="nv">&lt;core$promise$reify__6310</span><span class="o">@</span><span class="mi">1</span><span class="nv">d7762e</span><span class="err">:</span> <span class="ss">:live-scorpions!&gt;</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">box</span><span class="p">)</span>
+<span class="ss">:live-scorpions!</span>
+</code></pre>
+<p>Wow, that’s a <em>terrible</em> gift. But at least there’s something there: when we dereference the box, it opens immediately and live scorpions skitter out. Can we get a do-over? Let’s try a nicer gift.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">deliver</span> <span class="nv">box</span> <span class="ss">:puppy</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">box</span><span class="p">)</span>
+<span class="ss">:live-scorpions!</span>
+</code></pre>
+<p>Like delays and futures, there’s no going back on our promises. Once delivered, a promise <em>always</em> refers to the same value. This is a simple identity type: we can set it to a value once, and read it as many times as we want. <code>promise</code> is also a <em>concurrency primitive</em>: it guarantees that any attempt to read the value will <em>wait</em> until the value has been written. We can use promises to <em>synchronize</em> a program which is being evaluated concurrently–for instance, this simple card game:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">card</span> <span class="p">(</span><span class="nf">promise</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/card</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">dealer</span> <span class="p">(</span><span class="nf">future</span> 
+                     <span class="p">(</span><span class="nf">Thread/sleep</span> <span class="mi">5000</span><span class="p">)</span>
+                     <span class="p">(</span><span class="nf">deliver</span> <span class="nv">card</span> <span class="p">[(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">rand-int </span><span class="mi">13</span><span class="p">))</span>
+                                    <span class="p">(</span><span class="nf">rand-nth</span> <span class="p">[</span><span class="ss">:clubs</span> <span class="ss">:spades</span> <span class="ss">:hearts</span> <span class="ss">:diamonds</span><span class="p">])])))</span>
+<span class="o">#</span><span class="ss">'user/dealer</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">card</span><span class="p">)</span>
+<span class="p">[</span><span class="mi">5</span> <span class="ss">:diamonds</span><span class="p">]</span>
+</code></pre>
+<p>In this program, we set up a <code>dealer</code> thread which waits for five seconds (5000 milliseconds), then delivers a random card. While the dealer is sleeping, we try to deref our card–and have to wait until the five seconds are up. Synchronization and identity in one package.</p>
+<p>Where delays are lazy, and futures are parallel, promises are concurrent <em>without specifying how the evaluation occurs</em>. We control exactly when and how the value is delivered. You can think of both delays and futures as being built atop promises, in a way.</p>
+<h2><a href="#vars" id="vars">Vars</a></h2>
+<p>So far the identities we’ve discussed have referred (eventually) to a <em>single</em> value, but the real world needs names that refer to <em>different</em> values at different points in time. For this, we use <em>vars</em>.</p>
+<p>We’ve touched on vars before–they’re transparent mutable references. Each var has a value associated with it, and that value can change over time. When a var is evaluated, it is replaced by its <em>present</em> value transparently–everywhere in the program.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="ss">:mouse</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">box</span> <span class="p">(</span><span class="k">fn </span><span class="p">[]</span> <span class="nv">x</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/box</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">box</span><span class="p">)</span>
+<span class="ss">:mouse</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="ss">:cat</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">box</span><span class="p">)</span>
+<span class="ss">:cat</span>
+</code></pre>
+<p>The <code>box</code> function closed over <code>x</code>–but calling <code>(box)</code> returned <em>different</em> results depending on the current value of <code>x</code>. Even though the <em>var</em> <code>x</code> remained unchanged throughout this example, the <em>value associated with that var</em> did change!</p>
+<p>Using mutable vars allows us to write programs which we can redefine as we go along.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">decouple</span> <span class="p">[</span><span class="nv">glider</span><span class="p">]</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;bolts released&quot;</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/decouple</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">launch</span> <span class="p">[</span><span class="nv">glider</span><span class="p">]</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nf">decouple</span> <span class="nv">glider</span><span class="p">)</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">prn </span><span class="nv">glider</span> <span class="s">&quot;away!&quot;</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/launch</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">launch</span> <span class="s">&quot;albatross&quot;</span><span class="p">)</span>
+<span class="s">&quot;bolts released&quot;</span>
+<span class="s">&quot;albatross&quot;</span> <span class="s">&quot;away!&quot;</span>
+<span class="nv">nil</span>
+
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">decouple</span> <span class="p">[</span><span class="nv">glider</span><span class="p">]</span>
+  <span class="o">#</span><span class="nv">_=&gt;</span>   <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;tether released&quot;</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/decouple</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">launch</span> <span class="s">&quot;albatross&quot;</span><span class="p">)</span>
+<span class="s">&quot;tether released&quot;</span>
+<span class="s">&quot;albatross&quot;</span> <span class="s">&quot;away!&quot;</span>
+</code></pre>
+<p>A reference which is the same everywhere is called a <em>global variable</em>, or simply a <em>global</em>. But vars have an additional trick up their sleeve: with a <em>dynamic</em> var, we can override their value only within the scope of a particular function call, and nowhere else.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="o">^</span><span class="ss">:dynamic</span> <span class="nv">*board*</span> <span class="ss">:maple</span><span class="p">)</span>
+<span class="o">#</span><span class="ss">'user/*board*</span>
+</code></pre>
+<p><code>^:dynamic</code> tells Clojure that this var can be overridden in one particular scope. By convention, dynamic variables are named with asterisks around them–this reminds us, as programmers, that they are likely to change. Next, we define a function that uses that dynamic var:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">cut</span> <span class="p">[]</span> <span class="p">(</span><span class="nb">prn </span><span class="s">&quot;sawing through&quot;</span> <span class="nv">*board*</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/cut</span>
+</code></pre>
+<p>Note that <code>cut</code> closes over the var <code>*board*</code>, but not the <em>value</em> :maple. Every time the function is invoked, it looks up the <em>current</em> value of <code>*board*</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cut</span><span class="p">)</span>
+<span class="s">&quot;sawing through&quot;</span> <span class="ss">:maple</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">binding </span><span class="p">[</span><span class="nv">*board*</span> <span class="ss">:cedar</span><span class="p">]</span> <span class="p">(</span><span class="nf">cut</span><span class="p">))</span>
+<span class="s">&quot;sawing through&quot;</span> <span class="ss">:cedar</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cut</span><span class="p">)</span>
+<span class="s">&quot;sawing through&quot;</span> <span class="ss">:maple</span>
+</code></pre>
+<p>Like <code>let</code>, the <code>binding</code> macro assigns a value to a name–but where <code>fn</code> and <code>let</code> create immutable <em>lexical scope</em>, <code>binding</code> creates <em>dynamic scope</em>. The difference? Lexical scope is constrained to the literal text of the <code>fn</code> or <code>let</code> expression–but dynamic scope propagates <em>through function calls</em>.</p>
+<p>Within the <code>binding</code> expression, and in every function called from that expression, and every function called from <em>those</em> functions, and so on, <code>*board*</code> has the value <code>:cedar</code>. Outside the <code>binding</code> expression, the value is still <code>:maple</code>. This safety property holds even when the program is executed in multiple threads: only the thread which evaluated the <code>binding</code> expression uses that value. Other threads are unaffected.</p>
+<p>While we use <code>def</code> all the time in the REPL, in real programs you should only mutate vars sparingly. They’re intended for naming functions, important bits of global data, and for tracking the <em>environment</em> of a program–like where to print messages with <code>prn</code>, which database to talk to, and so on. Using vars for mutable program state is a recipe for disaster, as we’re about to see.</p>
+<h2><a href="#atoms" id="atoms">Atoms</a></h2>
+<p>Vars can be read, set, and dynamically bound–but they aren’t easy to <em>evolve</em>. Imagine building up a set of integers:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="o">#</span><span class="p">{})</span>
+<span class="o">#</span><span class="ss">'user/xs</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">i</span> <span class="mi">10</span><span class="p">]</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">xs</span> <span class="nv">i</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="nv">xs</span>
+<span class="o">#</span><span class="p">{</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">}</span>
+</code></pre>
+<p>For each number from 0 to 9, we take the current set of numbers <code>xs</code>, add a particular number <code>i</code> to that set, and redefine <code>xs</code> as the result. This is a common idiom in imperative language like C, Ruby, Javascript, or Java–all variables are mutable by default.</p>
+<pre><code><span></span><span class="n">ImmutableSet</span> <span class="n">xs</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ImmutableSet</span><span class="p">();</span>
+<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">xs</span> <span class="o">=</span> <span class="n">xs</span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre>
+<p>It seems straightforward enough, but there are serious problems lurking here. Specifically, this program is not <em>thread safe</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="o">#</span><span class="p">{})</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">i</span> <span class="mi">10</span><span class="p">]</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="p">(</span><span class="nb">conj </span><span class="nv">xs</span> <span class="nv">i</span><span class="p">))))</span>
+<span class="o">#</span><span class="ss">'user/xs</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="nv">xs</span>
+<span class="o">#</span><span class="p">{</span><span class="mi">1</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">7</span><span class="p">}</span>
+</code></pre>
+<p>This program runs 10 threads in parallel, and each reads the current value of <code>xs</code>, adds its particular number, and defines <code>xs</code> to be that new set of numbers. This read-modify-update process assumed that all updates would be <em>consecutive</em>–not <em>concurrent</em>. When we allowed the program to do two read-modify-updates at the same time, updates were lost.</p>
+<ol>
+<li>Thread 2 read <code>#{0 1}</code></li>
+<li>Thread 3 read <code>#{0 1}</code></li>
+<li>Thread 2 wrote <code>#{0 1 2}</code></li>
+<li>Thread 3 wrote <code>#{0 1 3}</code></li>
+</ol>
+<p>This interleaving of operations allowed the number <code>2</code> to slip through the cracks. We need something stronger–an identity which supports safe transformation from one state to another. Enter atoms.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="p">(</span><span class="nf">atom</span> <span class="o">#</span><span class="p">{}))</span>
+<span class="o">#</span><span class="ss">'user/xs</span>
+<span class="nv">user=&gt;</span> <span class="nv">xs</span>
+<span class="o">#</span><span class="nv">&lt;Atom</span><span class="o">@</span><span class="mi">30</span><span class="nv">bb8cc9</span><span class="err">:</span> <span class="o">#</span><span class="p">{}</span><span class="nv">&gt;</span>
+</code></pre>
+<p>The initial value of this atom is <code>#{}</code>. Unlike vars, atoms are not transparent. When evaluated, they don’t return their underlying values–but notice that when printed, the current value is hiding inside. To get the current value out of an atom, we have to use <code>deref</code> or <code>@</code>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">deref </span><span class="nv">xs</span><span class="p">)</span>
+<span class="o">#</span><span class="p">{}</span>
+<span class="nv">user=&gt;</span> <span class="o">@</span><span class="nv">xs</span>
+<span class="o">#</span><span class="p">{}</span>
+</code></pre>
+<p>Like vars, atoms can be set to a particular value–but instead of <code>def</code>, we use <code>reset!</code>. The exclamation point (sometimes called a <em>bang</em>) is there to remind us that this function <em>modifies</em> the state of its arguments–in this case, changing the value of the atom.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">reset!</span> <span class="nv">xs</span> <span class="ss">:foo</span><span class="p">)</span>
+<span class="ss">:foo</span>
+<span class="nv">user=&gt;</span> <span class="nv">xs</span>
+<span class="o">#</span><span class="nv">&lt;Atom</span><span class="o">@</span><span class="mi">30</span><span class="nv">bb8cc9</span><span class="err">:</span> <span class="ss">:foo&gt;</span>
+</code></pre>
+<p>Unlike vars, atoms can be safely <em>updated</em> using <code>swap!</code>. <code>swap!</code> uses a pure function which takes the current value of the atom and returns a <em>new</em> value. Under the hood, Clojure does some tricks to ensure that these updates are <em>linearizable</em>, which means:</p>
+<ol>
+<li>All updates with `swap! complete in what <em>appears</em> to be a single consecutive order.</li>
+<li>The effect of a swap! never takes place before calling <code>swap!</code>.</li>
+<li>The effect of a swap! is visible to everyone once swap! returns.</li>
+</ol>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nf">atom</span> <span class="mi">0</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">swap!</span> <span class="nv">x</span> <span class="nv">inc</span><span class="p">)</span>
+<span class="mi">1</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">swap!</span> <span class="nv">x</span> <span class="nv">inc</span><span class="p">)</span>
+<span class="mi">2</span>
+</code></pre>
+<p>The first <code>swap!</code> reads the value <code>0</code>, calls <code>(inc 0)</code> to obtain <code>1</code>, and writes <code>1</code> back to the atom. Each call to <code>swap!</code> returns the value that was just written.</p>
+<p>We can pass additional arguments to the function <code>swap!</code> calls. For instance, <code>(swap! x + 5 6)</code> will call <code>(+ x 5 6)</code> to find the new value. Now we have the tools to correct our parallel program from earlier:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="p">(</span><span class="nf">atom</span> <span class="o">#</span><span class="p">{}))</span>
+<span class="o">#</span><span class="ss">'user/xs</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">i</span> <span class="mi">10</span><span class="p">]</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nf">swap!</span> <span class="nv">xs</span> <span class="nb">conj </span><span class="nv">i</span><span class="p">)))</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="o">@</span><span class="nv">xs</span>
+<span class="o">#</span><span class="p">{</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">}</span>
+</code></pre>
+<p>Note that the function we use to update an atom must be <em>pure</em>–must not mutate any state–because when resolving conflicts between multiple threads, Clojure might need to call the update function more than once. Clojure’s reliance on immutable datatypes, immutable variables, and pure functions <em>enables</em> this approach to linearizable mutability. Languages which emphasize mutable datatypes need to use other constructs.</p>
+<p>Atoms are the workhorse of Clojure state. They’re lightweight, safe, fast, and flexible. You can use atoms with any immutable datatype–for instance, a map to track complex state. Reach for an atom whenever you want to update a single thing over time.</p>
+<h2><a href="#refs" id="refs">Refs</a></h2>
+<p>Atoms are a great way to represent state, but they are only linearizable <em>individually</em>. Updates to an atom aren’t well-ordered with respect to other atoms, so if we try to update more than one atom at once, we could see the same kinds of bugs that we did with vars.</p>
+<p>For multi-identity updates, we need a stronger safety property than single-atom linearizability. We want <em>serializability</em>: a global order. For this, Clojure has an identity type called a <em>Ref</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">0</span><span class="p">))</span>
+<span class="o">#</span><span class="ss">'user/x</span>
+<span class="nv">user=&gt;</span> <span class="nv">x</span>
+<span class="o">#</span><span class="nv">&lt;Ref</span><span class="o">@</span><span class="mi">1835</span><span class="nv">d850</span><span class="err">:</span> <span class="mi">0</span><span class="nv">&gt;</span>
+</code></pre>
+<p>Like all identity types, refs are dereferencable:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="o">@</span><span class="nv">x</span>
+<span class="mi">0</span>
+</code></pre>
+<p>But where atoms are updated individually with <code>swap!</code>, refs are updated in <em>groups</em> using <code>dosync</code> transactions. Just as we <code>reset!</code> an atom, we can set refs to new values using <code>ref-set</code>–but unlike atoms, we can change more than one ref at once.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">0</span><span class="p">))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">y</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">0</span><span class="p">))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">dosync</span>
+         <span class="p">(</span><span class="nb">ref-set </span><span class="nv">x</span> <span class="mi">1</span><span class="p">)</span>
+         <span class="p">(</span><span class="nb">ref-set </span><span class="nv">y</span> <span class="mi">2</span><span class="p">))</span>
+<span class="mi">2</span>
+<span class="nv">user=&gt;</span> <span class="p">[</span><span class="o">@</span><span class="nv">x</span> <span class="o">@</span><span class="nv">y</span><span class="p">]</span>
+<span class="p">[</span><span class="mi">1</span> <span class="mi">2</span><span class="p">]</span>
+</code></pre>
+<p>The equivalent of <code>swap!</code>, for a ref, is <code>alter</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">1</span><span class="p">))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">y</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">2</span><span class="p">))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">dosync</span>
+         <span class="p">(</span><span class="nb">alter </span><span class="nv">x</span> <span class="nb">+ </span><span class="mi">2</span><span class="p">)</span>
+         <span class="p">(</span><span class="nb">alter </span><span class="nv">y</span> <span class="nv">inc</span><span class="p">))</span>
+<span class="mi">3</span>
+<span class="nv">user=&gt;</span> <span class="p">[</span><span class="o">@</span><span class="nv">x</span> <span class="o">@</span><span class="nv">y</span><span class="p">]</span>
+<span class="p">[</span><span class="mi">3</span> <span class="mi">3</span><span class="p">]</span>
+</code></pre>
+<p>All <code>alter</code> operations within a <code>dosync</code> take place atomically–their effects are never interleaved with other transactions. If it’s OK for an operation to take place out of order, you can use <code>commute</code> instead of <code>alter</code> for a performance boost:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">dosync</span>
+         <span class="p">(</span><span class="nb">commute </span><span class="nv">x</span> <span class="nb">+ </span><span class="mi">2</span><span class="p">)</span>
+         <span class="p">(</span><span class="nb">commute </span><span class="nv">y</span> <span class="nv">inc</span><span class="p">))</span>
+</code></pre>
+<p>These updates are <em>not</em> guaranteed to take place in the same order–but if all our transactions are equivalent, we can <em>relax</em> the ordering constraints. x + 2 + 3 is equal to x + 3 + 2, so we can do the additions in either order. That’s what <em>commutative</em> means: the same result from all orders. It’s a weaker, but faster kind of safety property.</p>
+<p>Finally, if you want to read a value from one ref and use it to update another, use <code>ensure</code> instead of <code>deref</code> to perform a <em>strongly consistent read</em>–one which is guaranteed to take place in the same logical order as the <code>dosync</code> transaction itself. To add <code>y</code>’s current value to <code>x</code>, use:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">dosync</span>
+         <span class="p">(</span><span class="nb">alter </span><span class="nv">x</span> <span class="nb">+ </span><span class="p">(</span><span class="nb">ensure </span><span class="nv">y</span><span class="p">)))</span>
+</code></pre>
+<p>Refs are a powerful construct, and make it easier to write complex transactional logic safely. However, that safety comes at a cost: refs are typically an order of magnitude slower to update than atoms.</p>
+<p>Use refs only where you need to update multiple pieces of state independently–specifically, where different transactions need to work with distinct but <em>partly overlapping</em> pieces of state. If there’s no overlap between updates, use distinct atoms. If all operations update the same identities, use a single atom to hold a map of the system’s state. If a system requires complex interlocking state spread throughput the program–that’s when to reach for refs.</p>
+<h2><a href="#summary" id="summary">Summary</a></h2>
+<p>We moved beyond immutable programs into the world of <em>changing state</em>–and discovered the challenges of concurrency and parallelism. Where symbols provide immutable and transparent names for values objects, Vars provide <em>mutable</em> transparent names. We also saw a host of anonymous identity types for different purposes: delays for lazy evaluation, futures for parallel evaluation, and promises for arbitrary handoff of a value. Updates to vars are unsafe, so atoms and refs provide linearizable and serializable identities where transformations are <em>safe</em>.</p>
+<p>Where reading a symbol or var is <em>transparent</em>–they evaluate directly to their current values–reading these new identity types requires the use of <code>deref</code>. Delays, futures, and promises <em>block</em>: deref must wait until the value is ready. This allows synchronization of concurrent threads. Atoms and refs, by contrast, can be read immediately at any time–but <em>updating</em> their values should occur within a <code>swap!</code> or <code>dosync</code> transaction, respectively.</p>
+<table>
+<thead>
+<tr><th>Type</th>
+<th>Mutability</th>
+<th>Reads</th>
+<th>Updates</th>
+<th>Evaluation</th>
+<th>Scope</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td>Symbol</td>
+  <td>Immutable</td>
+  <td>Transparent</td>
+  <td></td>
+  <td></td>
+  <td>Lexical</td>
+</tr>
+<tr>
+  <td>Var</td>
+  <td>Mutable</td>
+  <td>Transparent</td>
+  <td>Unrestricted</td>
+  <td></td>
+  <td>Global/Dynamic</td>
+</tr>
+<tr>
+  <td>Delay</td>
+  <td>Mutable</td>
+  <td>Blocking</td>
+  <td>Once only</td>
+  <td>Lazy</td>
+  <td></td>
+</tr>
+<tr>
+  <td>Future</td>
+  <td>Mutable</td>
+  <td>Blocking</td>
+  <td>Once only</td>
+  <td>Parallel</td>
+  <td></td>
+</tr>
+<tr>
+  <td>Promise</td>
+  <td>Mutable</td>
+  <td>Blocking</td>
+  <td>Once only</td>
+  <td></td>
+  <td></td>
+</tr>
+<tr>
+  <td>Atom</td>
+  <td>Mutable</td>
+  <td>Nonblocking</td>
+  <td>Linearizable</td>
+  <td></td>
+  <td></td>
+</tr>
+<tr>
+  <td>Ref</td>
+  <td>Mutable</td>
+  <td>Nonblocking</td>
+  <td>Serializable</td>
+  <td></td>
+  <td></td>
+</tr>
+</tbody>
+</table>
+<p>State is undoubtedly the hardest part of programming, and this chapter probably felt overwhelming! On the other hand, we’re now equipped to solve serious problems. We’ll take a break to apply what we’ve learned through practical examples, in Chapter Seven: <a href="http://aphyr.com/posts/311-clojure-from-the-ground-up-logistics">Logistics</a>.</p>
+<h2><a href="#exercises" id="exercises">Exercises</a></h2>
+<p>Finding the sum of the first 10000000 numbers takes about 1 second on my machine:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="kd">defn </span><span class="nv">sum</span> <span class="p">[</span><span class="nv">start</span> <span class="nv">end</span><span class="p">]</span> <span class="p">(</span><span class="nb">reduce + </span><span class="p">(</span><span class="nb">range </span><span class="nv">start</span> <span class="nv">end</span><span class="p">)))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">time </span><span class="p">(</span><span class="nf">sum</span> <span class="mi">0</span> <span class="mi">1</span><span class="nv">e7</span><span class="p">))</span>
+<span class="s">&quot;Elapsed time: 1001.295323 msecs&quot;</span>
+<span class="mi">49999995000000</span>
+</code></pre>
+<ol>
+<li>
+<p>Use <code>delay</code> to compute this sum lazily; show that it takes no time to return the delay, but roughly 1 second to <code>deref</code>.</p>
+</li>
+<li>
+<p>We can do the computation in a new thread directly, using <code>(.start (Thread. (fn [] (sum 0 1e7)))</code>–but this simply runs the <code>(sum)</code> function and discards the results. Use a promise to hand the result back out of the thread. Use this technique to write your own version of the <code>future</code> macro.</p>
+</li>
+<li>
+<p>If your computer has two cores, you can do this expensive computation twice as fast by splitting it into two parts: <code>(sum 0 (/ 1e7 2))</code>, and <code>(sum (/ 1e7 2) 1e7)</code>, then adding those parts together. Use <code>future</code> to do both parts at once, and show that this strategy gets the same answer as the single-threaded version, but takes roughly half the time.</p>
+</li>
+<li>
+<p>Instead of using <code>reduce</code>, store the sum in an atom and use two futures to add each number from the lower and upper range to that atom. Wait for both futures to complete using <code>deref</code>, then check that the atom contains the right number. Is this technique faster or slower than <code>reduce</code>? Why do you think that might be?</p>
+</li>
+<li>
+<p>Instead of using a lazy list, imagine two threads are removing tasks from a pile of work. Our work pile will be the list of all integers from 0 to 10000:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">work</span> <span class="p">(</span><span class="nb">ref </span><span class="p">(</span><span class="nb">apply list </span><span class="p">(</span><span class="nb">range </span><span class="mi">1</span><span class="nv">e5</span><span class="p">))))</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span> <span class="o">@</span><span class="nv">work</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">)</span>
+</code></pre>
+<p>And the sum will be a ref as well:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="k">def </span><span class="nv">sum</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">0</span><span class="p">))</span>
+</code></pre>
+<p>Write a function which, in a <code>dosync</code> transaction, removes the first number in <code>work</code> and adds it to <code>sum</code>.<br>
+Then, in two futures, call that function over and over again until there’s no work left. Verify that <code>@sum</code>
+is <code>4999950000</code>. Experiment with different combinations of <code>alter</code> and <code>commute</code>–if both are correct, is
+one faster? Does using <code>deref</code> instead of <code>ensure</code> change the result?</p>
+</li>
+</ol>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1798"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/946aeb5ce5f353e02b51ac863ec0c1d4?r=pg&s=96&d=identicon" alt="Edward Cho" title="Edward Cho" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Edward Cho
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1798">
+            <time datetime="Jan 1, 2014, 7:12:41 PM" pubdate>
+              2014-01-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Kudos to your effort, this is great work!</p>
+
+<p>I just have a minor correction in your dynamic vars example.  The binding call should rebind <em>board</em> instead of board. E.g.</p>
+
+<p>(cut)</p>
+
+<p>(binding <a rel="nofollow"><em>board</em> :cedar</a>)</p>
+
+<p>(cut)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1799"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/946aeb5ce5f353e02b51ac863ec0c1d4?r=pg&s=96&d=identicon" alt="Edward Cho" title="Edward Cho" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Edward Cho
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1799">
+            <time datetime="Jan 1, 2014, 7:27:49 PM" pubdate>
+              2014-01-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Doh, Markdown?  That should be:</p>
+<code class="block">(cut)
+
+(binding [*board* :cedar] (cut))
+
+(cut)</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1800"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/722a6812714c20da3f477ec9fb32180a?r=pg&s=96&d=identicon" alt="Andy Dwelly" title="Andy Dwelly" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Andy Dwelly
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1800">
+            <time datetime="Jan 2, 2014, 3:59:42 AM" pubdate>
+              2014-01-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is great. I hope you’ll consider publishing this set of posts as a book when you are done (ideally a kindle one AFAIC). I’d buy it - it’s far more readable and to the point than other beginner guides. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1801"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1801">
+            <time datetime="Jan 2, 2014, 12:12:37 PM" pubdate>
+              2014-01-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for the correction, Edward. Fixed! :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1802"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/ec93f8f40f6bddd88ea08d90a4ef07bf?r=pg&s=96&d=identicon" alt="Saad Mufti" title="Saad Mufti" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Saad Mufti
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1802">
+            <time datetime="Jan 3, 2014, 7:35:27 PM" pubdate>
+              2014-01-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great series, I’m learning by leaps and bounds, and eagerly anticipating each chapter :-) A small correction, in your exercises section, you have:</p>
+
+<p>“We can do the computation in a new thread directly, using (Thread. (fn <a rel="nofollow"></a>)–but this simply runs the (sum-up) function and discards the results.”</p>
+
+<p>First a minor point, the name of the function you defined at the top of the Exercises section is actually “sum” and not “sump-up”. Second, I don’t think this actually even runs anything, it just creates the java.lang.Thread object and passes in the Clojure function as its runnable, because all Clojure functions at the Java level implement the java.lang.Runnable interface. I think you need the following to actually run it, though of course you still need the solution to your exercise using “promise” to actually get a reference to the result:</p>
+
+<p>(.start (Thread. (fn <a rel="nofollow"></a>))</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1803"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/ec93f8f40f6bddd88ea08d90a4ef07bf?r=pg&s=96&d=identicon" alt="Saad Mufti" title="Saad Mufti" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Saad Mufti
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1803">
+            <time datetime="Jan 3, 2014, 7:38:07 PM" pubdate>
+              2014-01-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Yikes, bitten by the markup gods, let me try that again:</p>
+
+<p>Great series, I’m learning by leaps and bounds, and eagerly anticipating each chapter :-) A small correction, in your exercises section, you have:</p>
+
+<p>“We can do the computation in a new thread directly, using 
+    (Thread. (fn <a rel="nofollow"></a>)</p>
+
+<p>–but this simply runs the (sum-up) function and discards the results.”</p>
+
+<p>First a minor point, the name of the function you defined at the top of the Exercises section is actually “sum” and not “sump-up”. Second, I don’t think this actually even runs anything, it just creates the java.lang.Thread object and passes in the Clojure function as its runnable, because all Clojure functions at the Java level implement the java.lang.Runnable interface. I think you need the following to actually run it, though of course you still need the solution to your exercise using “promise” to actually get a reference to the result:</p>
+<code class="block">(.start (Thread. (fn [] (sum-up 0 1e7)))</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1807"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1807">
+            <time datetime="Jan 6, 2014, 8:04:41 PM" pubdate>
+              2014-01-06
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Correct on both counts, Saad. Fixed. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1808"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/9012e1f859fd9ebe0650cd94dcf3249a?r=pg&s=96&d=identicon" alt="Dan Haffey" title="Dan Haffey" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Dan Haffey
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1808">
+            <time datetime="Jan 10, 2014, 4:22:44 PM" pubdate>
+              2014-01-10
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Your description of <code>ensure</code> doesn’t quite match my understanding of it as an optimized version of <code>(ref-set y @y)</code>. You wrote:</p>
+
+<blockquote>
+<p>if you want to read a value from one ref and use it to update another, use ensure instead of deref to perform a strongly consistent read</p>
+</blockquote>
+
+<p>Could you elaborate on why <code>deref</code> doesn’t suffice in <code>(alter x + (ensure y))</code>? Sure, <code>deref</code> means another transaction might modify <code>y</code> before we commit, but wouldn’t both <code>deref</code> and <code>ensure</code> return the value of <code>y</code> from our snapshot regardless? I thought it would take some additional semantic constraint relating <code>x</code> and <code>y</code> to necessitate <code>ensure</code> here. Just defensive programming, or am I missing something?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1810"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Andreas Olsson" title="Andreas Olsson" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Andreas Olsson
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1810">
+            <time datetime="Jan 14, 2014, 1:44:22 AM" pubdate>
+              2014-01-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hello there.</p>
+
+<p>I´m trying to learn some and I like your tutorial.
+I have tryed changing som of youre code and got into problems.</p>
+
+<p>this code works with #{} but not with []… why?</p>
+
+<blockquote>
+<p>(def sx(atom []))</p>
+</blockquote>
+
+<p>(dotimes <a rel="nofollow">i 10</a>))</p>
+
+<blockquote>
+</blockquote>
+
+<p>If you dont try you never learn… =)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1812"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/242eb6bfde0f58b0943cd8c1ae068e00?r=pg&s=96&d=identicon" alt="Andreas Olsson" title="Andreas Olsson" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Andreas Olsson
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1812">
+            <time datetime="Jan 14, 2014, 1:48:58 AM" pubdate>
+              2014-01-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>The Code dissapers. Sorry. (def sx(atom [1 2])) (dotimes <a rel="nofollow">i 10</a>)).</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1820"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="pseudoanonymous" title="pseudoanonymous" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            pseudoanonymous
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1820">
+            <time datetime="Feb 16, 2014, 8:42:20 AM" pubdate>
+              2014-02-16
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for writing this, it is really accessible.</p>
+
+<p>Will you have a concurrency chapter? I’m assuming that’s when you’ll talk about agents.</p>
+
+<p>I’m really looking forward to reading the next installment.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1843"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/ee8c87b63359c999698970acc89148ea?r=pg&s=96&d=identicon" alt="tiensonqin" title="tiensonqin" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            tiensonqin
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1843">
+            <time datetime="Mar 13, 2014, 3:23:05 AM" pubdate>
+              2014-03-13
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This series is so helpful, very great work!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1962"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4c46bf42871b485af2f44f03023d99f3?r=pg&s=96&d=identicon" alt="Luke Worth" title="Luke Worth" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Luke Worth
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1962">
+            <time datetime="Oct 9, 2014, 4:02:40 AM" pubdate>
+              2014-10-09
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I’m trying to figure out exercise 3. Currently I have:</p>
+<code class="block">(time (let [a (future (sum 0 (/ 1e8 2))) b (future (sum (/ 1e8 2) 1e8))] (+ @a @b)))</code>
+<p>but this has roughly the same runtime as just</p>
+<code class="block">(time (let [a (sum 0 (/ 1e8 2)) b (sum (/ 1e8 2) 1e8)] (+ a b)))</code>
+<p>What have I done wrong?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1963"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4c46bf42871b485af2f44f03023d99f3?r=pg&s=96&d=identicon" alt="Luke Worth" title="Luke Worth" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Luke Worth
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-1963">
+            <time datetime="Oct 10, 2014, 3:40:44 PM" pubdate>
+              2014-10-10
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>In reply to myself, it seems that upgrading from Java 6 (pre-installed on my mac) to Java 8 (from Oracle) has improved the speed of the multi-threaded version.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2480"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/acce31a5852d552b2dba38c4cda7b811?r=pg&s=96&d=identicon" alt="Kenneth R. Beesley" title="Kenneth R. Beesley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Kenneth R. Beesley
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-2480">
+            <time datetime="Aug 11, 2015, 2:08:26 PM" pubdate>
+              2015-08-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Let me first repeat that you explain Clojure with remarkable skill and readability.  You should definitely write a book. 
+On one little point, the following example might be a bit misleading:</p>
+
+<p>(def xs (atom #{}))</p>
+
+<p>(dotimes <a rel="nofollow">i 10</a>))</p>
+
+<p>The output is shown as:  #{0 1 2 3 4 5 6 7 8 9}, which might imply that order is maintained.  Earlier in the presentation, it is stated that “All updates with swap! complete in what appears to be a single consecutive order.”  However, sets being sets, the order of elements is insignificant, and the output may appear different when printed.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2481"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/acce31a5852d552b2dba38c4cda7b811?r=pg&s=96&d=identicon" alt="Kenneth R. Beesley" title="Kenneth R. Beesley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Kenneth R. Beesley
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-2481">
+            <time datetime="Aug 11, 2015, 2:12:29 PM" pubdate>
+              2015-08-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Oops.  Code disappears.  Let me try again with a marked up Clojure code block.  First try:</p>
+<code class="block"><span class="p">(</span><span class="k">def </span><span class="nv">xs</span> <span class="p">(</span><span class="nf">atom</span> <span class="o">#</span><span class="p">{}))</span>
+<span class="p">(</span><span class="nb">dotimes </span><span class="p">[</span><span class="nv">i</span> <span class="mi">5</span><span class="p">]</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nf">swap!</span> <span class="nv">xs</span> <span class="nb">conj </span><span class="nv">i</span><span class="p">)))</span>
+<span class="o">@</span><span class="nv">xs</span>
+</code>
+<p>The output is shown as </p>
+<code class="block"><span class="o">#</span><span class="p">{</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span> <span class="mi">8</span> <span class="mi">9</span><span class="p">}</span>
+</code>
+<p>which might imply that the order is preserved.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2482"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/acce31a5852d552b2dba38c4cda7b811?r=pg&s=96&d=identicon" alt="Kenneth R. Beesley" title="Kenneth R. Beesley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Kenneth R. Beesley
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-2482">
+            <time datetime="Aug 11, 2015, 2:33:39 PM" pubdate>
+              2015-08-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>On the issue of swap!, when the indicated function’s operation is not commutative, it might be useful to point out that the old value of the atom is used as the <em>first</em> argument to the function.  E.g. in the example</p>
+<code class="block"><span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nf">atom</span> <span class="mi">1</span><span class="p">))</span>
+<span class="p">(</span><span class="nf">swap!</span> <span class="nv">x</span> <span class="nb">+ </span><span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+</code>
+<p>it doesn’t matter if the old value of x is used as the first or last argument to + because + is commutative.  But in</p>
+<code class="block"><span class="p">(</span><span class="k">def </span><span class="nv">x</span> <span class="p">(</span><span class="nf">atom</span> <span class="mi">4</span><span class="p">))</span>
+<span class="p">(</span><span class="nf">swap!</span>  <span class="nv">x</span>  <span class="nb">- </span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+</code>
+<p>using the - function/operation, the old value of x is definitely used as the <em>first</em> argument to 1, and the resulting value is of x is 1, e.g. </p>
+<code class="block"><span class="p">(</span><span class="nf">swap!</span> <span class="nv">x</span> <span class="nb">- </span> <span class="nv">&lt;oldvalueofx&gt;</span> <span class="mi">1</span> <span class="mi">2</span><span class="p">)</span>
+</code>
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2483"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/acce31a5852d552b2dba38c4cda7b811?r=pg&s=96&d=identicon" alt="Kenneth R. Beesley" title="Kenneth R. Beesley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Kenneth R. Beesley
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-2483">
+            <time datetime="Aug 12, 2015, 6:24:19 PM" pubdate>
+              2015-08-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Trying to sort out delay, future and promise, I came up with the following summary.  Please correct as necessary.</p>
+
+<p>delay
+    The delay definition specifies code to set/bind the identity, but
+    it doesn’t execute that code.
+    When the delay is dereferenced, only then is the code is executed, 
+    and the dereference will effectively need to wait/hang until that 
+    code is finished. The result of the dereference is cashed, so if the
+    identity is dereferenced again, the previously computed result is 
+    simply looked up and returned.</p>
+
+<p>future
+    The future definition specifies code to set/bind the identity, and
+    it creates a thread and immediately starts executing the code in
+    that thread.  When the identity is dereferenced, the execution will
+    have to wait/hang if and only if the code launched in the thread has 
+    not yet terminated.</p>
+
+<p>promise
+    The promise definition does NOT specify code to set/bind the
+    identity; it simply creates an “empty” promise, with the assumption
+    that some other code somewhere/somehow will ‘deliver’ a value to
+    that identity.  The deference of the promise identity will have to 
+    wait/hang if and only if a value has not yet been ‘deliver’-ed to
+    the promise.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2920"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="new clojurian" title="new clojurian" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            new clojurian
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-2920">
+            <time datetime="Dec 8, 2017, 9:38:36 AM" pubdate>
+              2017-12-08
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>My answers for the questions 2, 3 and 4 :</p>
+
+<ol>
+<li>
+<code>(defmacro
+my-future
+[&amp; args] (
+        let [p# promise]
+        ((.start (Thread.
+                  (fn [] (do ~args))))
+         p#)))</code>
+</li>
+</ol>
+
+<p>3.
+<code>(time (let [a (future (sum 0 (/ 1e7 2))) b (sum (/ 1e7 2) 1e7)] (+ @a b)))</code></p>
+
+<p>4.
+<code>(defn my-sum 
+  [start end] (
+               let [a (atom 0)] 
+               (let [b (future (doseq [i (range start (/ end 2))] (swap! a + i)))
+                     c (future (doseq [i (range (/ end 2) end)] (swap! a + i)))]
+                 @b @c)
+               @a))</code>`</p>
+
+<p>How can i improve them ?</p>
+
+<p>Thx.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3190"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/69d5391257453ddaeb2ca6557ad9439d?r=pg&s=96&d=identicon" alt="Mariano Mollo" title="Mariano Mollo" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://marianomollo.me" rel="nofollow">
+              Mariano Mollo
+            </a>
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-3190">
+            <time datetime="Aug 21, 2020, 9:59:10 AM" pubdate>
+              2020-08-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi new clojurian, it seems that inside the let, you should call the promise doing <code>(promise)</code>, otherwise p# is linked to the function named promise itself and is not actually a promise.</p>
+
+<p>Also, p# returns an empty promise because the thread didn’t deliver the obtained value to the promise. I tried my best and came up with this:</p>
+<code class="block"><span class="p">(</span><span class="kd">defmacro </span><span class="nv">my-future</span> <span class="p">[</span><span class="nv">expr</span><span class="p">]</span>
+  <span class="o">`</span><span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">p#</span> <span class="p">(</span><span class="nf">promise</span><span class="p">)]</span>
+     <span class="p">(</span><span class="nf">.start</span> <span class="p">(</span><span class="nf">Thread.</span> <span class="p">(</span><span class="k">fn </span><span class="p">[]</span> <span class="p">(</span><span class="nf">deliver</span> <span class="nv">p#</span> <span class="o">~</span><span class="nv">expr</span><span class="p">))))</span>
+     <span class="nv">p#</span><span class="p">))</span>
+</code>
+<p>I played around a lot with macroexpand to get the desired result.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3502"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4e05cdd796d05953e23ff15a2e1a85b7?r=pg&s=96&d=identicon" alt="Elias Vakkuri" title="Elias Vakkuri" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Elias Vakkuri
+          
+          
+          on
+          <a href="/posts/306-clojure-from-the-ground-up-state#comment-3502">
+            <time datetime="Jul 28, 2021, 1:32:38 AM" pubdate>
+              2021-07-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I’d like to join in and thank you for this great content!</p>
+
+
+<p>A question on exercise 5: how should I be using ensure? I have a sum function that checks whether the work queue has any items in it and pops the first one in a <code>when-let</code> block. However, when I try to run this, I get an error: <code>Execution error (IllegalStateException) ... No transaction running</code>. I guess then the ensure should be in an <code>alter</code> expression, but how should I then check if the queue has any items in it?</p>
+
+
+<p>Thanks for any help!</p>
+
+
+<p>Code:</p>
+
+
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">ref-sum</span>
+  <span class="p">[</span><span class="nv">work-ref</span> <span class="nv">sum-ref</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">when-let </span><span class="p">[</span><span class="nv">n</span> <span class="p">(</span><span class="nb">first </span><span class="p">(</span><span class="nb">ensure </span><span class="nv">work-ref</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nf">dosync</span>
+     <span class="p">(</span><span class="nb">alter </span><span class="nv">sum-ref</span> <span class="nb">+ </span><span class="nv">n</span><span class="p">)</span>
+     <span class="p">(</span><span class="nb">alter </span><span class="nv">work-ref</span> <span class="nv">rest</span><span class="p">))</span>
+    <span class="p">(</span><span class="nf">recur</span> <span class="nv">work-ref</span> <span class="nv">sum-ref</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">ref-sum-multi</span>
+  <span class="p">[]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">work</span> <span class="p">(</span><span class="nb">ref </span><span class="p">(</span><span class="nb">apply list </span><span class="p">(</span><span class="nb">range </span><span class="mi">1</span><span class="nv">e5</span><span class="p">)))</span>
+        <span class="nv">sum-ref</span> <span class="p">(</span><span class="nb">ref </span><span class="mi">0</span><span class="p">)</span>
+        <span class="nv">a</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nf">ref-sum</span> <span class="nv">work</span> <span class="nv">sum-ref</span><span class="p">))</span>
+        <span class="nv">b</span> <span class="p">(</span><span class="nf">future</span> <span class="p">(</span><span class="nf">ref-sum</span> <span class="nv">work</span> <span class="nv">sum-ref</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nb">deref </span><span class="nv">a</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">deref </span><span class="nv">b</span><span class="p">)</span>
+    <span class="o">@</span><span class="nv">sum-ref</span><span class="p">))</span>
+</code></pre>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="306" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

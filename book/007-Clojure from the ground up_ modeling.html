@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: modeling</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/312-clojure-from-the-ground-up-modeling" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/312-clojure-from-the-ground-up-modeling">Clojure from the ground up: modeling</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Feb 19, 2014, 1:17:39 AM" pubdate>
+          2014-02-19
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>Previously: <a href="http://aphyr.com/posts/311-clojure-from-the-ground-up-logistics">Logistics</a></p>
+<p>Until this point in the book, we’ve dealt primarily in specific details: what an expression is, how math works, which functions apply to different data structures, and where code lives. But programming, like speaking a language, painting landscapes, or designing turbines, is about more than the <em>nuts and bolts</em> of the trade. It’s knowing how to <em>combine</em> those parts into a cohesive whole–and this is a skill which is difficult to describe formally. In this part of the book, I’d like to work with you on an integrative tour of one particular problem: modeling a rocket in flight.</p>
+<p>We’re going to reinforce our concrete knowledge of the standard library by using maps, sequences, and math functions together. At the same time, we’re going to practice how to represent a complex system; decomposing a problem into smaller parts, naming functions and variables, and writing tests.</p>
+<h2><a href="#so-you-want-to-go-to-space" id="so-you-want-to-go-to-space">So you want to go to space</a></h2>
+<p>First, we need a representation of a craft. The obvious properties for a rocket are its dry mass (how much it weighs without fuel), fuel mass, position, velocity, and time. We’ll create a new file in our scratch project–<code>src/scratch/rocket.clj</code>–to talk about spacecraft.</p>
+<p>For starters, let’s pattern our craft after an <a href="http://en.wikipedia.org/wiki/Atlas_V">Atlas V</a> launch vehicle. We’ll represent everything in SI units–kilograms, meters, newtons, etc. The Atlas V carries 627,105 lbs of LOX/RP-1 fuel, and a total mass of 334,500 kg gives only 50,050 kg of mass which <em>isn’t</em> fuel. It develops 4152 kilonewtons of thrust and runs for 253 seconds, with a <a href="http://en.wikipedia.org/wiki/Specific_impulse">specific impulse</a> (effectively, exhaust velocity) of 3.05 kilometers/sec. Real rockets develop varying amounts of thrust depending on the atmosphere, but we’ll pretend it’s constant in our simulation.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">atlas-v</span>
+ <span class="p">[]</span>
+  <span class="p">{</span><span class="ss">:dry-mass</span>  <span class="mi">50050</span>
+   <span class="ss">:fuel-mass</span> <span class="mi">284450</span>
+   <span class="ss">:time</span> <span class="mi">0</span>
+   <span class="ss">:isp</span> <span class="mi">3050</span>
+   <span class="ss">:max-fuel-rate</span> <span class="p">(</span><span class="nb">/ </span><span class="mi">284450</span> <span class="mi">253</span><span class="p">)</span>
+   <span class="ss">:max-thrust</span> <span class="mf">4.152</span><span class="nv">e6</span><span class="p">})</span>
+</code></pre>
+<p>How heavy is the craft?</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">mass</span>
+  <span class="s">&quot;The total mass of a craft.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="ss">:dry-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)))</span>
+</code></pre>
+<p>What about the position and velocity? We could represent them in Cartesian coordinates–x, y, and z–or we could choose spherical coordinates: a radius from the planet and angle from the pole and 0 degrees longitude. I’ve got a hunch that spherical coordinates will be easier for position, but accelerating the craft will be simplest in in x, y, and z terms. The center of the planet is a natural choice for the coordinate system’s origin (0, 0, 0). We’ll choose z along the north pole, and x and y in the plane of the equator.</p>
+<p>Let’s define a space center where we launch from–let’s say it’s initially on the equator at y=0. To figure out the x coordinate, we’ll need to know how far the space center is from the center of the earth. The earth’s <a href="http://en.wikipedia.org/wiki/Earth_radius#Equatorial_radius">equatorial radius</a> is ~6378 kilometers.</p>
+<pre><code><span></span><span class="p">(</span><span class="k">def </span><span class="nv">earth-equatorial-radius</span>
+ <span class="s">&quot;Radius of the earth, in meters&quot;</span>
+  <span class="mi">6378137</span><span class="p">)</span>
+</code></pre>
+<p>How fast is the surface moving? Well the earth’s day is 86,400 seconds long,</p>
+<pre><code><span></span><span class="p">(</span><span class="k">def </span><span class="nv">earth-day</span>
+  <span class="s">&quot;Length of an earth day, in seconds.&quot;</span>
+  <span class="mi">86400</span><span class="p">)</span>
+</code></pre>
+<p>which means a given point on the equator has to go 2 * pi * equatorial radius meters in earth-day seconds:</p>
+<pre><code><span></span><span class="p">(</span><span class="k">def </span><span class="nv">earth-equatorial-speed</span>
+  <span class="s">&quot;How fast points on the equator move, relative to the center of the earth,</span>
+<span class="s">  in meters/sec.&quot;</span>
+  <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">Math/PI</span> <span class="nv">earth-equatorial-radius</span><span class="p">)</span>
+     <span class="nv">earth-day</span><span class="p">))</span>
+</code></pre>
+<p>So our space center is on the equator (z=0), at y=0 by choice, which means x is the equatorial radius. Since the earth is spinning, the space center is moving at earth-equatorial-speed in the y direction–and not changing at all in x or z.</p>
+<pre><code><span></span><span class="p">(</span><span class="k">def </span><span class="nv">initial-space-center</span>
+  <span class="s">&quot;The initial position and velocity of the launch facility&quot;</span>
+  <span class="p">{</span><span class="ss">:time</span>     <span class="mi">0</span>
+   <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="nv">earth-equatorial-radius</span>
+              <span class="ss">:y</span> <span class="mi">0</span>
+              <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>
+   <span class="ss">:velocity</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">0</span>
+              <span class="ss">:y</span> <span class="nv">earth-equatorial-speed</span>
+              <span class="ss">:z</span> <span class="mi">0</span><span class="p">}})</span>
+</code></pre>
+<p><code>:position</code> and <code>:velocity</code> are both <a href="http://en.wikipedia.org/wiki/Euclidean_vector#Representations">vectors</a>, in the sense that they describe a position, or a direction, in terms of x, y, and z components. This is a <em>different</em> kind of vector than a Clojure vector, like <code>[1 2 3]</code>. We’re actually representing these logical vectors as Clojure <em>maps</em>, with <code>:x</code>, <code>:y</code>, and <code>:z</code> keys, corresponding to the distance along the x, y, and z directions, from the center of the earth. Throughout this chapter, I’ll mainly use the term <em>coordinates</em> to talk about these structures, to avoid confusion with Clojure vectors.</p>
+<p>Now let’s create a function which positions our craft on the launchpad at time 0. We’ll just <em>merge</em> the spacecraft’s with the initial space center, overwriting the craft’s time and space coordinates.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">prepare</span>
+  <span class="s">&quot;Prepares a craft for launch from an equatorial space center.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">merge </span><span class="nv">craft</span> <span class="nv">initial-space-center</span><span class="p">))</span>
+</code></pre>
+<h2><a href="#forces" id="forces">Forces</a></h2>
+<p>Gravity continually pulls the spacecraft towards the center of the Earth, accelerating it by 9.8 meters/second every second. To figure out what direction is towards the Earth, we’ll need the angles of a <a href="http://en.wikipedia.org/wiki/Spherical_coordinate_system">spherical coordinate system</a>. We’ll use the trigonometric functions from <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/Math.html">java.lang.Math</a>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">magnitude</span>
+  <span class="s">&quot;What's the radius of a given set of cartesian coordinates?&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="c1">; By the Pythagorean theorem...</span>
+  <span class="p">(</span><span class="nf">Math/sqrt</span> <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">cartesian-&gt;spherical</span>
+  <span class="s">&quot;Converts a map of Cartesian coordinates :x, :y, and :z to spherical coordinates :r, :theta, and :phi.&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">r</span> <span class="p">(</span><span class="nf">magnitude</span> <span class="nv">c</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:r</span> <span class="nv">r</span>
+     <span class="ss">:theta</span> <span class="p">(</span><span class="nf">Math/acos</span> <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">c</span><span class="p">)</span> <span class="nv">r</span><span class="p">))</span>
+     <span class="ss">:phi</span>   <span class="p">(</span><span class="nf">Math/atan2</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c</span><span class="p">))}))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">spherical-&gt;cartesian</span>
+  <span class="s">&quot;Converts spherical to Cartesian coordinates.&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="p">{</span><span class="ss">:x</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:r</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="nf">Math/sin</span> <span class="p">(</span><span class="ss">:theta</span> <span class="nv">c</span><span class="p">))</span> <span class="p">(</span><span class="nf">Math/cos</span> <span class="p">(</span><span class="ss">:phi</span> <span class="nv">c</span><span class="p">)))</span>
+   <span class="ss">:y</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:r</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="nf">Math/sin</span> <span class="p">(</span><span class="ss">:theta</span> <span class="nv">c</span><span class="p">))</span> <span class="p">(</span><span class="nf">Math/sin</span> <span class="p">(</span><span class="ss">:phi</span> <span class="nv">c</span><span class="p">)))</span>
+   <span class="ss">:z</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:r</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="nf">Math/cos</span> <span class="p">(</span><span class="ss">:phi</span> <span class="nv">c</span><span class="p">)))})</span>
+</code></pre>
+<p>With those angles in mind, computing the gravitational acceleration is easy. We take the spherical coordinates of the spacecraft and replace the radius with the total force due to gravity. Then we can transform that spherical force back into Cartesian coordinates.</p>
+<pre><code><span></span><span class="p">(</span><span class="k">def </span><span class="nv">g</span> <span class="s">&quot;Acceleration of gravity in meters/s^2&quot;</span> <span class="mf">-9.8</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">gravity-force</span>
+  <span class="s">&quot;The force vector, each component in Newtons, due to gravity.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="c1">; Since force is mass times acceleration...</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">total-force</span> <span class="p">(</span><span class="nb">* </span><span class="nv">g</span> <span class="p">(</span><span class="nf">mass</span> <span class="nv">craft</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">craft</span>
+        <span class="c1">; Now we'll take the craft's position</span>
+        <span class="ss">:position</span>
+        <span class="c1">; in spherical coordinates,</span>
+        <span class="nv">cartesian-&gt;spherical</span>
+        <span class="c1">; replace the radius with the gravitational force...</span>
+        <span class="p">(</span><span class="nb">assoc </span><span class="ss">:r</span> <span class="nv">total-force</span><span class="p">)</span>
+        <span class="c1">; and transform back to Cartesian-land</span>
+        <span class="nv">spherical-&gt;cartesian</span><span class="p">)))</span>
+</code></pre>
+<p>Rockets produce thrust by consuming fuel. Let’s say the fuel consumption is always the maximum, until we run out:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">fuel-rate</span>
+  <span class="s">&quot;How fast is fuel, in kilograms/second, consumed by the craft?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">if </span><span class="p">(</span><span class="nb">pos? </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:max-fuel-rate</span> <span class="nv">craft</span><span class="p">)</span>
+    <span class="mi">0</span><span class="p">))</span>
+</code></pre>
+<p>Now that we know how much fuel is being consumed, we can compute the force the rocket engine develops. That force is simply the mass consumed per second times the exhaust velocity–which is the specific impulse <code>:isp</code>. We’ll ignore atmospheric effects.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">thrust</span>
+  <span class="s">&quot;How much force, in newtons, does the craft's rocket engines exert?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="nf">fuel-rate</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="ss">:isp</span> <span class="nv">craft</span><span class="p">)))</span>
+</code></pre>
+<p>Cool. What about the direction of thrust? Just for grins, let’s keep the rocket pointing entirely along the x axis.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">engine-force</span>
+  <span class="s">&quot;The force vector, each component in Newtons, due to the rocket engine.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">t</span> <span class="p">(</span><span class="nf">thrust</span> <span class="nv">craft</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:x</span> <span class="nv">t</span>
+     <span class="ss">:y</span> <span class="mi">0</span>
+     <span class="ss">:z</span> <span class="mi">0</span><span class="p">}))</span>
+</code></pre>
+<p>The total force on a craft is just the sum of gravity and thrust. To sum these maps together, we’ll need a way to sum the x, y, and z components independently. Clojure’s <code>merge-with</code> function combines common fields in maps using a function, so this is surprisingly straightforward.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">total-force</span>
+  <span class="s">&quot;Total force on a craft.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="nf">engine-force</span> <span class="nv">craft</span><span class="p">)</span>
+                <span class="p">(</span><span class="nf">gravity-force</span> <span class="nv">craft</span><span class="p">)))</span>
+</code></pre>
+<p>The acceleration of a craft, by <a href="http://www.physicsclassroom.com/class/newtlaws/u2l3a.cfm">Newton’s second law</a>, is force divided by mass. This one’s a little trickier; given <code>{:x 1 :y 2 :z 4}</code> we want to apply a function–say, multiplication by a factor, to each number. Since maps are sequences of key/value pairs…</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">seq </span><span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span> <span class="ss">:y</span> <span class="mi">2</span> <span class="ss">:z</span> <span class="mi">3</span><span class="p">})</span>
+<span class="p">([</span><span class="ss">:z</span> <span class="mi">3</span><span class="p">]</span> <span class="p">[</span><span class="ss">:y</span> <span class="mi">2</span><span class="p">]</span> <span class="p">[</span><span class="ss">:x</span> <span class="mi">1</span><span class="p">])</span>
+</code></pre>
+<p>… and we can build up new maps out of key/value pairs using <code>into</code>…</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">into </span><span class="p">{}</span> <span class="p">[[</span><span class="ss">:x</span> <span class="mi">4</span><span class="p">]</span> <span class="p">[</span><span class="ss">:y</span> <span class="mi">5</span><span class="p">]])</span>
+<span class="p">{</span><span class="ss">:x</span> <span class="mi">4</span>, <span class="ss">:y</span> <span class="mi">5</span><span class="p">}</span>
+</code></pre>
+<p>… we can write a function <code>map-values</code> which works like <code>map</code>, but affects the values of a map data structure.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">map-values</span>
+  <span class="s">&quot;Applies f to every value in the map m.&quot;</span>
+  <span class="p">[</span><span class="nv">f</span> <span class="nv">m</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">into </span><span class="p">{}</span>
+        <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">pair</span><span class="p">]</span>
+               <span class="p">[(</span><span class="nb">key </span><span class="nv">pair</span><span class="p">)</span> <span class="p">(</span><span class="nf">f</span> <span class="p">(</span><span class="nb">val </span><span class="nv">pair</span><span class="p">))])</span>
+             <span class="nv">m</span><span class="p">)))</span>
+</code></pre>
+<p>And that allows us to define a <code>scale</code> function which <em>scales</em> a set of coordinates by some factor:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">scale</span>
+  <span class="s">&quot;Multiplies a map of x, y, and z coordinates by the given factor.&quot;</span>
+  <span class="p">[</span><span class="nv">factor</span> <span class="nv">coordinates</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">map-values</span> <span class="p">(</span><span class="nb">partial * </span><span class="nv">factor</span><span class="p">)</span> <span class="nv">coordinates</span><span class="p">))</span>
+</code></pre>
+<p>What’s that <code>partial</code> thing? It’s a function which <em>takes a function</em>, and some arguments, and <em>returns a new function</em>. What does the new function do? It calls the original function, with the arguments passed to <code>partial</code>, followed by any arguments passed to the new function. In short, <code>(partial * factor)</code> returns a function that takes any number, and multiplies it by <code>factor</code>.</p>
+<p>So to divide each component of the force vector by the mass of the craft:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">acceleration</span>
+  <span class="s">&quot;Total acceleration of a craft.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">m</span> <span class="p">(</span><span class="nf">mass</span> <span class="nv">craft</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">m</span><span class="p">)</span> <span class="p">(</span><span class="nf">total-force</span> <span class="nv">craft</span><span class="p">))))</span>
+</code></pre>
+<p>Note that <code>(/ m)</code> returns 1/m. Our scale function can do double-duty as both multiplication and division.</p>
+<p>With the acceleration and fuel consumption all figured out, we’re ready to <em>apply those changes over time</em>. We’ll write a function which takes the rocket at a particular time, and returns a version of it <code>dt</code> seconds later.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">step</span>
+  <span class="p">[</span><span class="nv">craft</span> <span class="nv">dt</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">assoc </span><span class="nv">craft</span>
+         <span class="c1">; Time advances by dt seconds</span>
+         <span class="ss">:t</span>         <span class="p">(</span><span class="nb">+ </span><span class="nv">dt</span> <span class="p">(</span><span class="ss">:t</span> <span class="nv">craft</span><span class="p">))</span>
+         <span class="c1">; We burn some fuel</span>
+         <span class="ss">:fuel-mass</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">* </span><span class="nv">dt</span> <span class="p">(</span><span class="nf">fuel-rate</span> <span class="nv">craft</span><span class="p">)))</span>
+         <span class="c1">; Our position changes based on our velocity</span>
+         <span class="ss">:position</span>  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">)</span>
+                                  <span class="p">(</span><span class="nf">scale</span> <span class="nv">dt</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)))</span>
+         <span class="c1">; And our velocity changes based on our acceleration</span>
+         <span class="ss">:velocity</span>  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)</span>
+                                  <span class="p">(</span><span class="nf">scale</span> <span class="nv">dt</span> <span class="p">(</span><span class="nf">acceleration</span> <span class="nv">craft</span><span class="p">)))))</span>
+</code></pre>
+<p>OK. Let’s save the <code>rocket.clj</code> file, load that code into the REPL, and fire it up.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.rocket</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="nv">nil</span>
+</code></pre>
+<p><code>use</code> is like a shorthand for <code>(:require ... :refer :all)</code>. We’re passing <code>:reload</code> because we want the REPL to re-read the file. Notice that in <code>ns</code> declarations, the namespace name <code>scratch.rocket</code> is <em>unquoted</em>–but when we call <code>use</code> or <code>require</code> at the repl, we quote the namespace name.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:dry-mass</span> <span class="mi">50050</span>, <span class="ss">:fuel-mass</span> <span class="mi">284450</span>, <span class="ss">:time</span> <span class="mi">0</span>, <span class="ss">:isp</span> <span class="mi">3050</span>, <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>, <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">}</span>
+</code></pre>
+<h2><a href="#launch" id="launch">Launch</a></h2>
+<p>Let’s prepare the rocket. We’ll use <code>pprint</code> to print it in a more readable form.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span> <span class="nv">prepare</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:velocity</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">0</span>, <span class="ss">:y</span> <span class="mf">463.8312116386399</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+ <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">6378137</span>, <span class="ss">:y</span> <span class="mi">0</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+ <span class="ss">:dry-mass</span> <span class="mi">50050</span>,
+ <span class="ss">:fuel-mass</span> <span class="mi">284450</span>,
+ <span class="ss">:time</span> <span class="mi">0</span>,
+ <span class="ss">:isp</span> <span class="mi">3050</span>,
+ <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>,
+ <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">}</span>
+</code></pre>
+<p>Great; there it is on the launchpad. Wow, even “standing still”, it’s moving at 463 meters/sec because of the earth’s rotation! That means <em>you and I</em> are flying through space at almost half a kilometer every second! Let’s step forward one second in time.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span> <span class="nv">prepare</span> <span class="p">(</span><span class="nf">step</span> <span class="mi">1</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+
+<span class="nv">NullPointerException</span>   <span class="nv">clojure.lang.Numbers.ops</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:942</span><span class="p">)</span>
+</code></pre>
+<p>In evaluating this expression, Clojure reached a point where it could not continue, and aborted execution. We call this error an <em>exception</em>, and the process of aborting <em>throwing</em> the exception. Clojure backs up to the function which <em>called</em> the function that threw, then the function which called <em>that</em> function, and so on, all the way to the top-level expression. The REPL finally intercepts the exception, prints an error to the console, and stashes the exception object in a special variable <code>*e</code>.</p>
+<p>In this case, we know that the exception in question was a <code>NullPointerException</code>, which occurs when a function received <code>nil</code> unexpectedly. This one came from <code>clojure.lang.Numbers.ops</code>, which suggests some sort of math was involved. Let’s use <code>pst</code> to find out where it came from.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pst</span> <span class="nv">*e</span><span class="p">)</span>
+<span class="nv">NullPointerException</span> 
+	<span class="nv">clojure.lang.Numbers.ops</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:942</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Numbers.add</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:126</span><span class="p">)</span>
+	<span class="nv">scratch.rocket/step</span> <span class="p">(</span><span class="nf">rocket.clj</span><span class="ss">:125</span><span class="p">)</span>
+	<span class="nv">user/eval1478</span> <span class="p">(</span><span class="nf">NO_SOURCE_FILE</span><span class="ss">:1</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Compiler.eval</span> <span class="p">(</span><span class="nf">Compiler.java</span><span class="ss">:6619</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Compiler.eval</span> <span class="p">(</span><span class="nf">Compiler.java</span><span class="ss">:6582</span><span class="p">)</span>
+	<span class="nv">clojure.core/eval</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:2852</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl/read-eval-print--6588/fn--6591</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:259</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl/read-eval-print--6588</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:259</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl/fn--6597</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:277</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:277</span><span class="p">)</span>
+	<span class="nv">clojure.tools.nrepl.middleware.interruptible-eval/evaluate/fn--589</span> <span class="p">(</span><span class="nf">interruptible_eval.clj</span><span class="ss">:56</span><span class="p">)</span>
+</code></pre>
+<p>This is called a <em>stack trace</em>: the <em>stack</em> is the context of the program at each function call. It traces the path the computer took in evaluating the expression, from the bottom to the top. At the bottom is the REPL, and Clojure compiler. Our code begins at <code>user/eval1478</code>–that’s the compiler’s name for the expression we just typed. That function called <code>scratch.rocket/step</code>, which in turn called <code>Numbers.add</code>, and that called  <code>Numbers.ops</code>. Let’s start by looking at the last function <em>we</em> wrote before calling into Clojure’s standard library: the <code>step</code> function, in <code>rocket.clj</code>, on line <code>125</code>.</p>
+<pre><code><span></span><span class="mi">123</span>  <span class="p">(</span><span class="nb">assoc </span><span class="nv">craft</span>
+<span class="mi">124</span>         <span class="c1">; Time advances by dt seconds</span>
+<span class="mi">125</span>         <span class="ss">:t</span>         <span class="p">(</span><span class="nb">+ </span><span class="nv">dt</span> <span class="p">(</span><span class="ss">:t</span> <span class="nv">craft</span><span class="p">))</span>
+</code></pre>
+<p>Ah; we named the time field <code>:time</code> earlier, not <code>:t</code>. Let’s replace <code>:t</code> with <code>:time</code>, save the file, and reload.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.rocket</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span> <span class="nv">prepare</span> <span class="p">(</span><span class="nf">step</span> <span class="mi">1</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:velocity</span> <span class="p">{</span><span class="ss">:x</span> <span class="mf">0.45154055666826215</span>, <span class="ss">:y</span> <span class="mf">463.8312116386399</span>, <span class="ss">:z</span> <span class="mf">-9.8</span><span class="p">}</span>,
+ <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">6378137</span>, <span class="ss">:y</span> <span class="mf">463.8312116386399</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+ <span class="ss">:dry-mass</span> <span class="mi">50050</span>,
+ <span class="ss">:fuel-mass</span> <span class="mi">71681400</span><span class="nv">/253</span>,
+ <span class="ss">:time</span> <span class="mi">1</span>,
+ <span class="ss">:isp</span> <span class="mi">3050</span>,
+ <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>,
+ <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">}</span>
+</code></pre>
+<p>Look at that! Our position is unchanged (because our velocity was zero), but our <em>velocity</em> has shifted. We’re now moving… wait, -9.8 meters per second <em>south</em>? That can’t be right. Gravity points <em>down</em>, not sideways. Something must be wrong with our spherical coordinate system. Let’s write a test in <code>test/scratch/rocket_test.clj</code> to explore.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.rocket-test</span>
+  <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">clojure.test</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]</span>
+            <span class="p">[</span><span class="nv">scratch.rocket</span> <span class="ss">:refer</span> <span class="ss">:all</span><span class="p">]))</span>
+
+<span class="p">(</span><span class="nf">deftest</span> <span class="nv">spherical-coordinate-test</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">pos</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span> <span class="ss">:y</span> <span class="mi">2</span> <span class="ss">:z</span> <span class="mi">3</span><span class="p">}]</span>
+    <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;roundtrip&quot;</span>
+      <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="nv">pos</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">pos</span> <span class="nv">cartesian-&gt;spherical</span> <span class="nv">spherical-&gt;cartesian</span><span class="p">))))))</span>
+</code></pre>
+<pre><code>aphyr@waterhouse:~/scratch$ lein test
+
+lein test scratch.core-test
+
+lein test scratch.rocket-test
+
+lein test :only scratch.rocket-test/spherical-coordinate-test
+
+FAIL in (spherical-coordinate-test) (rocket_test.clj:8)
+roundtrip
+expected: (= pos (-&gt; pos cartesian-&gt;spherical spherical-&gt;cartesian))
+  actual: (not (= {:z 3, :y 2, :x 1} {:x 1.0, :y 1.9999999999999996, :z 1.6733200530681513}))
+
+Ran 2 tests containing 4 assertions.
+1 failures, 0 errors.
+Tests failed.
+</code></pre>
+<p>Definitely wrong. Looks like something to do with the z coordinate, since x and y look OK. Let’s try testing a point on the north pole:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">deftest</span> <span class="nv">spherical-coordinate-test</span>
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;spherical-&gt;cartesian&quot;</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="p">(</span><span class="nf">spherical-&gt;cartesian</span> <span class="p">{</span><span class="ss">:r</span> <span class="mi">2</span>
+                                  <span class="ss">:phi</span> <span class="mi">0</span>
+                                  <span class="ss">:theta</span> <span class="mi">0</span><span class="p">})</span>
+           <span class="p">{</span><span class="ss">:x</span> <span class="mf">0.0</span> <span class="ss">:y</span> <span class="mf">0.0</span> <span class="ss">:z</span> <span class="mf">2.0</span><span class="p">})))</span>
+
+  <span class="p">(</span><span class="nf">testing</span> <span class="s">&quot;roundtrip&quot;</span>
+    <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">pos</span> <span class="p">{</span><span class="ss">:x</span> <span class="mf">1.0</span> <span class="ss">:y</span> <span class="mf">2.0</span> <span class="ss">:z</span> <span class="mf">3.0</span><span class="p">}]</span>
+      <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">= </span><span class="nv">pos</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">pos</span> <span class="nv">cartesian-&gt;spherical</span> <span class="nv">spherical-&gt;cartesian</span><span class="p">))))))</span>
+</code></pre>
+<p>That checks out OK. Let’s try some values in the repl.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cartesian-&gt;spherical</span> <span class="p">{</span><span class="ss">:x</span> <span class="mf">0.00001</span> <span class="ss">:y</span> <span class="mf">0.00001</span> <span class="ss">:z</span> <span class="mf">2.0</span><span class="p">})</span>
+<span class="p">{</span><span class="ss">:r</span> <span class="mf">2.00000000005</span>, <span class="ss">:theta</span> <span class="mf">7.071068104411588</span><span class="nv">E-6</span>, <span class="ss">:phi</span> <span class="mf">0.7853981633974483</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cartesian-&gt;spherical</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span> <span class="ss">:y</span> <span class="mi">2</span> <span class="ss">:z</span> <span class="mi">3</span><span class="p">})</span>
+<span class="p">{</span><span class="ss">:r</span> <span class="mf">3.7416573867739413</span>, <span class="ss">:theta</span> <span class="mf">0.6405223126794245</span>, <span class="ss">:phi</span> <span class="mf">1.1071487177940904</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">spherical-&gt;cartesian</span> <span class="p">(</span><span class="nf">cartesian-&gt;spherical</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span> <span class="ss">:y</span> <span class="mi">2</span> <span class="ss">:z</span> <span class="mi">3</span><span class="p">}))</span>
+<span class="p">{</span><span class="ss">:x</span> <span class="mf">1.0</span>, <span class="ss">:y</span> <span class="mf">1.9999999999999996</span>, <span class="ss">:z</span> <span class="mf">1.6733200530681513</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cartesian-&gt;spherical</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span> <span class="ss">:y</span> <span class="mi">2</span> <span class="ss">:z</span> <span class="mi">0</span><span class="p">})</span>
+<span class="p">{</span><span class="ss">:r</span> <span class="mf">2.23606797749979</span>, <span class="ss">:theta</span> <span class="mf">1.5707963267948966</span>, <span class="ss">:phi</span> <span class="mf">1.1071487177940904</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">cartesian-&gt;spherical</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span> <span class="ss">:y</span> <span class="mi">1</span> <span class="ss">:z</span> <span class="mi">0</span><span class="p">})</span>
+<span class="p">{</span><span class="ss">:r</span> <span class="mf">1.4142135623730951</span>, <span class="ss">:theta</span> <span class="mf">1.5707963267948966</span>, <span class="ss">:phi</span> <span class="mf">0.7853981633974483</span><span class="p">}</span>
+</code></pre>
+<p>Oh, wait, that looks odd. <code>{:x 1 :y 1 :z 0}</code> is on the equator: phi–the angle from the pole–should be pi/2 or ~1.57, and theta–the angle around the equator–should be pi/4 or 0.78. Those coordinates are reversed! Double-checking our formulas with <a href="http://mathworld.wolfram.com/SphericalCoordinates.html">Wolfram MathWorld</a> shows that we mixed up phi and theta! Let’s redefine <code>cartesian-&gt;spherical</code> correctly.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">cartesian-&gt;spherical</span>
+  <span class="s">&quot;Converts a map of Cartesian coordinates :x, :y, and :z to spherical</span>
+<span class="s">  coordinates :r, :theta, and :phi.&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">r</span> <span class="p">(</span><span class="nf">Math/sqrt</span> <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)</span>
+                        <span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)</span>
+                        <span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)))]</span>
+    <span class="p">{</span><span class="ss">:r</span>     <span class="nv">r</span>
+     <span class="ss">:phi</span>   <span class="p">(</span><span class="nf">Math/acos</span> <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">c</span><span class="p">)</span> <span class="nv">r</span><span class="p">))</span>
+     <span class="ss">:theta</span> <span class="p">(</span><span class="nf">Math/atan2</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c</span><span class="p">))}))</span>
+</code></pre>
+<pre><code>aphyr@waterhouse:~/scratch$ lein test
+
+lein test scratch.core-test
+
+lein test scratch.rocket-test
+
+Ran 2 tests containing 5 assertions.
+0 failures, 0 errors.
+</code></pre>
+<p>Great. Now let’s check the rocket trajectory again.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">-&gt; </span><span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span> <span class="nv">prepare</span> <span class="p">(</span><span class="nf">step</span> <span class="mi">1</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:velocity</span>
+ <span class="p">{</span><span class="ss">:x</span> <span class="mf">0.45154055666826204</span>,
+  <span class="ss">:y</span> <span class="mf">463.8312116386399</span>,
+  <span class="ss">:z</span> <span class="mf">-6.000769315822031</span><span class="nv">E-16</span><span class="p">}</span>,
+ <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">6378137</span>, <span class="ss">:y</span> <span class="mf">463.8312116386399</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+ <span class="ss">:dry-mass</span> <span class="mi">50050</span>,
+ <span class="ss">:fuel-mass</span> <span class="mi">71681400</span><span class="nv">/253</span>,
+ <span class="ss">:time</span> <span class="mi">1</span>,
+ <span class="ss">:isp</span> <span class="mi">3050</span>,
+ <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>,
+ <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">}</span>
+</code></pre>
+<p>This time, our velocity is increasing in the +x direction, at half a meter per second. We have liftoff!</p>
+<h2><a href="#flight" id="flight">Flight</a></h2>
+<p>We have a function that can move the rocket forward by one small step of time, but we’d like to understand the rocket’s trajectory as a <em>whole</em>; to see <em>all</em> positions it will take. We’ll use <em>iterate</em> to construct a lazy, infinite sequence of rocket states, each one constructed by stepping forward from the last.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">trajectory</span>
+  <span class="p">[</span><span class="nv">dt</span> <span class="nv">craft</span><span class="p">]</span>
+  <span class="s">&quot;Returns all future states of the craft, at dt-second intervals.&quot;</span>
+  <span class="p">(</span><span class="nb">iterate </span><span class="o">#</span><span class="p">(</span><span class="nf">step</span> <span class="nv">%</span> <span class="mi">1</span><span class="p">)</span> <span class="nv">craft</span><span class="p">))</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span> <span class="nv">prepare</span> <span class="p">(</span><span class="nf">trajectory</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="nb">take </span><span class="mi">3</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">({</span><span class="ss">:velocity</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">0</span>, <span class="ss">:y</span> <span class="mf">463.8312116386399</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+  <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">6378137</span>, <span class="ss">:y</span> <span class="mi">0</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+  <span class="ss">:dry-mass</span> <span class="mi">50050</span>,
+  <span class="ss">:fuel-mass</span> <span class="mi">284450</span>,
+  <span class="ss">:time</span> <span class="mi">0</span>,
+  <span class="ss">:isp</span> <span class="mi">3050</span>,
+  <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>,
+  <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:velocity</span>
+  <span class="p">{</span><span class="ss">:x</span> <span class="mf">0.45154055666826204</span>,
+   <span class="ss">:y</span> <span class="mf">463.8312116386399</span>,
+   <span class="ss">:z</span> <span class="mf">-6.000769315822031</span><span class="nv">E-16</span><span class="p">}</span>,
+  <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">6378137</span>, <span class="ss">:y</span> <span class="mf">463.8312116386399</span>, <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>,
+  <span class="ss">:dry-mass</span> <span class="mi">50050</span>,
+  <span class="ss">:fuel-mass</span> <span class="mi">71681400</span><span class="nv">/253</span>,
+  <span class="ss">:time</span> <span class="mi">1</span>,
+  <span class="ss">:isp</span> <span class="mi">3050</span>,
+  <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>,
+  <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">}</span>
+ <span class="p">{</span><span class="ss">:velocity</span>
+  <span class="p">{</span><span class="ss">:x</span> <span class="mf">0.9376544222659078</span>,
+   <span class="ss">:y</span> <span class="mf">463.83049896253056</span>,
+   <span class="ss">:z</span> <span class="mf">-1.200153863164406</span><span class="nv">E-15</span><span class="p">}</span>,
+  <span class="ss">:position</span>
+  <span class="p">{</span><span class="ss">:x</span> <span class="mf">6378137.451540557</span>,
+   <span class="ss">:y</span> <span class="mf">927.6624232772798</span>,
+   <span class="ss">:z</span> <span class="mf">-6.000769315822031</span><span class="nv">E-16</span><span class="p">}</span>,
+  <span class="ss">:dry-mass</span> <span class="mi">50050</span>,
+  <span class="ss">:fuel-mass</span> <span class="mi">71396950</span><span class="nv">/253</span>,
+  <span class="ss">:time</span> <span class="mi">2</span>,
+  <span class="ss">:isp</span> <span class="mi">3050</span>,
+  <span class="ss">:max-fuel-rate</span> <span class="mi">284450</span><span class="nv">/253</span>,
+  <span class="ss">:max-thrust</span> <span class="mf">4152000.0</span><span class="p">})</span>
+</code></pre>
+<p>Notice that each map is like a frame of a movie, playing at one frame per second. We can make the simulation more or less accurate by raising or lowering the framerate–adjusting the parameter fed to <code>trajectory</code>. For now, though, we’ll stick with one-second intervals.</p>
+<p>How high above the surface is the rocket?</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">altitude</span>
+  <span class="s">&quot;The height above the surface of the equator, in meters.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">craft</span>
+      <span class="ss">:position</span>
+      <span class="nv">cartesian-&gt;spherical</span>
+      <span class="ss">:r</span>
+      <span class="p">(</span><span class="nb">- </span><span class="nv">earth-equatorial-radius</span><span class="p">)))</span>
+</code></pre>
+<p>Now we can explore the rocket’s path as a series of altitudes over time:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span> <span class="nv">prepare</span> <span class="p">(</span><span class="nf">trajectory</span> <span class="mi">1</span><span class="p">)</span> <span class="p">(</span><span class="nb">map </span><span class="nv">altitude</span><span class="p">)</span> <span class="p">(</span><span class="nb">take </span><span class="mi">10</span><span class="p">)</span> <span class="nv">pprint</span><span class="p">)</span>
+<span class="p">(</span><span class="mf">0.0</span>
+ <span class="mf">0.016865378245711327</span>
+ <span class="mf">0.519002066925168</span>
+ <span class="mf">1.540983198210597</span>
+ <span class="mf">3.117615718394518</span>
+ <span class="mf">5.283942770212889</span>
+ <span class="mf">8.075246102176607</span>
+ <span class="mf">11.52704851794988</span>
+ <span class="mf">15.675116359256208</span>
+ <span class="mf">20.555462017655373</span><span class="p">)</span>
+</code></pre>
+<p>The million dollar question, though, is whether the rocket breaks orbit.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">above-ground?</span>
+  <span class="s">&quot;Is the craft at or above the surface?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">&lt;= </span><span class="mi">0</span> <span class="p">(</span><span class="nf">altitude</span> <span class="nv">craft</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">flight</span>
+  <span class="s">&quot;The above-ground portion of a trajectory.&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">take-while </span><span class="nv">above-ground?</span> <span class="nv">trajectory</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">crashed?</span>
+  <span class="s">&quot;Does this trajectory crash into the surface before 100 hours are up?&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">time-limit</span> <span class="p">(</span><span class="nb">* </span><span class="mi">100</span> <span class="mi">3600</span><span class="p">)]</span> <span class="c1">; 1 hour</span>
+    <span class="p">(</span><span class="nb">not </span><span class="p">(</span><span class="nb">every? </span><span class="nv">above-ground?</span>
+                 <span class="p">(</span><span class="nb">take-while </span><span class="o">#</span><span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="ss">:time</span> <span class="nv">%</span><span class="p">)</span> <span class="nv">time-limit</span><span class="p">)</span> <span class="nv">trajectory</span><span class="p">)))))</span>
+  
+<span class="p">(</span><span class="kd">defn </span><span class="nv">crash-time</span>
+  <span class="s">&quot;Given a trajectory, returns the time the rocket impacted the ground.&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="ss">:time</span> <span class="p">(</span><span class="nb">last </span><span class="p">(</span><span class="nf">flight</span> <span class="nv">trajectory</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">apoapsis</span>
+  <span class="s">&quot;The highest altitude achieved during a trajectory.&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">apply max </span><span class="p">(</span><span class="nb">map </span><span class="nv">altitude</span> <span class="nv">trajectory</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">apoapsis-time</span>
+  <span class="s">&quot;The time of apoapsis&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="ss">:time</span> <span class="p">(</span><span class="nb">apply max-key </span><span class="nv">altitude</span> <span class="p">(</span><span class="nf">flight</span> <span class="nv">trajectory</span><span class="p">))))</span>
+</code></pre>
+<p>If the rocket goes below ground, we know it crashed. If the rocket stays in orbit, the trajectory will never end. That makes it a bit tricky to tell whether the rocket is in a stable orbit or not, because we can’t ask about every element, or the last element, of an infinite sequence: it’ll take infinite time to evaluate. Instead, we’ll assume that the rocket <em>should</em> crash within the first, say, 100 hours; if it makes it past that point, we’ll assume it made orbit successfully. With these functions in hand, we’ll write a test in <code>test/scratch/rocket_test.clj</code> to see whether or not the launch is successful:</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">deftest</span> <span class="nv">makes-orbit</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">trajectory</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">atlas-v</span><span class="p">)</span>
+                        <span class="nv">prepare</span>
+                        <span class="p">(</span><span class="nf">trajectory</span> <span class="mi">1</span><span class="p">))]</span>
+
+    <span class="p">(</span><span class="nb">when </span><span class="p">(</span><span class="nf">crashed?</span> <span class="nv">trajectory</span><span class="p">)</span>
+      <span class="p">(</span><span class="nb">println </span><span class="s">&quot;Crashed at&quot;</span> <span class="p">(</span><span class="nf">crash-time</span> <span class="nv">trajectory</span><span class="p">)</span> <span class="s">&quot;seconds&quot;</span><span class="p">)</span>
+      <span class="p">(</span><span class="nb">println </span><span class="s">&quot;Maximum altitude&quot;</span> <span class="p">(</span><span class="nf">apoapsis</span> <span class="nv">trajectory</span><span class="p">)</span>
+               <span class="s">&quot;meters at&quot;</span>        <span class="p">(</span><span class="nf">apoapsis-time</span> <span class="nv">trajectory</span><span class="p">)</span> <span class="s">&quot;seconds&quot;</span><span class="p">))</span>
+
+    <span class="c1">; Assert that the rocket eventually made it to orbit.</span>
+    <span class="p">(</span><span class="nf">is</span> <span class="p">(</span><span class="nb">not </span><span class="p">(</span><span class="nf">crashed?</span> <span class="nv">trajectory</span><span class="p">)))))</span>
+</code></pre>
+<pre><code><span></span><span class="nv">aphyr</span><span class="o">@</span><span class="nv">waterhouse</span><span class="err">:</span><span class="o">~</span><span class="nv">/scratch$</span> <span class="nv">lein</span> <span class="nb">test </span><span class="nv">scratch.rocket-test</span>
+
+<span class="nv">lein</span> <span class="nb">test </span><span class="nv">scratch.rocket-test</span>
+<span class="nv">Crashed</span> <span class="nv">at</span> <span class="mi">982</span> <span class="nv">seconds</span>
+<span class="nv">Maximum</span> <span class="nv">altitude</span> <span class="mf">753838.039645385</span> <span class="nv">meters</span> <span class="nv">at</span> <span class="mi">532</span> <span class="nv">seconds</span>
+
+<span class="nv">lein</span> <span class="nb">test </span><span class="ss">:only</span> <span class="nv">scratch.rocket-test/makes-orbit</span>
+
+<span class="nv">FAIL</span> <span class="nv">in</span> <span class="p">(</span><span class="nf">makes-orbit</span><span class="p">)</span> <span class="p">(</span><span class="nf">rocket_test.clj</span><span class="ss">:26</span><span class="p">)</span>
+<span class="nv">expected</span><span class="err">:</span> <span class="p">(</span><span class="nb">not </span><span class="p">(</span><span class="nf">crashed?</span> <span class="nv">trajectory</span><span class="p">))</span>
+  <span class="nv">actual</span><span class="err">:</span> <span class="p">(</span><span class="nb">not </span><span class="p">(</span><span class="nb">not </span><span class="nv">true</span><span class="p">))</span>
+
+<span class="nv">Ran</span> <span class="mi">2</span> <span class="nv">tests</span> <span class="nv">containing</span> <span class="mi">3</span> <span class="nv">assertions.</span>
+<span class="mi">1</span> <span class="nv">failures</span>, <span class="mi">0</span> <span class="nv">errors.</span>
+<span class="nv">Tests</span> <span class="nv">failed.</span>
+</code></pre>
+<p>We made it to an altitude of 750 kilometers, and crashed 982 seconds after launch. We’re gonna need a bigger boat.</p>
+<h2><a href="#stage-ii" id="stage-ii">Stage II</a></h2>
+<p>The Atlas V isn’t big enough to make it into orbit on its own. It carries a second stage, the <a href="http://en.wikipedia.org/wiki/Centaur_(rocket_stage)">Centaur</a>, which is much smaller and uses <a href="http://www.astronautix.com/stages/cenaurde.htm">more efficient engines</a>.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">centaur</span>
+  <span class="s">&quot;The upper rocket stage.</span>
+<span class="s">  http://en.wikipedia.org/wiki/Centaur_(rocket_stage)</span>
+<span class="s">  http://www.astronautix.com/stages/cenaurde.htm&quot;</span>
+  <span class="p">[]</span>
+  <span class="p">{</span><span class="ss">:dry-mass</span>  <span class="mi">2361</span>
+   <span class="ss">:fuel-mass</span> <span class="mi">13897</span>
+   <span class="ss">:isp</span>       <span class="mi">4354</span>
+   <span class="ss">:max-fuel-rate</span> <span class="p">(</span><span class="nb">/ </span><span class="mi">13897</span> <span class="mi">470</span><span class="p">)})</span>
+</code></pre>
+<p>The Centaur lives inside the Atlas V main stage. We’ll re-write <code>atlas-v</code> to take an <em>argument</em>: its next stage.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">atlas-v</span>
+  <span class="s">&quot;The full launch vehicle. http://en.wikipedia.org/wiki/Atlas_V&quot;</span>
+  <span class="p">[</span><span class="nv">next-stage</span><span class="p">]</span>
+  <span class="p">{</span><span class="ss">:dry-mass</span>  <span class="mi">50050</span>
+   <span class="ss">:fuel-mass</span> <span class="mi">284450</span>
+   <span class="ss">:isp</span> <span class="mi">3050</span>
+   <span class="ss">:max-fuel-rate</span> <span class="p">(</span><span class="nb">/ </span><span class="mi">284450</span> <span class="mi">253</span><span class="p">)</span>
+   <span class="ss">:next-stage</span> <span class="nv">next-stage</span><span class="p">})</span>
+</code></pre>
+<p>Now, in our tests, we’ll construct the rocket like so:</p>
+<pre><code><span></span>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">trajectory</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">(</span><span class="nf">atlas-v</span> <span class="p">(</span><span class="nf">centaur</span><span class="p">))</span>
+                        <span class="nv">prepare</span>
+                        <span class="p">(</span><span class="nf">trajectory</span> <span class="mi">1</span><span class="p">))]</span>
+</code></pre>
+<p>When we exhaust the fuel reserves of the primary stage, we’ll de-couple the main booster from the Centaur. In terms of our simulation, the Atlas V will be <em>replaced</em> by its next stage, the Centaur. We’ll write a function <code>stage</code> which separates the vehicles when ready:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">stage</span>
+  <span class="s">&quot;When fuel reserves are exhausted, separate stages. Otherwise, return craft</span>
+<span class="s">  unchanged.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">cond</span>
+    <span class="c1">; Still fuel left</span>
+    <span class="p">(</span><span class="nb">pos? </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">))</span>
+    <span class="nv">craft</span>
+
+    <span class="c1">; No remaining stages</span>
+    <span class="p">(</span><span class="nb">nil? </span><span class="p">(</span><span class="ss">:next-stage</span> <span class="nv">craft</span><span class="p">))</span>
+    <span class="nv">craft</span>
+
+    <span class="c1">; Stage!</span>
+    <span class="ss">:else</span>
+    <span class="p">(</span><span class="nb">merge </span><span class="p">(</span><span class="ss">:next-stage</span> <span class="nv">craft</span><span class="p">)</span>
+           <span class="p">(</span><span class="nb">select-keys </span><span class="nv">craft</span> <span class="p">[</span><span class="ss">:time</span> <span class="ss">:position</span> <span class="ss">:velocity</span><span class="p">]))))</span>
+</code></pre>
+<p>We’re using <code>cond</code> to handle three distinct cases: where there’s fuel remaining in the craft, where there is no stage to separate, and when we’re ready for stage separation. Separation is easy: we simply return the next stage of the current craft, with the current craft’s time, position, and velocity merged in.</p>
+<p>Finally, we’ll have to update our <code>step</code> function to take into account the possibility of stage separation.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">step</span>
+  <span class="p">[</span><span class="nv">craft</span> <span class="nv">dt</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">craft</span> <span class="p">(</span><span class="nf">stage</span> <span class="nv">craft</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">assoc </span><span class="nv">craft</span>
+           <span class="c1">; Time advances by dt seconds</span>
+           <span class="ss">:time</span>      <span class="p">(</span><span class="nb">+ </span><span class="nv">dt</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">))</span>
+           <span class="c1">; We burn some fuel</span>
+           <span class="ss">:fuel-mass</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">* </span><span class="nv">dt</span> <span class="p">(</span><span class="nf">fuel-rate</span> <span class="nv">craft</span><span class="p">)))</span>
+           <span class="c1">; Our position changes based on our velocity</span>
+           <span class="ss">:position</span>  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">)</span>
+                                  <span class="p">(</span><span class="nf">scale</span> <span class="nv">dt</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)))</span>
+           <span class="c1">; And our velocity changes based on our acceleration</span>
+           <span class="ss">:velocity</span>  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)</span>
+                                  <span class="p">(</span><span class="nf">scale</span> <span class="nv">dt</span> <span class="p">(</span><span class="nf">acceleration</span> <span class="nv">craft</span><span class="p">))))))</span>
+</code></pre>
+<p>Same as before, only now we call <code>stage</code> prior to the physics simulation. Let’s try a launch.</p>
+<pre><code>aphyr@waterhouse:~/scratch$ lein test scratch.rocket-test
+
+lein test scratch.rocket-test
+Crashed at 2415 seconds
+Maximum altitude 4598444.289945109 meters at 1446 seconds
+
+lein test :only scratch.rocket-test/makes-orbit
+
+FAIL in (makes-orbit) (rocket_test.clj:27)
+expected: (not (crashed? trajectory))
+  actual: (not (not true))
+
+Ran 2 tests containing 3 assertions.
+1 failures, 0 errors.
+Tests failed.
+</code></pre>
+<p>Still crashed–but we increased our apoapsis from 750 kilometers to 4,598 kilometers. That’s plenty high, but we’re still not making orbit. Why? Because we’re going straight up, then straight back down. To orbit, we need to move <em>sideways</em>, around the earth.</p>
+<h2><a href="#orbital-insertion" id="orbital-insertion">Orbital insertion</a></h2>
+<p>Our spacecraft is shooting upwards, but in order to remain in orbit around the earth, it has to execute a <em>second</em> burn: an orbital injection maneuver. That injection maneuver is also called a <em>circularization burn</em> because it turns the orbit from an ascending parabola into a circle (or something roughly like it). We don’t need to be precise about circularization–any trajectory that doesn’t hit the planet will suffice. All we have to do is burn towards the horizon, once we get high enough.</p>
+<p>To do that, we’ll need to enhance the rocket’s control software. We assumed that the rocket would always thrust in the +x direction; but now we’ll need to thrust in multiple directions. We’ll break up the engine force into two parts: <code>thrust</code> (how hard the rocket motor pushes) and <code>orientation</code> (which determines the direction the rocket is pointing.)</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">unit-vector</span>
+  <span class="s">&quot;Scales coordinates to magnitude 1.&quot;</span>
+  <span class="p">[</span><span class="nv">coordinates</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="nf">magnitude</span> <span class="nv">coordinates</span><span class="p">))</span> <span class="nv">coordinates</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">engine-force</span>
+  <span class="s">&quot;The force vector, each component in Newtons, due to the rocket engine.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nf">thrust</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nf">unit-vector</span> <span class="p">(</span><span class="nf">orientation</span> <span class="nv">craft</span><span class="p">))))</span>
+</code></pre>
+<p>We’re taking the orientation of the craft–some coordinates–and scaling it to be of length one with <code>unit-vector</code>. Then we’re scaling the orientation vector by the thrust, returning a <em>thrust vector</em>.</p>
+<p>As we go back and redefine parts of the program, you might see an error like</p>
+<pre><code>Exception in thread &quot;main&quot; java.lang.RuntimeException: Unable to resolve symbol: unit-vector in this context, compiling:(scratch/rocket.clj:69:11)
+	at clojure.lang.Compiler.analyze(Compiler.java:6380)
+	at clojure.lang.Compiler.analyze(Compiler.java:6322)
+</code></pre>
+<p>This is a stack trace from the Clojure compiler. It indicates that in <code>scratch/rocket.clj</code>, on line <code>69</code>, column <code>11</code>, we used the symbol <code>unit-vector</code>–but it didn’t have a meaning at that point in the program. Perhaps <code>unit-vector</code> is defined <em>below</em> that line. There are two ways to solve this.</p>
+<ol>
+<li>
+<p>Organize your functions so that the simple ones come first, and those that depend on them come later. Read this way, namespaces tell a story, progressing from smaller to bigger, more complex problems.</p>
+</li>
+<li>
+<p>Sometimes, ordering functions this way is impossible, or would put related ideas too far apart. In this case you can <code>(declare unit-vector)</code> near the top of the namespace. This tells Clojure that <code>unit-vector</code> isn’t defined <em>yet</em>, but it’ll come later.</p>
+</li>
+</ol>
+<p>Now that we’ve broken up <code>engine-force</code> into <code>thrust</code> and <code>orientation</code>, we have to control the thrust properly for our two burns. We’ll start by defining the times for the initial ascent and circularization burn, expressed as vectors of start and end times, in seconds.</p>
+<pre><code><span></span><span class="p">(</span><span class="k">def </span><span class="nv">ascent</span>
+  <span class="s">&quot;The start and end times for the ascent burn.&quot;</span>
+  <span class="p">[</span><span class="mi">0</span> <span class="mi">3000</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">circularization</span>
+  <span class="s">&quot;The start and end times for the circularization burn.&quot;</span>
+  <span class="p">[</span><span class="mi">4000</span> <span class="mi">1000</span><span class="p">])</span>
+</code></pre>
+<p>Now we’ll change the thrust by adjusting the rate of fuel consumption. Instead of burning at maximum until running out of fuel, we’ll execute two distinct burns.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">fuel-rate</span>
+  <span class="s">&quot;How fast is fuel, in kilograms/second, consumed by the craft?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">cond</span>
+    <span class="c1">; Out of fuel</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="mi">0</span>
+
+    <span class="c1">; Ascent burn</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">ascent</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">ascent</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:max-fuel-rate</span> <span class="nv">craft</span><span class="p">)</span>
+
+    <span class="c1">; Circularization burn</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">circularization</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">circularization</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:max-fuel-rate</span> <span class="nv">craft</span><span class="p">)</span>
+
+    <span class="c1">; Shut down engines otherwise</span>
+    <span class="ss">:else</span> <span class="mi">0</span><span class="p">))</span>
+</code></pre>
+<p>We’re using <code>cond</code> to express four distinct possibilities: that we’ve run out of fuel, executing either of the two burns, or resting with the engines shut down. Because the comparison function <code>&lt;=</code> takes any number of arguments and asserts that they occur in order, expressing intervals like “the time is between the first and last times in the ascent” is easy.</p>
+<p>Finally, we need to determine the <em>direction</em> to burn in. This one’s gonna require some tricky linear algebra. You don’t need to worry about the specifics here–the goal is to find out what direction the rocket should burn to fly towards the horizon, in a circle around the planet. We’re doing that by taking the rocket’s velocity vector, and <em>flattening out</em> the velocity towards or away from the planet. All that’s left is the direction the rocket is flying <em>around</em> the earth.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">dot-product</span>
+  <span class="s">&quot;Finds the inner product of two x, y, z coordinate maps.</span>
+<span class="s">  See http://en.wikipedia.org/wiki/Dot_product.&quot;</span>
+  <span class="p">[</span><span class="nv">c1</span> <span class="nv">c2</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:x</span> <span class="nv">c1</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c2</span><span class="p">))</span>
+     <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:y</span> <span class="nv">c1</span><span class="p">)</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c2</span><span class="p">))</span>
+     <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">c1</span><span class="p">)</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">c2</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">projection</span>
+  <span class="s">&quot;The component of coordinate map a in the direction of coordinate map b.</span>
+<span class="s">  See http://en.wikipedia.org/wiki/Vector_projection.&quot;</span>
+  <span class="p">[</span><span class="nv">a</span> <span class="nv">b</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">b</span> <span class="p">(</span><span class="nf">unit-vector</span> <span class="nv">b</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nf">dot-product</span> <span class="nv">a</span> <span class="nv">b</span><span class="p">)</span> <span class="nv">b</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">rejection</span>
+  <span class="s">&quot;The component of coordinate map a *not* in the direction of coordinate map</span>
+<span class="s">  b.&quot;</span>
+  <span class="p">[</span><span class="nv">a</span> <span class="nv">b</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">a</span><span class="o">'</span> <span class="p">(</span><span class="nf">projection</span> <span class="nv">a</span> <span class="nv">b</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:x</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:x</span> <span class="nv">a</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">a</span><span class="o">'</span><span class="p">))</span>
+     <span class="ss">:y</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:y</span> <span class="nv">a</span><span class="p">)</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">a</span><span class="o">'</span><span class="p">))</span>
+     <span class="ss">:z</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">a</span><span class="p">)</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">a</span><span class="o">'</span><span class="p">))}))</span>
+</code></pre>
+<p>With the mathematical underpinnings ready, we’ll define the orientation control software:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">orientation</span>
+  <span class="s">&quot;What direction is the craft pointing?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">cond</span>
+    <span class="c1">; Initially, point along the *position* vector of the craft--that is</span>
+    <span class="c1">; to say, straight up, away from the earth.</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">ascent</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">ascent</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">)</span>
+
+    <span class="c1">; During the circularization burn, we want to burn *sideways*, in the</span>
+    <span class="c1">; direction of the orbit. We'll find the component of our velocity</span>
+    <span class="c1">; which is aligned with our position vector (that is to say, the vertical</span>
+    <span class="c1">; velocity), and subtract the vertical component. All that's left is the</span>
+    <span class="c1">; *horizontal* part of our velocity.</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">circularization</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">circularization</span><span class="p">))</span>
+    <span class="p">(</span><span class="nf">rejection</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">))</span>
+
+    <span class="c1">; Otherwise, just point straight ahead.</span>
+    <span class="ss">:else</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)))</span>
+</code></pre>
+<p>For the ascent burn, we’ll push straight away from the planet. For circularization, we use the <code>rejection</code> function to find the part of the velocity around the planet, and thrust in that direction. By default, we’ll leave the rocket pointing in the direction of travel.</p>
+<p>With these changes made, the rocket should execute two burns. Let’s re-run the tests and see.</p>
+<pre><code>aphyr@waterhouse:~/scratch$ lein test scratch.rocket-test
+
+lein test scratch.rocket-test
+
+Ran 2 tests containing 3 assertions.
+0 failures, 0 errors.
+</code></pre>
+<p>We finally did it! We’re <em>rocket scientists</em>!</p>
+<h2><a href="#review" id="review">Review</a></h2>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.rocket</span><span class="p">)</span>
+
+<span class="c1">;; Linear algebra for {:x 1 :y 2 :z 3} coordinate vectors.</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">map-values</span>
+  <span class="s">&quot;Applies f to every value in the map m.&quot;</span>
+  <span class="p">[</span><span class="nv">f</span> <span class="nv">m</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">into </span><span class="p">{}</span>
+        <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">pair</span><span class="p">]</span>
+               <span class="p">[(</span><span class="nb">key </span><span class="nv">pair</span><span class="p">)</span> <span class="p">(</span><span class="nf">f</span> <span class="p">(</span><span class="nb">val </span><span class="nv">pair</span><span class="p">))])</span>
+             <span class="nv">m</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">magnitude</span>
+  <span class="s">&quot;What's the radius of a given set of cartesian coordinates?&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="c1">; By the Pythagorean theorem...</span>
+  <span class="p">(</span><span class="nf">Math/sqrt</span> <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="p">(</span><span class="nf">Math/pow</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">c</span><span class="p">)</span> <span class="mi">2</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">scale</span>
+  <span class="s">&quot;Multiplies a map of x, y, and z coordinates by the given factor.&quot;</span>
+  <span class="p">[</span><span class="nv">factor</span> <span class="nv">coordinates</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">map-values</span> <span class="p">(</span><span class="nb">partial * </span><span class="nv">factor</span><span class="p">)</span> <span class="nv">coordinates</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">unit-vector</span>
+  <span class="s">&quot;Scales coordinates to magnitude 1.&quot;</span>
+  <span class="p">[</span><span class="nv">coordinates</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="nf">magnitude</span> <span class="nv">coordinates</span><span class="p">))</span> <span class="nv">coordinates</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">dot-product</span>
+  <span class="s">&quot;Finds the inner product of two x, y, z coordinate maps. See</span>
+<span class="s">  http://en.wikipedia.org/wiki/Dot_product&quot;</span>
+  <span class="p">[</span><span class="nv">c1</span> <span class="nv">c2</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:x</span> <span class="nv">c1</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c2</span><span class="p">))</span>
+     <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:y</span> <span class="nv">c1</span><span class="p">)</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c2</span><span class="p">))</span>
+     <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">c1</span><span class="p">)</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">c2</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">projection</span>
+  <span class="s">&quot;The component of coordinate map a in the direction of coordinate map b.</span>
+<span class="s">  See http://en.wikipedia.org/wiki/Vector_projection.&quot;</span>
+  <span class="p">[</span><span class="nv">a</span> <span class="nv">b</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">b</span> <span class="p">(</span><span class="nf">unit-vector</span> <span class="nv">b</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nf">dot-product</span> <span class="nv">a</span> <span class="nv">b</span><span class="p">)</span> <span class="nv">b</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">rejection</span>
+  <span class="s">&quot;The component of coordinate map a *not* in the direction of coordinate map</span>
+<span class="s">  b.&quot;</span>
+  <span class="p">[</span><span class="nv">a</span> <span class="nv">b</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">a</span><span class="o">'</span> <span class="p">(</span><span class="nf">projection</span> <span class="nv">a</span> <span class="nv">b</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:x</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:x</span> <span class="nv">a</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">a</span><span class="o">'</span><span class="p">))</span>
+     <span class="ss">:y</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:y</span> <span class="nv">a</span><span class="p">)</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">a</span><span class="o">'</span><span class="p">))</span>
+     <span class="ss">:z</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">a</span><span class="p">)</span> <span class="p">(</span><span class="ss">:z</span> <span class="nv">a</span><span class="o">'</span><span class="p">))}))</span>
+
+<span class="c1">;; Coordinate conversion</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">cartesian-&gt;spherical</span>
+  <span class="s">&quot;Converts a map of Cartesian coordinates :x, :y, and :z to spherical</span>
+<span class="s">  coordinates :r, :theta, and :phi.&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">r</span> <span class="p">(</span><span class="nf">magnitude</span> <span class="nv">c</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:r</span>     <span class="nv">r</span>
+     <span class="ss">:phi</span>   <span class="p">(</span><span class="nf">Math/acos</span> <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="ss">:z</span> <span class="nv">c</span><span class="p">)</span> <span class="nv">r</span><span class="p">))</span>
+     <span class="ss">:theta</span> <span class="p">(</span><span class="nf">Math/atan2</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">c</span><span class="p">))}))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">spherical-&gt;cartesian</span>
+  <span class="s">&quot;Converts spherical to Cartesian coordinates.&quot;</span>
+  <span class="p">[</span><span class="nv">c</span><span class="p">]</span>
+  <span class="p">{</span><span class="ss">:x</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:r</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="nf">Math/cos</span> <span class="p">(</span><span class="ss">:theta</span> <span class="nv">c</span><span class="p">))</span> <span class="p">(</span><span class="nf">Math/sin</span> <span class="p">(</span><span class="ss">:phi</span> <span class="nv">c</span><span class="p">)))</span>
+   <span class="ss">:y</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:r</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="nf">Math/sin</span> <span class="p">(</span><span class="ss">:theta</span> <span class="nv">c</span><span class="p">))</span> <span class="p">(</span><span class="nf">Math/sin</span> <span class="p">(</span><span class="ss">:phi</span> <span class="nv">c</span><span class="p">)))</span>
+   <span class="ss">:z</span> <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="ss">:r</span> <span class="nv">c</span><span class="p">)</span> <span class="p">(</span><span class="nf">Math/cos</span> <span class="p">(</span><span class="ss">:phi</span> <span class="nv">c</span><span class="p">)))})</span>
+
+<span class="c1">;; The earth</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">earth-equatorial-radius</span>
+  <span class="s">&quot;Radius of the earth, in meters&quot;</span>
+  <span class="mi">6378137</span><span class="p">)</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">earth-day</span>
+  <span class="s">&quot;Length of an earth day, in seconds.&quot;</span>
+  <span class="mi">86400</span><span class="p">)</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">earth-equatorial-speed</span>
+  <span class="s">&quot;How fast points on the equator move, relative to the center of the earth, in</span>
+<span class="s">  meters/sec.&quot;</span>
+  <span class="p">(</span><span class="nb">/ </span><span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">Math/PI</span> <span class="nv">earth-equatorial-radius</span><span class="p">)</span>
+     <span class="nv">earth-day</span><span class="p">))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">g</span> <span class="s">&quot;Acceleration of gravity in meters/s^2&quot;</span> <span class="mf">-9.8</span><span class="p">)</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">initial-space-center</span>
+  <span class="s">&quot;The initial position and velocity of the launch facility&quot;</span>
+  <span class="p">{</span><span class="ss">:time</span>     <span class="mi">0</span>
+   <span class="ss">:position</span> <span class="p">{</span><span class="ss">:x</span> <span class="nv">earth-equatorial-radius</span>
+              <span class="ss">:y</span> <span class="mi">0</span>
+              <span class="ss">:z</span> <span class="mi">0</span><span class="p">}</span>
+   <span class="ss">:velocity</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">0</span>
+              <span class="ss">:y</span> <span class="nv">earth-equatorial-speed</span>
+              <span class="ss">:z</span> <span class="mi">0</span><span class="p">}})</span>
+
+
+<span class="c1">;; Craft</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">centaur</span>
+  <span class="s">&quot;The upper rocket stage.</span>
+<span class="s">  http://en.wikipedia.org/wiki/Centaur_(rocket_stage)</span>
+<span class="s">  http://www.astronautix.com/stages/cenaurde.htm&quot;</span>
+  <span class="p">[]</span>
+  <span class="p">{</span><span class="ss">:dry-mass</span>  <span class="mi">2361</span>
+   <span class="ss">:fuel-mass</span> <span class="mi">13897</span>
+   <span class="ss">:isp</span>       <span class="mi">4354</span>
+   <span class="ss">:max-fuel-rate</span> <span class="p">(</span><span class="nb">/ </span><span class="mi">13897</span> <span class="mi">470</span><span class="p">)})</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">atlas-v</span>
+  <span class="s">&quot;The full launch vehicle. http://en.wikipedia.org/wiki/Atlas_V&quot;</span>
+  <span class="p">[</span><span class="nv">next-stage</span><span class="p">]</span>
+  <span class="p">{</span><span class="ss">:dry-mass</span>  <span class="mi">50050</span>
+   <span class="ss">:fuel-mass</span> <span class="mi">284450</span>
+   <span class="ss">:isp</span> <span class="mi">3050</span>
+   <span class="ss">:max-fuel-rate</span> <span class="p">(</span><span class="nb">/ </span><span class="mi">284450</span> <span class="mi">253</span><span class="p">)</span>
+   <span class="ss">:next-stage</span> <span class="nv">next-stage</span><span class="p">})</span>
+
+<span class="c1">;; Flight control</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">ascent</span>
+  <span class="s">&quot;The start and end times for the ascent burn.&quot;</span>
+  <span class="p">[</span><span class="mi">0</span> <span class="mi">300</span><span class="p">])</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">circularization</span>
+  <span class="s">&quot;The start and end times for the circularization burn.&quot;</span>
+  <span class="p">[</span><span class="mi">400</span> <span class="mi">1000</span><span class="p">])</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">orientation</span>
+  <span class="s">&quot;What direction is the craft pointing?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">cond</span>
+    <span class="c1">; Initially, point along the *position* vector of the craft--that is</span>
+    <span class="c1">; to say, straight up, away from the earth.</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">ascent</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">ascent</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">)</span>
+
+    <span class="c1">; During the circularization burn, we want to burn *sideways*, in the</span>
+    <span class="c1">; direction of the orbit. We'll find the component of our velocity</span>
+    <span class="c1">; which is aligned with our position vector (that is to say, the vertical</span>
+    <span class="c1">; velocity), and subtract the vertical component. All that's left is the</span>
+    <span class="c1">; *horizontal* part of our velocity.</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">circularization</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">circularization</span><span class="p">))</span>
+    <span class="p">(</span><span class="nf">rejection</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">))</span>
+
+    <span class="c1">; Otherwise, just point straight ahead.</span>
+    <span class="ss">:else</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">fuel-rate</span>
+  <span class="s">&quot;How fast is fuel, in kilograms/second, consumed by the craft?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">cond</span>
+    <span class="c1">; Out of fuel</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="mi">0</span>
+
+    <span class="c1">; Ascent burn</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">ascent</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">ascent</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:max-fuel-rate</span> <span class="nv">craft</span><span class="p">)</span>
+
+    <span class="c1">; Circularization burn</span>
+    <span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="nb">first </span><span class="nv">circularization</span><span class="p">)</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">last </span><span class="nv">circularization</span><span class="p">))</span>
+    <span class="p">(</span><span class="ss">:max-fuel-rate</span> <span class="nv">craft</span><span class="p">)</span>
+
+    <span class="c1">; Shut down engines otherwise</span>
+    <span class="ss">:else</span> <span class="mi">0</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">stage</span>
+  <span class="s">&quot;When fuel reserves are exhausted, separate stages. Otherwise, return craft</span>
+<span class="s">  unchanged.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">cond</span>
+    <span class="c1">; Still fuel left</span>
+    <span class="p">(</span><span class="nb">pos? </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">))</span>
+    <span class="nv">craft</span>
+
+    <span class="c1">; No remaining stages</span>
+    <span class="p">(</span><span class="nb">nil? </span><span class="p">(</span><span class="ss">:next-stage</span> <span class="nv">craft</span><span class="p">))</span>
+    <span class="nv">craft</span>
+
+    <span class="c1">; Stage!</span>
+    <span class="ss">:else</span>
+    <span class="p">(</span><span class="nb">merge </span><span class="p">(</span><span class="ss">:next-stage</span> <span class="nv">craft</span><span class="p">)</span>
+           <span class="p">(</span><span class="nb">select-keys </span><span class="nv">craft</span> <span class="p">[</span><span class="ss">:time</span> <span class="ss">:position</span> <span class="ss">:velocity</span><span class="p">]))))</span>
+
+<span class="c1">;; Dynamics</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">thrust</span>
+  <span class="s">&quot;How much force, in newtons, does the craft's rocket engines exert?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">* </span><span class="p">(</span><span class="nf">fuel-rate</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="ss">:isp</span> <span class="nv">craft</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">mass</span>
+  <span class="s">&quot;The total mass of a craft.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">+ </span><span class="p">(</span><span class="ss">:dry-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">gravity-force</span>
+  <span class="s">&quot;The force vector, each component in Newtons, due to gravity.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="c1">; Since force is mass times acceleration...</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">total-force</span> <span class="p">(</span><span class="nb">* </span><span class="nv">g</span> <span class="p">(</span><span class="nf">mass</span> <span class="nv">craft</span><span class="p">))]</span>
+    <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">craft</span>
+        <span class="c1">; Now we'll take the craft's position</span>
+        <span class="ss">:position</span>
+        <span class="c1">; in spherical coordinates,</span>
+        <span class="nv">cartesian-&gt;spherical</span>
+        <span class="c1">; replace the radius with the gravitational force...</span>
+        <span class="p">(</span><span class="nb">assoc </span><span class="ss">:r</span> <span class="nv">total-force</span><span class="p">)</span>
+        <span class="c1">; and transform back to Cartesian-land</span>
+        <span class="nv">spherical-&gt;cartesian</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">declare </span><span class="nv">altitude</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">engine-force</span>
+  <span class="s">&quot;The force vector, each component in Newtons, due to the rocket engine.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+<span class="c1">;  Debugging; useful for working through trajectories in detail.</span>
+<span class="c1">;  (println craft)</span>
+<span class="c1">;  (println &quot;t   &quot; (:time craft) &quot;alt&quot; (altitude craft) &quot;thrust&quot; (thrust craft))</span>
+<span class="c1">;  (println &quot;fuel&quot; (:fuel-mass craft))</span>
+<span class="c1">;  (println &quot;vel &quot; (:velocity craft))</span>
+<span class="c1">;  (println &quot;ori &quot; (unit-vector (orientation craft)))</span>
+  <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nf">thrust</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nf">unit-vector</span> <span class="p">(</span><span class="nf">orientation</span> <span class="nv">craft</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">total-force</span>
+  <span class="s">&quot;Total force on a craft.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="nf">engine-force</span> <span class="nv">craft</span><span class="p">)</span>
+              <span class="p">(</span><span class="nf">gravity-force</span> <span class="nv">craft</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">acceleration</span>
+  <span class="s">&quot;Total acceleration of a craft.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">m</span> <span class="p">(</span><span class="nf">mass</span> <span class="nv">craft</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nf">scale</span> <span class="p">(</span><span class="nb">/ </span><span class="nv">m</span><span class="p">)</span> <span class="p">(</span><span class="nf">total-force</span> <span class="nv">craft</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">step</span>
+  <span class="p">[</span><span class="nv">craft</span> <span class="nv">dt</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">craft</span> <span class="p">(</span><span class="nf">stage</span> <span class="nv">craft</span><span class="p">)]</span>
+    <span class="p">(</span><span class="nb">assoc </span><span class="nv">craft</span>
+           <span class="c1">; Time advances by dt seconds</span>
+           <span class="ss">:time</span>      <span class="p">(</span><span class="nb">+ </span><span class="nv">dt</span> <span class="p">(</span><span class="ss">:time</span> <span class="nv">craft</span><span class="p">))</span>
+           <span class="c1">; We burn some fuel</span>
+           <span class="ss">:fuel-mass</span> <span class="p">(</span><span class="nb">- </span><span class="p">(</span><span class="ss">:fuel-mass</span> <span class="nv">craft</span><span class="p">)</span> <span class="p">(</span><span class="nb">* </span><span class="nv">dt</span> <span class="p">(</span><span class="nf">fuel-rate</span> <span class="nv">craft</span><span class="p">)))</span>
+           <span class="c1">; Our position changes based on our velocity</span>
+           <span class="ss">:position</span>  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="ss">:position</span> <span class="nv">craft</span><span class="p">)</span>
+                                  <span class="p">(</span><span class="nf">scale</span> <span class="nv">dt</span> <span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)))</span>
+           <span class="c1">; And our velocity changes based on our acceleration</span>
+           <span class="ss">:velocity</span>  <span class="p">(</span><span class="nb">merge-with + </span><span class="p">(</span><span class="ss">:velocity</span> <span class="nv">craft</span><span class="p">)</span>
+                                  <span class="p">(</span><span class="nf">scale</span> <span class="nv">dt</span> <span class="p">(</span><span class="nf">acceleration</span> <span class="nv">craft</span><span class="p">))))))</span>
+
+<span class="c1">;; Launch and flight</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">prepare</span>
+  <span class="s">&quot;Prepares a craft for launch from an equatorial space center.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">merge </span><span class="nv">craft</span> <span class="nv">initial-space-center</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">trajectory</span>
+  <span class="p">[</span><span class="nv">dt</span> <span class="nv">craft</span><span class="p">]</span>
+  <span class="s">&quot;Returns all future states of the craft, at dt-second intervals.&quot;</span>
+  <span class="p">(</span><span class="nb">iterate </span><span class="o">#</span><span class="p">(</span><span class="nf">step</span> <span class="nv">%</span> <span class="mi">1</span><span class="p">)</span> <span class="nv">craft</span><span class="p">))</span>
+
+<span class="c1">;; Analyzing trajectories</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">altitude</span>
+  <span class="s">&quot;The height above the surface of the equator, in meters.&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">-&gt; </span><span class="nv">craft</span>
+      <span class="ss">:position</span>
+      <span class="nv">cartesian-&gt;spherical</span>
+      <span class="ss">:r</span>
+      <span class="p">(</span><span class="nb">- </span><span class="nv">earth-equatorial-radius</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">above-ground?</span>
+  <span class="s">&quot;Is the craft at or above the surface?&quot;</span>
+  <span class="p">[</span><span class="nv">craft</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">&lt;= </span><span class="mi">0</span> <span class="p">(</span><span class="nf">altitude</span> <span class="nv">craft</span><span class="p">)))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">flight</span>
+  <span class="s">&quot;The above-ground portion of a trajectory.&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">take-while </span><span class="nv">above-ground?</span> <span class="nv">trajectory</span><span class="p">))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">crashed?</span>
+  <span class="s">&quot;Does this trajectory crash into the surface before 10 hours are up?&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">time-limit</span> <span class="p">(</span><span class="nb">* </span><span class="mi">10</span> <span class="mi">3600</span><span class="p">)]</span> <span class="c1">; 10 hours</span>
+    <span class="p">(</span><span class="nb">not </span><span class="p">(</span><span class="nb">every? </span><span class="nv">above-ground?</span>
+                 <span class="p">(</span><span class="nb">take-while </span><span class="o">#</span><span class="p">(</span><span class="nb">&lt;= </span><span class="p">(</span><span class="ss">:time</span> <span class="nv">%</span><span class="p">)</span> <span class="nv">time-limit</span><span class="p">)</span> <span class="nv">trajectory</span><span class="p">)))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">crash-time</span>
+  <span class="s">&quot;Given a trajectory, returns the time the rocket impacted the ground.&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="ss">:time</span> <span class="p">(</span><span class="nb">last </span><span class="p">(</span><span class="nf">flight</span> <span class="nv">trajectory</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">apoapsis</span>
+  <span class="s">&quot;The highest altitude achieved during a trajectory.&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">apply max </span><span class="p">(</span><span class="nb">map </span><span class="nv">altitude</span> <span class="p">(</span><span class="nf">flight</span> <span class="nv">trajectory</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">apoapsis-time</span>
+  <span class="s">&quot;The time of apoapsis&quot;</span>
+  <span class="p">[</span><span class="nv">trajectory</span><span class="p">]</span>
+  <span class="p">(</span><span class="ss">:time</span> <span class="p">(</span><span class="nb">apply max-key </span><span class="nv">altitude</span> <span class="p">(</span><span class="nf">flight</span> <span class="nv">trajectory</span><span class="p">))))</span>
+</code></pre>
+<p>As written here, our first non-trivial program tells a story–though a <em>different</em> one than the process of exploration and refinement that brought the rocket to orbit. It builds from small, abstract ideas: linear algebra and coordinates; physical constants describing the universe for the simulation; and the basic outline of the spacecraft. Then we define the software controlling the rocket; the times for the burns, how much to thrust, in what direction, and when to separate stages. Using those control functions, we build a <em>physics engine</em> including gravity and thrust forces, and use Newton’s second law to build a basic <a href="http://en.wikipedia.org/wiki/Euler_method">Euler Method</a> solver. Finally, we analyze the trajectories the solver produces to answer key questions: how high, how long, and did it explode?</p>
+<p>We used Clojure’s immutable data structures–mostly maps–to represent the state of the universe, and defined <em>pure functions</em> to interpret those states and construct new ones. Using <code>iterate</code>, we projected a single state forward into an infinite timeline of the future–evaluated as demanded by the analysis functions. Though we pay a performance penalty, immutable data structures, pure functions, and lazy evaluation make simulating complex systems easier to reason about.</p>
+<p>Had we written this simulation in a different language, different techniques might have come into play. In Java, C++, or Ruby, we would have defined a hierarchy of datatypes called <em>classes</em>, each one representing a small piece of state. We might define a <code>Craft</code> type, and created subtypes <code>Atlas</code> and <code>Centaur</code>. We’d create a <code>Coordinate</code> type, subdivided into <code>Cartesian</code> and <code>Spherical</code>, and so on. The types add complexity and rigidity, but also prevent mis-spellings, and can prevent us from interpreting, say, coordinates as craft or vice-versa.</p>
+<p>To move the system forward in a language emphasizing <em>mutable</em> data structures, we would have updated the time and coordinates of a single craft in-place. This introduces additional complexity, because many of the changes we made depended on the current values of the craft. To ensure the correct ordering of calculations, we’d scatter temporary variables and explicit copies throughout the code, ensuring that functions didn’t see inconsistent pictures of the craft state. The mutable approach would likely be faster, but would still demand some copying of data, and sacrifice clarity.</p>
+<p>More <em>imperative</em> languages place less emphasis on laziness, and make it harder to express ideas like <code>map</code> and <code>take</code>. We might have simulated the trajectory for some fixed time, constructing a history of all the intermediate results we needed, then analyzed it by moving explicitly from slot to slot in that history, checking if the craft had crashed, and so on.</p>
+<p>Across all these languages, though, some ideas remain the same. We solve big problems by breaking them up into smaller ones. We use data structures to represent the state of the system, and functions to alter that state. Comments and docstrings clarify the <em>story</em> of the code, making it readable to others. Tests ensure the software is correct, and allow us to work piecewise towards a solution.</p>
+<h2><a href="#exercises" id="exercises">Exercises</a></h2>
+<ol>
+<li>
+<p>We know the spacecraft reached orbit, but we have no idea what that orbit <em>looks</em> like. Since the trajectory is infinite in length, we can’t ask about the <em>entire</em> history using <code>max</code>–but we know that all orbits have a high and low point. At the highest point, the difference between successive altitudes changes from increasing to decreasing, and at the lowest point, the difference between successive altitudes changes from decreasing to increasing. Using this technique, refine the <code>apoapsis</code> function to find the highest point using that <em>inflection</em> in altitudes–and write a corresponding <code>periapsis</code> function that finds the lowest point in the orbit. Display both periapsis and apoapsis in the test suite.</p>
+</li>
+<li>
+<p>We assumed the force of gravity resulted in a constant 9.8 meter/second/second acceleration towards the earth, but in the real world, gravity falls off with the <a href="http://en.wikipedia.org/wiki/Newton's_law_of_universal_gravitation">inverse square law</a>. Using the mass of the earth, mass of the spacecraft, and Newton’s constant, refine the gravitational force used in this simulation to take Newton’s law into account. How does this affect the apoapsis?</p>
+</li>
+<li>
+<p>We ignored the atmosphere, which exerts <a href="http://en.wikipedia.org/wiki/Drag_(physics)">drag</a> on the craft as it moves through the air. Write a basic air-density function which falls off with altitude. Make some educated guesses as to how much drag a real rocket experiences, and assume that the drag force is proportional to the square of the rocket’s velocity. Can your rocket still reach orbit?</p>
+</li>
+<li>
+<p>Notice that the periapsis and apoapsis of the rocket are <em>different</em>. By executing the circularization burn carefully, can you make them the same–achieving a perfectly circular orbit? One way to do this is to pick an orbital altitude and velocity of a known satellite–say, the International Space Station–and write the control software to match that velocity at that altitude.</p>
+</li>
+</ol>
+<p>In the next chapter, we talk about <a href="https://aphyr.com/posts/319-clojure-from-the-ground-up-debugging">debugging</a>.</p>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1830"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/244743d581b011243b0a4670e43f1d2e?r=pg&s=96&d=identicon" alt="Donald Parish" title="Donald Parish" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Donald Parish
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1830">
+            <time datetime="Feb 27, 2014, 1:41:31 AM" pubdate>
+              2014-02-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great addition. One of my first programs was a TRS-80 simulation of a space ship orbiting a planet, I hope to interest my son in using it for his physics class. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1831"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/94e6c47b2f9a76cd39f5c7b7c8ad3a36?r=pg&s=96&d=identicon" alt="Honza" title="Honza" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://honza.ca" rel="nofollow">
+              Honza
+            </a>
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1831">
+            <time datetime="Feb 28, 2014, 4:41:38 AM" pubdate>
+              2014-02-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>There is a tiny typo in the definition of <code>trajectory</code>. The <code>dt</code> argument is ignored and <code>1</code> is hard-coded.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1832"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="" title="" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            anonymous
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1832">
+            <time datetime="Mar 1, 2014, 10:25:25 AM" pubdate>
+              2014-03-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is a nice intro to functional techniques, but there are hundreds of these around the web. What’s really missing is more and better examples of dealing with resource management and side effects in FP.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1833"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/33ca8dd44993cafe3c851c9323111987?r=pg&s=96&d=identicon" alt="Noah Easterly" title="Noah Easterly" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Noah Easterly
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1833">
+            <time datetime="Mar 2, 2014, 3:38:51 PM" pubdate>
+              2014-03-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Shouldn’t the <code>atlas-v</code> use its <code>next-stage</code>’s mass to determine its <code>dry-mass</code>?</p>
+
+<p>Great series, thanks!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1838"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7f2b79cd5329a2c04562a873211e5d16?r=pg&s=96&d=identicon" alt="Matt" title="Matt" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://google.com" rel="nofollow">
+              Matt
+            </a>
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1838">
+            <time datetime="Mar 8, 2014, 12:02:50 AM" pubdate>
+              2014-03-08
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Noah is right, your mass function should be adding in the upper stage for the fuel and dry mass. If you modify the function to add that, then the craft can no longer make it into orbit either!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1844"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f8db1aa9a5989dda731f9005dbf4a8b8?r=pg&s=96&d=identicon" alt="Lauri" title="Lauri" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://blog.lauripesonen.com" rel="nofollow">
+              Lauri
+            </a>
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1844">
+            <time datetime="Mar 13, 2014, 9:06:46 AM" pubdate>
+              2014-03-13
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>What a great post! There are a few bugs in the code if you follow along with the snippets:</p>
+
+<ul>
+<li><p>the <code>makes-orbit</code> test should use <code>(flight trajectory)</code> rather than <code>trajectory</code> when analyzing the crash time etc.</p></li>
+<li><p><code>ascent</code> should be defined as <code>[0 300]</code> and <code>circularization</code> as <code>[400 1000]</code> for the tests to pass</p></li>
+</ul>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1853"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7f462de32218dc5e8dbdf0496ae8a957?r=pg&s=96&d=identicon" alt="Ivan" title="Ivan" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ivan
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1853">
+            <time datetime="Apr 1, 2014, 3:27:32 PM" pubdate>
+              2014-04-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Very interesting tutorial, thanks!</p>
+
+<p>Just a question,  do you have anything against records and protocols? As far I understand this is be suitable for model data, as presented here. It would be safer than using only maps. Maybe, you consider this approach is too OO? Or you just want to keep it simple?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1854"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7f462de32218dc5e8dbdf0496ae8a957?r=pg&s=96&d=identicon" alt="Ivan" title="Ivan" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ivan
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1854">
+            <time datetime="Apr 1, 2014, 3:38:14 PM" pubdate>
+              2014-04-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Well, now I see you use e.g.</p>
+
+<p>(merge craft initial-space-center)</p>
+
+<p>not sure if this would be possible using records (fresh Clojure noob here). So probably you prefer maps for flexibility?  Is there a way to combine this with records or protocols to make it safer, or would you stick with this in a serious / bigger app?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1858"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1858">
+            <time datetime="Apr 19, 2014, 2:21:56 PM" pubdate>
+              2014-04-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>Just a question, do you have anything against records and protocols?</p>
+</blockquote>
+
+<p>Protocols are strictly for polymorphism, and since we don’t have different types of records here, there’s no need for a protocol. We’ll be addressing polymorphism in a later chapter, though. :)</p>
+
+<p>Records have two advantages over maps: first, lookup for the basis fields in a record is an order of magnitude faster than a hashmap, and second, records can specify implementations of polymorphic functions (namely, via protocols and interfaces). They don’t provide type safety for their fields (you can happily assign a Cat to a Dog field) and don’t constrain their fields (you can assoc arbitrary keys into a record, just like a map), so they don’t really provide the sort of type safety you’d be looking for in a typed Object or algebraic datatype.</p>
+
+<p>Because Records print differently and have a few subtle API differences, and because I’m trying to give learners a chance to settle in to the core data abstractions before moving up to polymorphism and types, this chapter sticks to maps. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1864"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e91e9c0f1c646941d149f2d7cc8b12da?r=pg&s=96&d=identicon" alt="flo" title="flo" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            flo
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1864">
+            <time datetime="May 12, 2014, 6:02:29 AM" pubdate>
+              2014-05-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey,</p>
+
+<p>your posts are my first dive into clojure and you’re doing a really good job at explaining. Keep up the great work!!!</p>
+
+<p>flo</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1882"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3593c89d10655366b75059f23c42ba64?r=pg&s=96&d=identicon" alt="Daniel" title="Daniel" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Daniel
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-1882">
+            <time datetime="May 24, 2014, 11:11:44 AM" pubdate>
+              2014-05-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I love this series. Thank you. A few suggestions for making it better:</p>
+
+<p>There are two typos in the narrative that get corrected in the review, but which made following along a bit more difficult:</p>
+
+<ul>
+<li>apoapsis uses (map altitude trajectory) in your narrative and (map altitude (flight trajectory)) in review, and my tests were running forever</li>
+<li>ascent and circularization have typos in the narrative which prevent the circularization stage from ever being triggered - 3000 instead of 300 and 4000 instead of 400</li>
+</ul>
+
+<p>I would also recommend promising the orientation function later while you’re talking about unit-vector and engine-force under Orbital insertion. While I was working on this I thought you had just forgotten to include it, and tried to work it out myself.</p>
+
+<p>Thanks again!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2546"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/01361b8a0d84f9ca4e656512db91324e?r=pg&s=96&d=identicon" alt="utkarsh" title="utkarsh" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            utkarsh
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-2546">
+            <time datetime="Oct 23, 2015, 1:01:47 PM" pubdate>
+              2015-10-23
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>great series dear friend. You take great pains for our understanding. The capability of clojure to manipulate data structures with some cool in-built functions is exemplary. Do any other languages offer such functions to work with DSs and manipulate them? </p>
+
+<p>regards
+utkarsh</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2621"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/963d9854afe50c4ff9943e09d33233be?r=pg&s=96&d=identicon" alt="Yoav Kleinberger" title="Yoav Kleinberger" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Yoav Kleinberger
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-2621">
+            <time datetime="Mar 2, 2016, 8:20:22 AM" pubdate>
+              2016-03-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Great work!</p>
+
+<p>A pedantic physics point: on the equator, if y=0 and z=0, x can be either R <em>or</em> -R. You of course can choose where to put your launcher, but it’s a choice, not an inference. Not really important, just something I noticed.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3675"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/14e5f1aaa71010256db8840f783a4e32?r=pg&s=96&d=identicon" alt="Adam" title="Adam" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://gashlin.net" rel="nofollow">
+              Adam
+            </a>
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-3675">
+            <time datetime="Feb 3, 2022, 8:01:10 PM" pubdate>
+              2022-02-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for the tutorial! A few more notes years too late:</p>
+
+
+<p><code>spherical-&gt;cartesian</code> is initially written with cos and sin reversed for <code>:x</code>, though this is corrected in the final version.</p>
+
+
+<p><code>cartesian-&gt;spherical</code> won’t roundtrip in the negative x hemisphere, as the Wolfram page says, “the inverse tangent must be suitably defined to take the correct quadrant of (x,y) into account.” This would be handled by <code>(Math/atan2 (:y c) (:x c))</code>. (It’s also called <code>cartesian-&gt;polar</code> once.)</p>
+
+
+<p>To Noah and Matt’s point above, the first stage dry mass of 50050 already takes into account the total mass of the second stage and likely a payload. Wikipedia says that the first stage only has a dry mass of about 21,000 kg, add the 16,258 total mass of the second stage and there’s still ~13,000 left, which looks like a reasonable payload to low-earth orbit.</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3676"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/14e5f1aaa71010256db8840f783a4e32?r=pg&s=96&d=identicon" alt="Adam" title="Adam" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://gashlin.net" rel="nofollow">
+              Adam
+            </a>
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-3676">
+            <time datetime="Feb 3, 2022, 8:28:08 PM" pubdate>
+              2022-02-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Although, if there’s a 13,000 kg payload, that would be included in the dry mass of the second stage, and with that added there’s a crash, even if the payload continues as a separate stage. Anyway, this is irrelevant, it was a good example.</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3683"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-3683">
+            <time datetime="Feb 11, 2022, 7:44:57 AM" pubdate>
+              2022-02-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>spherical-&gt;cartesian is initially written with cos and sin reversed for :x, though this is corrected in the final version.</p>
+</blockquote>
+
+
+<p>Yep! This is (unless I’ve made <em>multiple</em> mistakes here, which is–knowing me–entirely possible) an intentional bug–the chapter walks you through detecting and resolving it.</p>
+
+
+<blockquote>
+<p>cartesian-&gt;spherical won’t roundtrip in the negative x hemisphere, as the Wolfram page says, “the inverse tangent must be suitably defined to take the correct quadrant of (x,y) into account.” This would be handled by (Math/atan2 (:y c) (:x c)). (It’s also called cartesian-&gt;polar once.)</p>
+</blockquote>
+
+
+<p>Quite right, thank you. Fixed!</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-3817"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/cacc2bce062d07c4b80213540d6f4050?r=pg&s=96&d=identicon" alt="matt" title="matt" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            matt
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-3817">
+            <time datetime="Jul 17, 2022, 10:29:49 PM" pubdate>
+              2022-07-17
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey, first off – thanks for this amazing tutorial series, I discovered it several years ago and it helped me tremendously in learning Clojure and enabling a career I didn’t expect to end up in. I now often use Clojure professionally in software I write for my research / simulations. Every so often I go through this series for practice and nostalgia; always hoping for more additions to the series (hopefully more modeling and simulation ones similar to this post!)</p>
+
+
+<p>I’d like to follow up on Adam’s comments from a few months ago – in the correction you made to the cartesian-&gt;spherical function (as written in the snippets and full source at the end) it produces a syntax error.</p>
+
+
+<p><code>(Math/atan2 (:y c) (:x c)</code> expects two args.</p>
+
+
+<p>As written in the version of the post I’m reading, the function is receiving a single arg which is the return values of the division of the key extracted coordinate values. I believe Adam was correct in that it should be:</p>
+
+
+<p><code>(Math/atan2 (:y c) (:x c))</code></p>
+
+
+<p><em>not</em></p>
+
+
+<p><code>(Math/atan2 (/ (:y c) (:x c))</code></p>
+
+
+<p>Which I believe was a holdover typo that caused it to pass one argument and produce a syntax error.</p>
+
+
+<p>Unless I’m mistaken or misunderstanding something, I believe this will fix the issue. Anyway, thanks again. I sincerely want to thank you for this series and hope there will be many more to follow.</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3819"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/312-clojure-from-the-ground-up-modeling#comment-3819">
+            <time datetime="Jul 18, 2022, 7:57:41 AM" pubdate>
+              2022-07-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>I believe Adam was correct in that it should be <code>(Math/atan2 (:y c) (:x c))</code> not <code>(Math/atan2 (/ (:y c) (:x c))</code></p>
+</blockquote>
+
+
+<p>Ah, yes, that does sound right! My sincere apologies for the confusion. I’m delighted that this series helped in your career! :-)</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="312" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

@@ -1,0 +1,3368 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: welcome</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="eeGVEdO9KjEPf1pSKVGutI3JU64gFttts/EKdoprXxA1GdY8SusDAX2VbaUc7ntEZ30HcBLyda2+nosu" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/301-clojure-from-the-ground-up-welcome" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/301-clojure-from-the-ground-up-welcome">Clojure from the ground up: welcome</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Oct 26, 2013, 1:06:30 PM" pubdate>
+          2013-10-26
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>This guide aims to introduce newcomers and experienced programmers alike to the
+beauty of functional programming, starting with the simplest building blocks of
+software. You’ll need a computer, basic proficiency in the command line, a text editor, and an internet connection. By the end of this series, you’ll have a thorough command of the Clojure programming language.</p>
+<h2><a href="#who-is-this-guide-for" id="who-is-this-guide-for">Who is this guide for?</a></h2>
+<p>Science, technology, engineering, and mathematics are deeply rewarding fields, yet few women enter STEM as a career path. Still more are discouraged by a culture which repeatedly asserts that women lack the analytic aptitude for writing software, that they are not driven enough to be successful scientists, that it’s not cool to pursue a passion for structural engineering. Those few with the talent, encouragement, and persistence to break in to science and tech are discouraged by persistent sexism in practice: the old boy’s club of tenure, being passed over for promotions, isolation from peers, and flat-out assault. This landscape sucks. I want to help change it.</p>
+<p><a href="https://twitter.com/WomenWhoCode">Women Who Code</a>, <a href="http://www.pyladies.com/">PyLadies</a>, <a href="http://www.blackgirlscode.com/">Black Girls Code</a>, <a href="http://railsbridge.org/">RailsBridge</a>, <a href="http://www.girlswhocode.com/about-us/">Girls Who Code</a>, <a href="http://www.girldevelopit.com/">Girl Develop It</a>, and <a href="http://www.lambdaladies.com/">Lambda Ladies</a> are just a few of the fantastic groups helping women enter and thrive in software. I wholeheartedly support these efforts.</p>
+<p>In addition, I want to help in my little corner of the technical community–functional programming and distributed systems–by making high-quality educational resources available for free. The <a href="/tags/jepsen">Jepsen</a> series has been, in part, an effort to share my enthusiasm for distributed systems with beginners of all stripes–but especially for <a href="http://aphyr.com/posts/275-meritocracy-is-short-sighted">women, LGBT folks, and people of color</a>.</p>
+<p>As technical authors, we often assume that our readers are white, that our readers are straight, that our readers are traditionally male. This is the invisible default in US culture, and it’s especially true in tech. People continue to assume on the basis of my software and writing that I’m straight, because well hey, it’s a statistically reasonable assumption.</p>
+<p>But I’m <em>not</em> straight. I get called faggot, cocksucker, and sinner. People say they’ll pray for me. When I walk hand-in-hand with my boyfriend, people roll down their car windows and stare. They threaten to beat me up or kill me. Every day I’m aware that I’m the only gay person some people know, and that I can show that not all gay people are effeminate, or hypermasculine, or ditzy, or obsessed with image. That you can be a manicurist or a mathematician or both. Being different, being a stranger in your culture, <a href="http://aphyr.com/posts/274-identity-and-state">comes with all kinds of challenges</a>. I can’t speak to everyone’s experience, but I can take a pretty good guess.</p>
+<p>At the same time, in the technical community I’ve found overwhelming warmth and support, from people of <em>all</em> stripes. My peers stand up for me every day, and I’m so thankful–especially you straight dudes–for understanding a bit of what it’s like to be different. I want to extend that same understanding, that same empathy, to people unlike myself. Moreover, I want to reassure everyone that though they may feel different, they <em>do</em> have a place in this community.</p>
+<p>So before we begin, I want to reinforce that you <em>can</em> program, that you <em>can</em> do math, that you <em>can</em> design car suspensions and fire suppression systems and spacecraft control software and distributed databases, regardless of what your classmates and media and even fellow engineers think. You don’t have to be white, you don’t have to be straight, you don’t have to be a man. You can grow up never having touched a computer and still become a skilled programmer. Yeah, it’s harder–and yeah, people will give you shit, but that’s not your fault and has nothing to do with your <em>ability</em> or your <em>right</em> to do what you love. All it takes to be a good engineer, scientist, or mathematician is your curiosity, your passion, the right teaching material, and putting in the hours.</p>
+<p>There’s nothing in this guide that’s just for lesbian grandmas or just for mixed-race kids; bros, you’re welcome here too. There’s nothing dumbed down. We’re gonna go as deep into the ideas of programming as I know how to go, and we’re gonna do it with everyone on board.</p>
+<p>No matter who you are or who people <em>think</em> you are, this guide is for you.</p>
+<h2><a href="#why-clojure" id="why-clojure">Why Clojure?</a></h2>
+<p>This book is about how to program. We’ll be learning in Clojure, which is a modern dialect of a very old family of computer languages, called Lisp. You’ll find that many of this book’s ideas will translate readily to other languages; though they may be <a href="http://aphyr.com/posts/266-core-language-concepts">expressed in different ways</a>.</p>
+<p>We’re going to explore the nature of syntax, metalanguages, values, references, mutation, control flow, and concurrency. Many languages leave these ideas implicit in the language construction, or don’t have a concept of metalanguages or concurrency at all. Clojure makes these ideas explicit, first-class language constructs.</p>
+<p>At the same time, we’re going to defer or omit any serious discussion of static type analysis, hardware, and performance. This is not to say that these ideas aren’t <em>important</em>; just that they don’t fit well within this particular narrative arc. For a deep exploration of type theory I recommend a study in Haskell, and for a better understanding of underlying hardware, learning C and an assembly language will undoubtedly help.</p>
+<p>In more general terms, Clojure is a well-rounded language. It offers broad library support and runs on multiple operating systems. Clojure performance is not terrific, but is orders of magnitude faster than Ruby, Python, or Javascript. Unlike some faster languages, Clojure emphasizes <em>safety</em> in its type system and approach to parallelism, making it easier to write correct multithreaded programs. Clojure is <em>concise</em>, requiring very little code to express complex operations. It offers a REPL and dynamic type system: ideal for beginners to experiment with, and well-suited for manipulating complex data structures. A consistently designed standard library and full-featured set of core datatypes rounds out the Clojure toolbox.</p>
+<p>Finally, there are some drawbacks. As a compiled language, Clojure is much slower to start than a scripting language; this makes it unsuitable for writing small scripts for interactive use. Clojure is also <em>not</em> well-suited for high-performance numeric operations. Though it is possible, you have to jump through hoops to achieve performance comparable with Java. I’ll do my best to call out these constraints and shortcomings as we proceed through the text.</p>
+<p>With that context out of the way, let’s get started by installing Clojure!</p>
+<h2><a href="#getting-set-up" id="getting-set-up">Getting set up</a></h2>
+<p>First, you’ll need a Java Virtual Machine, or JVM, and its associated
+development tools, called the JDK. This is the software which <em>runs</em> a Clojure
+program. If you’re on Windows, install <a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle
+JDK 1.7</a>. If you’re on OS X or Linux, you may already have a JDK installed.
+In a terminal, try:</p>
+<pre><code><span></span>which javac
+</code></pre>
+<p>If you see something like</p>
+<pre><code><span></span>/usr/bin/javac
+</code></pre>
+<p>Then you’re good to go. If you don’t see any output from that command, install the appropriate
+<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html">Oracle
+JDK 1.7</a> for your operating system, or whatever JDK your package manager has available.</p>
+<p>When you have a JDK, you’ll need <a href="http://leiningen.org">Leiningen</a>,
+the Clojure build tool. If you’re on a Linux or OS X computer, the instructions below
+should get you going right away. If you’re on Windows, see the Leiningen page
+for an installer. If you get stuck, you might want to start with a
+<a href="http://blog.teamtreehouse.com/command-line-basics">primer on command line basics</a>.</p>
+<pre><code><span></span>mkdir -p ~/bin
+<span class="nb">cd</span> ~/bin
+curl -O https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein
+chmod a+x lein
+</code></pre>
+<p>Leiningen automatically handles installing Clojure, finding libraries from the
+internet, and building and running your programs. We’ll create a new Leiningen
+project to play around in:</p>
+<pre><code><span></span><span class="nb">cd</span>
+lein new scratch
+</code></pre>
+<p>This creates a new directory in your homedir, called <code>scratch</code>. If you see <code>command not found</code> instead, it means the directory <code>~/bin</code> isn’t registered with your terminal as a place to search for programs. To fix this, add the line</p>
+<pre><code><span></span><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$PATH</span><span class="s2">&quot;</span>:~/bin
+</code></pre>
+<p>to the file <code>.bash_profile</code> in your home directory, then run <code>source ~/.bash_profile</code>. Re-running <code>lein new scratch</code> should work.</p>
+<p>Let’s enter that directory, and start using Clojure itself:</p>
+<pre><code><span></span><span class="nb">cd</span> scratch
+lein repl
+</code></pre>
+<h2><a href="#the-structure-of-programs" id="the-structure-of-programs">The structure of programs</a></h2>
+<p>When you type <code>lein repl</code> at the terminal, you’ll see something like this:</p>
+<pre><code>aphyr@waterhouse:~/scratch$ lein repl
+nREPL server started on port 45413
+REPL-y 0.2.0
+Clojure 1.5.1
+    Docs: (doc function-name-here)
+          (find-doc &quot;part-of-name-here&quot;)
+  Source: (source function-name-here)
+ Javadoc: (javadoc java-object-or-class-here)
+    Exit: Control+D or (exit) or (quit)
+
+user=&gt;
+</code></pre>
+<p>This is an interactive Clojure environment called a REPL, for “Read, Evaluate,
+Print Loop”. It’s going to <em>read</em> a program we enter, run that program, and
+print the results. REPLs give you quick feedback, so they’re a great way to
+explore a program interactively, run tests, and prototype new ideas.</p>
+<p>Let’s write a simple program. The simplest, in fact. Type “nil”, and hit enter.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">nil</span>
+<span class="nv">nil</span>
+</code></pre>
+<p><code>nil</code> is the most basic value in Clojure. It represents emptiness,
+nothing-doing, not-a-thing. The absence of information.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">true</span>
+<span class="nv">true</span>
+<span class="nv">user=&gt;</span> <span class="nv">false</span>
+<span class="nv">false</span>
+</code></pre>
+<p><code>true</code> and <code>false</code> are a pair of special values called <em>Booleans</em>. They mean
+exactly what you think: whether a statement is true or false. <code>true</code>, <code>false</code>, and <code>nil</code> form the three poles of the Lisp logical system.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="mi">0</span>
+<span class="mi">0</span>
+</code></pre>
+<p>This is the number zero. Its numeric friends are <code>1</code>, <code>-47</code>, <code>1.2e-4</code>, <code>1/3</code>,
+and so on. We might also talk about <em>strings</em>, which are chunks of text surrounded by double quotes:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="s">&quot;hi there!&quot;</span>
+<span class="s">&quot;hi there!&quot;</span>
+</code></pre>
+<p><code>nil</code>, <code>true</code>, <code>0</code>, and <code>&quot;hi there!&quot;</code> are all different types of <em>values</em>; the
+nouns of programming. Just as one could say “House.” in English, we can write a
+program like <code>&quot;hello, world&quot;</code> and it evaluates to itself: the string <code>&quot;hello world&quot;</code>. But most sentences aren’t just about stating the existence of a thing; they involve <em>action</em>. We need <em>verbs</em>.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="nv">inc</span>
+<span class="o">#</span><span class="nv">&lt;core$inc</span> <span class="nv">clojure.core$inc</span><span class="o">@</span><span class="mi">6</span><span class="nv">f7ef41c&gt;</span>
+</code></pre>
+<p>This is a verb called <code>inc</code>–short for “increment”. Specifically, <code>inc</code> is a
+<em>symbol</em> which <em>points</em> to a verb: <code>#&lt;core$inc clojure.core$inc@6f7ef41c&gt;</code>–
+just like the word “run” is a <em>name</em> for the <em>concept</em> of running.</p>
+<p>There’s a key distinction here–that a signifier, a reference, a label, is not
+the same as the signified, the referent, the concept itself. If you write the
+word “run” on paper, the ink means nothing by itself. It’s just a symbol. But
+in the mind of a reader, that symbol takes on <em>meaning</em>; the idea of running.</p>
+<p>Unlike the number 0, or the string “hi”, symbols are references to other
+values. when Clojure evaluates a symbol, it looks up that symbol’s meaning.
+Look up <code>inc</code>, and you get <code>#&lt;core$inc clojure.core$inc@6f7ef41c&gt;</code>.</p>
+<p>Can we refer to the symbol itself, <em>without</em> looking up its meaning?</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="ss">'inc</span>
+<span class="nv">inc</span>
+</code></pre>
+<p>Yes. The single quote <code>'</code> <em>escapes</em> a sentence. In programming languages, we call sentences <code>expressions</code> or <code>statements</code>. A quote says “Rather than <em>evaluating</em> this expression’s text, simply return the text itself, unchanged.” Quote a symbol, get a symbol. Quote a number, get a number. Quote anything, and get it back exactly as it came in.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="ss">'123</span>
+<span class="mi">123</span>
+<span class="nv">user=&gt;</span> <span class="o">'</span><span class="s">&quot;foo&quot;</span>
+<span class="s">&quot;foo&quot;</span>
+<span class="nv">user=&gt;</span> <span class="o">'</span><span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+<span class="p">(</span><span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span><span class="p">)</span>
+</code></pre>
+<p>A new kind of value, surrounded by parentheses: the <em>list</em>. LISP originally stood for LISt Processing, and lists are still at the core of the language. In fact, they form the most basic way to compose expressions, or sentences. A list is a single expression which has <em>multiple parts</em>. For instance, this list contains three elements: the numbers 1, 2, and 3. Lists can contain anything: numbers, strings, even other lists:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="o">'</span><span class="p">(</span><span class="nf">nil</span> <span class="s">&quot;hi&quot;</span><span class="p">)</span>
+<span class="p">(</span><span class="nf">nil</span> <span class="s">&quot;hi&quot;</span><span class="p">)</span>
+</code></pre>
+<p>A list containing two elements: the number 1, and a second list. That list
+contains two elements: the number 2, and another list. <em>That</em> list contains two
+elements: 3, and an empty list.</p>
+<pre><code>user=&gt; '(1 (2 (3 ())))
+(1 (2 (3 ())))
+</code></pre>
+<p>You could think of this structure as a tree–which is a provocative idea,
+because <em>languages</em> are like trees too: sentences are comprised of clauses, which can be nested, and each clause may have subjects modified by adjectives, and verbs modified by adverbs, and so on. “Lindsay, my best friend, took the dog which we found together at the pound on fourth street, for a walk with her mother Michelle.”</p>
+<pre><code>Took
+  Lindsay
+    my best friend
+  the dog
+    which we found together
+      at the pound
+        on fourth street
+    for a walk
+      with her mother
+        Michelle
+</code></pre>
+<p>But let’s try something simpler. Something we know how to talk about.
+“Increment the number zero.” As a tree:</p>
+<pre><code>Increment
+  the number zero
+</code></pre>
+<p>We have a symbol for incrementing, and we know how to write the number zero.
+Let’s combine them in a list:</p>
+<pre><code><span></span><span class="nv">clj=&gt;</span> <span class="o">'</span><span class="p">(</span><span class="nb">inc </span><span class="mi">0</span><span class="p">)</span>
+<span class="p">(</span><span class="nb">inc </span><span class="mi">0</span><span class="p">)</span>
+</code></pre>
+<p>A basic sentence. Remember, since it’s quoted, we’re talking about the tree,
+the text, the expression, by itself. Absent interpretation. If we remove the
+single-quote, Clojure will <em>interpret</em> the expression:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="mi">0</span><span class="p">)</span>
+<span class="mi">1</span>
+</code></pre>
+<p>Incrementing zero yields one. And if we wanted to increment <em>that</em> value?</p>
+<pre><code>Increment
+  increment
+    the number zero
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">inc </span><span class="mi">0</span><span class="p">))</span>
+<span class="mi">2</span>
+</code></pre>
+<p>A sentence in Lisp is a list. It starts with a verb, and is followed by zero or
+more objects for that verb to act on. Each part of the list can <em>itself</em> be
+another list, in which case that nested list is evaluated first, just like a
+nested clause in a sentence. When we type</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">inc </span><span class="p">(</span><span class="nb">inc </span><span class="mi">0</span><span class="p">))</span>
+</code></pre>
+<p>Clojure first looks up the meanings for the symbols in the code:</p>
+<pre><code><span></span><span class="p">(</span><span class="o">#</span><span class="nv">&lt;core$inc</span> <span class="nv">clojure.core$inc</span><span class="o">@</span><span class="mi">6</span><span class="nv">f7ef41c&gt;</span>
+  <span class="p">(</span><span class="o">#</span><span class="nv">&lt;core$inc</span> <span class="nv">clojure.core$inc</span><span class="o">@</span><span class="mi">6</span><span class="nv">f7ef41c&gt;</span>
+    <span class="mi">0</span><span class="p">))</span>
+</code></pre>
+<p>Then evaluates the innermost list <code>(inc 0)</code>, which becomes the number 1:</p>
+<pre><code><span></span><span class="p">(</span><span class="o">#</span><span class="nv">&lt;core$inc</span> <span class="nv">clojure.core$inc</span><span class="o">@</span><span class="mi">6</span><span class="nv">f7ef41c&gt;</span>
+ <span class="mi">1</span><span class="p">)</span>
+</code></pre>
+<p>Finally, it evaluates the outer list, incrementing the number 1:</p>
+<pre><code><span></span><span class="mi">2</span>
+</code></pre>
+<p>Every list starts with a verb. Parts of a list are evaluated from left to
+right. Innermost lists are evaluated before outer lists.</p>
+<pre><code><span></span><span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="p">(</span><span class="nb">- </span><span class="mi">5</span> <span class="mi">2</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="mi">3</span> <span class="mi">4</span><span class="p">))</span>
+<span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">3</span>       <span class="p">(</span><span class="nb">+ </span><span class="mi">3</span> <span class="mi">4</span><span class="p">))</span>
+<span class="p">(</span><span class="nb">+ </span><span class="mi">1</span> <span class="mi">3</span>       <span class="mi">7</span><span class="p">)</span>
+<span class="mi">11</span>
+</code></pre>
+<p>That’s it.</p>
+<p>The entire grammar of Lisp: the structure for every expression in the language.
+We transform expressions by <em>substituting</em> meanings for symbols, and obtain
+some result. This is the core of the <a href="http://en.wikipedia.org/wiki/Lambda_calculus">Lambda Calculus</a>, and it is the theoretical basis for almost all computer languages.
+Ruby, Javascript, C, Haskell; all languages express the text of their programs in different ways, but internally all construct a <em>tree</em> of expressions. Lisp simply makes it explicit.</p>
+<h2><a href="#review" id="review">Review</a></h2>
+<p>We started by learning a few basic nouns: numbers like <code>5</code>, strings like
+<code>&quot;cat&quot;</code>, and symbols like <code>inc</code> and <code>+</code>. We saw how quoting makes the
+difference between an <em>expression</em> itself and the thing it <em>evaluates</em> to.  We
+discovered symbols as <em>names</em> for other values, just like how words represent
+concepts in any other language. Finally, we combined lists to make trees, and
+used those trees to represent a program.</p>
+<p>With these basic elements of syntax in place, it’s time to expand our
+vocabulary with new verbs and nouns; learning to <a href="http://aphyr.com/posts/302-clojure-from-the-ground-up-basic-types">represent more complex values and transform them in different ways</a>.</p>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1677"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/05e4e83c87a5700958fcb3efa8951a06?r=pg&s=96&d=identicon" alt="Vasudev Ram" title="Vasudev Ram" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://www.dancingbison.com" rel="nofollow">
+              Vasudev Ram
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1677">
+            <time datetime="Oct 26, 2013, 4:35:09 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Nice idea, Kyle.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1678"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/98c5b03ee6a2786356748b9a99e0826f?r=pg&s=96&d=identicon" alt="svankie" title="svankie" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            svankie
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1678">
+            <time datetime="Oct 26, 2013, 4:55:55 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Loving this.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1679"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/87c5b458dca4ebe9646478d1efc48b3c?r=pg&s=96&d=identicon" alt="david karapetyan" title="david karapetyan" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://scriptcrafty.com" rel="nofollow">
+              david karapetyan
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1679">
+            <time datetime="Oct 26, 2013, 5:11:48 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Looking forward to what’s next.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1680"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0f324fb00cdf26f501450a11eb821d8f?r=pg&s=96&d=identicon" alt="BR" title="BR" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            BR
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1680">
+            <time datetime="Oct 26, 2013, 6:29:06 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Seriously? LISP? Haven’t we learned?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1681"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3ad74a0b72273db84c85d67253fe5982?r=pg&s=96&d=identicon" alt="Peter" title="Peter" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Peter
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1681">
+            <time datetime="Oct 26, 2013, 7:39:26 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>Seriously? LISP? Haven’t we learned?</p>
+</blockquote>
+
+<p>Apparently you haven’t</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1682"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/16fc03db97c032b24e20f13500971d42?r=pg&s=96&d=identicon" alt="na" title="na" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            na
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1682">
+            <time datetime="Oct 26, 2013, 8:29:37 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<blockquote>
+<p>Seriously? LISP? Haven’t we learned?</p>
+</blockquote>
+
+<p>Apparently you haven’t</p>
+</blockquote>
+
+<p>Agreed.  </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1683"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/2d22b5145dc063d32010f0905e2b0078?r=pg&s=96&d=identicon" alt="Johnny Chang" title="Johnny Chang" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://johnnychang.com" rel="nofollow">
+              Johnny Chang
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1683">
+            <time datetime="Oct 26, 2013, 9:21:26 PM" pubdate>
+              2013-10-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Awesome!  Eagerly awaiting the next installment!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1684"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/016455fdff8501f9b0b322137a641ce4?r=pg&s=96&d=identicon" alt="alex" title="alex" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://alexspencer.me" rel="nofollow">
+              alex
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1684">
+            <time datetime="Oct 27, 2013, 12:40:00 AM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I have to make a comment entirely unrelated to your post - I love your blog design and layout. It is great. The comments, the terminal CSS, etc. great job.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1685"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a3e8874df6cfeae776dcf5259cd39a40?r=pg&s=96&d=identicon" alt="JD" title="JD" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            JD
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1685">
+            <time datetime="Oct 27, 2013, 12:44:50 AM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I’m definitely following these posts. </p>
+
+<p>Thank you! :) </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1686"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0d2399d5f7eb1cd46f0437b20a39efaa?r=pg&s=96&d=identicon" alt="ScientificCoder" title="ScientificCoder" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            ScientificCoder
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1686">
+            <time datetime="Oct 27, 2013, 6:07:00 AM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Nice !
+I’ll be sure to point newcomers to your site.
+Kuddos and keep them coming ! ☺</p>
+
+<p>Cheers.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1687"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7e4e7569d64e14de784aca9f9a8fffb4?r=pg&s=96&d=identicon" alt="Aahz" title="Aahz" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://www.pythoncraft.com/" rel="nofollow">
+              Aahz
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1687">
+            <time datetime="Oct 27, 2013, 8:20:01 AM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>It’s not really clear who this is aimed at.  For example, I got here
+through a feed thingie (DuckDuckGo on Android) and had no idea what
+exactly Clojure was until I saw the magic word “LISP”.  Might be a good
+idea to at least link to something.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1689"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/601277db52ff762d09b5f29fd2257679?r=pg&s=96&d=identicon" alt="Rick James" title="Rick James" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Rick James
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1689">
+            <time datetime="Oct 27, 2013, 1:13:19 PM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>The whole white knight paragraph was horrible. Nobody thinks you’re a great guy because you did that.  You’re just an asshole.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1691"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/1f992f8432040eddc781a49b034def54?r=pg&s=96&d=identicon" alt="Kasim" title="Kasim" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://staplesinnovationlab.com/" rel="nofollow">
+              Kasim
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1691">
+            <time datetime="Oct 27, 2013, 1:53:02 PM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi,</p>
+
+<p>Great post and keep up the good work. I’d be happy to help with reviewing codes and such before you publish. </p>
+
+<p>Just let you know we are hiring Clojure developers. Come check us out: <a href="http://staplesinnovationlab.com/" rel="nofollow">http://staplesinnovationlab.com/</a></p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1693"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/26134de1e74c627a6df26e898229e1e0?r=pg&s=96&d=identicon" alt="Jbeja" title="Jbeja" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jbeja
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1693">
+            <time datetime="Oct 27, 2013, 2:56:56 PM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Loving this and thanks for the encouraging intro ( i am gay), just reading the “Clojure data analisys cookbook” and this will help me to go trough the  chapters. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1695"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a79143991b8b636aa1670a1b30ba55f8?r=pg&s=96&d=identicon" alt="Mark Wotton" title="Mark Wotton" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://shimweasel.com" rel="nofollow">
+              Mark Wotton
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1695">
+            <time datetime="Oct 27, 2013, 3:49:35 PM" pubdate>
+              2013-10-27
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Nice tute - but isn’t it a read-Eval-print-loop, not execute?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1697"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e9fbeb37bfd7d3c5b187e5d8e2f422a6?r=pg&s=96&d=identicon" alt="epyf" title="epyf" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            epyf
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1697">
+            <time datetime="Oct 28, 2013, 2:29:47 AM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Well, women, LGBT and people of color can always take classes on Coursera.
+The quality there is high too, and they won’t get the impression of being “people with special teaching ”. Or flagships - want it or not.</p>
+
+<p>I do understand that the tutorial is aimed at just anybody, but this is really the feeling I get when I read that paragraph (but I’m white and straight, that may be the reason)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1698"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e9fbeb37bfd7d3c5b187e5d8e2f422a6?r=pg&s=96&d=identicon" alt="epyf" title="epyf" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            epyf
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1698">
+            <time datetime="Oct 28, 2013, 2:29:52 AM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Well, women, LGBT and people of color can always take classes on Coursera.
+The quality there is high too, and they won’t get the impression of being “people with special teaching ”. Or flagships - want it or not.</p>
+
+<p>I do understand that the tutorial is aimed at just anybody, but this is really the feeling I get when I read that paragraph (but I’m white and straight, that may be the reason)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1699"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/1c417abcc099af753a15420bff6c363a?r=pg&s=96&d=identicon" alt="M" title="M" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            M
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1699">
+            <time datetime="Oct 28, 2013, 6:27:34 AM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>user=&gt; ‘(1 (2 (3 ()))
+(1 (2 (3)))</p>
+
+<p>is this a mistake?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1700"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/2f4b6ce9f3de16a3e17bd548f70836e1?r=pg&s=96&d=identicon" alt="Andreas" title="Andreas" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Andreas
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1700">
+            <time datetime="Oct 28, 2013, 7:22:05 AM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi Kyle,</p>
+
+<p>the goals of this introduction you’re mentioning are just wonderful. 
+I have nothing than deep respect for your openness, encouragement <em>and</em> your profound technical skills! Please, just keep walking this path. </p>
+
+<p>Best,
+Andreas  </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1701"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/b6a00102453a0fd6e3fc9c25ca83cb9c?r=pg&s=96&d=identicon" alt="jarppe" title="jarppe" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://metosin.fi" rel="nofollow">
+              jarppe
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1701">
+            <time datetime="Oct 28, 2013, 3:53:16 PM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hello Kyle,</p>
+
+<p>I really liked you approach where you introduce quoting first, then using quoting introduce a list, and only then calling functions.</p>
+
+<p>I have been giving Clojure introductions and I usually start from literals and simple collections. When I go from vectors to lists I have to introduce quoting and evaluation at the same time and this is usually hard to grasp.</p>
+
+<p>Next I will try to introduce Clojure to my 18 years old daughter and I think I’ll use your blog as starting point. So please continue your excellent blog.</p>
+
+<p>Br, Jarppe</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1702"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1702">
+            <time datetime="Oct 28, 2013, 4:36:45 PM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Good catch, it is a mistake. Thanks M.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1703"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1703">
+            <time datetime="Oct 28, 2013, 4:40:50 PM" pubdate>
+              2013-10-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I agree, jarppe. Went back and forth several times on whether it made more sense to introduce the (fun &amp; args) syntax initially–and introduce the concept of evaluation as substitution–or stick with more concrete semantics as in Chapter 2. I… <em>think</em> it paid off; folks seem to be following this path without getting too lost, and it sets the stage for a deeper exploration of substitution later.</p>
+
+<p>Definitely a more abstract path, though. I’m trying to explain the core structure as deeply as possible without getting bogged down, but without losing sight of inductive learners either. We’ll see how it goes. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1743"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3343705ce45837959960b7e9119143bf?r=pg&s=96&d=identicon" alt="Sergey" title="Sergey" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Sergey
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1743">
+            <time datetime="Nov 18, 2013, 12:27:56 PM" pubdate>
+              2013-11-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hello, Kyle! 
+You are a man! Thanks a bunch for this guide, looking forward to next posts :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1748"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0629ec4252f7aaf7988b5770e73de4f5?r=pg&s=96&d=identicon" alt="Adrian" title="Adrian" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Adrian
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1748">
+            <time datetime="Nov 20, 2013, 10:56:47 PM" pubdate>
+              2013-11-20
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thankyou for this article.  I often find myself wallpapering over my sexuality in professional environments to avoid any “awkward looks”.  It is important for queer coders to be visible to their peers and their lives celebrated equally.  It put a smile on my face to read something that speaks to me both socially and technically :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1760"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="LitoNico" title="LitoNico" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://lito-nico.tumblr.com" rel="nofollow">
+              LitoNico
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1760">
+            <time datetime="Dec 2, 2013, 8:54:23 PM" pubdate>
+              2013-12-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for both the article and statement of purpose! This is a great reference for learning clojure– especially since I’m completely new to lisps.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1780"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a839a1dce92696539e7e9475604ef310?r=pg&s=96&d=identicon" alt="Juan Manuel" title="Juan Manuel" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Juan Manuel
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1780">
+            <time datetime="Dec 16, 2013, 1:28:34 AM" pubdate>
+              2013-12-16
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Why don’t you publish this as a book? The contents deserve it.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1785"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/08cff047d246096cee251b541594a52f?r=pg&s=96&d=identicon" alt="Marko Bonaci" title="Marko Bonaci" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://github/mbonaci @markobonaci" rel="nofollow">
+              Marko Bonaci
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1785">
+            <time datetime="Dec 21, 2013, 4:40:17 AM" pubdate>
+              2013-12-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I love you dude. And I’m strait!
+:)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1804"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/73e3492025a37b39053a539c9d102bd6?r=pg&s=96&d=identicon" alt="Ahsen" title="Ahsen" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ahsen
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1804">
+            <time datetime="Jan 5, 2014, 11:30:02 AM" pubdate>
+              2014-01-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>nice tutorial, eagerly waiting for the next chapters.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1814"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="m" title="m" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            m
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1814">
+            <time datetime="Jan 18, 2014, 4:57:20 AM" pubdate>
+              2014-01-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>This is wonderful. Thank you.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1818"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/976f0ac6a82ba65ef6b8065262ef1172?r=pg&s=96&d=identicon" alt="Mathew Bentley" title="Mathew Bentley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Mathew Bentley
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1818">
+            <time datetime="Feb 4, 2014, 10:23:18 PM" pubdate>
+              2014-02-04
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>So happy to read this guide. You are an absolute programming badass, thanks for sharing some of that with the rest of us!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1834"
+       class="comment pure-g gutter-sm
+               
+                 registered
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Aphyr
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1834">
+            <time datetime="Mar 2, 2014, 11:21:58 PM" pubdate>
+              2014-03-02
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for the kind words, all. Goal has always been to produce a full-length book; hopefully some time by the end of the year.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e145b50faf662e70c066b13c98921900?r=pg&s=96&d=identicon" alt="Aphyr" title="Aphyr" />
+      
+    </div>
+  </div>
+
+  <div id="comment-1847"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a8d4e540082d690af80ab70191239ca0?r=pg&s=96&d=identicon" alt="Rob" title="Rob" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Rob
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1847">
+            <time datetime="Mar 19, 2014, 9:23:46 AM" pubdate>
+              2014-03-19
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Just to counterbalance the opening slightly, and perhaps this is just an encouraging view of the way things are where I live, but certainly at my software company we’ve interviewed female applicants whose CVs weren’t good enough, but we wanted to hire more women. One colleague hired this way didn’t know the difference between megabytes and gigabytes, but the point is it certainly wasn’t an environment that discouraged female hires.</p>
+
+<p>When I was at school and university white guys such as myself weren’t encouraged socially to keep doing tech/geeky studies; in fact one chief idea is that women don’t like guys who do that sort of thing. I think facing opposition is something we all do if we want to do something that isn’t socially normal, and it’s hard (but necessary) to try and not confuse that opposition that almost everyone faces with some genuine victimisation that one has felt in the past, or lump all opposition together as having the same cause. E.g. if you have two guys who don’t like you, one of them might not because of your gender or sexuality or whatever (i.e. unfair victimisation) and the other might not because he doesn’t feel you work hard enough. If that happens, don’t think that both guys don’t like your for the victimisation reason, easy though it is to do.</p>
+
+<p>I’m a Brit working in South Africa, and Afrikaaners sometimes give me a hard time. I keep smiling and chatting nicely, and eventually they stop thinking of me as British and just think of me as a person. I haven’t yet written a technical blog post that starts by encouraging Brits to work in South Africa :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1850"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/837b171c4d5158c78780802b441a14fd?r=pg&s=96&d=identicon" alt="Amy Jenkins" title="Amy Jenkins" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Amy Jenkins
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1850">
+            <time datetime="Mar 25, 2014, 12:16:02 AM" pubdate>
+              2014-03-25
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>One of the most useful things for a beginner to do is to muck around with the command line. Thanks for this!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1891"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8c4b2d3fb7b965ffe7fe9da1ee27ad9a?r=pg&s=96&d=identicon" alt="Lee Spector" title="Lee Spector" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://hampshire.edu/lspector" rel="nofollow">
+              Lee Spector
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1891">
+            <time datetime="Jun 9, 2014, 8:10:20 AM" pubdate>
+              2014-06-09
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I really like this series of posts and I’m considering recommending it to my students in a Clojure-based AI course in the fall. Is there a table of contents page that I’ve missed? Easy to create externally, of course, but it’d be nice to have one on the site if there isn’t one already. FWIW I created something that uses an approach that’s similar in some ways (clojinc, at github/lspector), but whereas I provided almost no text at all between code snippets, you’ve provided lots and lots of helpful text. Thanks!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1942"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="" title="" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            anonymous
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1942">
+            <time datetime="Jul 30, 2014, 3:58:53 PM" pubdate>
+              2014-07-30
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <blockquote>
+<p>Is there a table of contents page that I’ve missed?</p>
+</blockquote>
+
+<p>Right up top, at the tags list: <a href="http://aphyr.com/tags/Clojure-from-the-ground-up" rel="nofollow">http://aphyr.com/tags/Clojure-from-the-ground-up</a>. I’ll be reformatting all this work for the book, eventually, where there’ll be actual chapter headings, etc. Had a bunch of other stuff on my plate recently but starting to get back to writing on CFTGU this month. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1952"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f2b0c578d79b3b269a1d8327843732c1?r=pg&s=96&d=identicon" alt="Mike" title="Mike" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Mike
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1952">
+            <time datetime="Sep 8, 2014, 3:39:35 AM" pubdate>
+              2014-09-08
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for making this series! I’m a novice trying to learn distributed systems and clojure, this blog is awesome. Two quick suggestions for the getting started section:</p>
+
+<p>Ii’m on Ubuntu 14.04 and this works for me
+<code>which javacc</code></p>
+
+<p><code> curl -O <a href="https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein" rel="nofollow">https://raw.githubusercontent.com/technomancy/leiningen/stable/bin/lein</a></code></p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1970"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/a28ec2794dc4a6533d78ceecb3575854?r=pg&s=96&d=identicon" alt="Sam" title="Sam" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Sam
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1970">
+            <time datetime="Oct 21, 2014, 12:45:47 PM" pubdate>
+              2014-10-21
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi,</p>
+
+<p>I’m new to Clojure. I was considering implementing data structures like BST etc in this and thought having a namespace clojure.tree might be a good idea. But others felt it was a horrible idea as there were other data structures that does all this work. Could you explain more about those?</p>
+
+<p>Thanks!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1982"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/6fcd34da244bbe310730ca5c625e94e7?r=pg&s=96&d=identicon" alt="Peter" title="Peter" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Peter
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-1982">
+            <time datetime="Nov 11, 2014, 10:48:36 AM" pubdate>
+              2014-11-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Was going to use this resource until I saw the psychotic rants of the author. No way I would support someone with such hatred for other people. get over it - most coders are male, most people are straight. No reason to become a hate-monger. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2012"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Kevin" title="Kevin" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Kevin
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2012">
+            <time datetime="Dec 23, 2014, 12:47:02 AM" pubdate>
+              2014-12-23
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I agree with Rob.  The beginning of this blog post is a bit too much and needs some counterbalancing.  Honestly, I think your post would be much better without it.  Perhaps you could just add a link to your rant?  And put a disclaimer saying, “This is for everyone and here is why .”  In my opinion rants like this are why people think of others so differently.  As a child I never really noticed/thought about someone else being different.  I always just saw them as a person without paying any attention to these differences I had yet to learn about.  As I grew older I read rants like this one, and listened in history classes, etc.  Eventually you are taught to think people are different.  It is not that teachers or people around you meant to teach you to think that way, but just the mere discussion of differences implants those thoughts at least subconsciously into the brain.  If I had never had anyone tell me the word racism or try to explain differences, I would not know what those concepts were in the first place.  I am not saying that history is unimportant, but that if conversations like this were less… Perhaps children would not repeat the same mistakes.  Perhaps children would not see these differences that were taught to me.  Perhaps children will be able to read the actual content of a blog post instead of a long rant about equality followed by the content they visited the blog post for in the first place.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2019"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/307ed40831c91ecef54ea2b565425078?r=pg&s=96&d=identicon" alt="Sam" title="Sam" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://darkfunction.com" rel="nofollow">
+              Sam
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2019">
+            <time datetime="Dec 28, 2014, 4:08:11 AM" pubdate>
+              2014-12-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for this. You write well and the technical pace is perfect and easy to follow. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2021"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/4488d62a8a69ac5cf6910ac0f57114f1?r=pg&s=96&d=identicon" alt="kiquetal" title="kiquetal" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            kiquetal
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2021">
+            <time datetime="Jan 14, 2015, 2:27:31 PM" pubdate>
+              2015-01-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>When will the book be available on github?.
+I love learning xD</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2044"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Eugene Goostman" title="Eugene Goostman" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://www.princetonai.com/" rel="nofollow">
+              Eugene Goostman
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2044">
+            <time datetime="Jan 17, 2015, 2:53:18 AM" pubdate>
+              2015-01-17
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Very sad to see that you do not include very clever AI chatterbots as well. Alas, I must search elsewhere to learn Clojure</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2052"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/5cca6682e26539ee49633032eb126fc3?r=pg&s=96&d=identicon" alt="Dave Cottlehuber" title="Dave Cottlehuber" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Dave Cottlehuber
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2052">
+            <time datetime="Jan 26, 2015, 2:25:41 PM" pubdate>
+              2015-01-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for one of the clearest introductions resources for Clojure, and the Jepsen series are an excellent gateway drug to the diabolic and fascinating world of distributed systems.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2146"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Weslley" title="Weslley" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Weslley
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2146">
+            <time datetime="Mar 5, 2015, 11:26:38 AM" pubdate>
+              2015-03-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi, this introduction saved my life in starting to learn Clojure. Congratulations for your effort! Thanks</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2301"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/8dc1fe8960712ba2df7c3db90c4984dc?r=pg&s=96&d=identicon" alt="Max G. Faraday" title="Max G. Faraday" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Max G. Faraday
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2301">
+            <time datetime="Apr 18, 2015, 6:35:07 PM" pubdate>
+              2015-04-18
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hey, 
+Love this… Great, Exceptional body of work you have here.  I am sure I am not the only one with this sentiment: THANK YOU.  I have been coding for 24 years now and in Clojure for the last few.  Thanks, really good job.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2580"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Sed" title="Sed" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Sed
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2580">
+            <time datetime="Jan 3, 2016, 4:45:14 PM" pubdate>
+              2016-01-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>“People of color”
+Seriously, dude. Suck my dick.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2583"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/ffcb418e17cac2873d611c2b8d8d891c?r=pg&s=96&d=identicon" alt="Benjohn" title="Benjohn" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Benjohn
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2583">
+            <time datetime="Jan 5, 2016, 7:35:17 AM" pubdate>
+              2016-01-05
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi Aphyr, nice work. </p>
+
+<p>I like you take on introducing quoted symbols before introducing executing them. I think it works too, and it’s definitely not something I’ve seen before. I’m learning Clojure myself (as a long term programmer), but I think this walk through would also work for my son (8), and when they’re a bit older, his siblings. I like how it starts them at the command line, talks them through checking their tool versions, installing, etc. Nice.</p>
+
+<p>I also like your intro. There are a many Clojure guides – but this one is yours. You introduce it how the hell you like! I don’t think you need me to tell you that :-) But other readers, maybe they do. </p>
+
+<p>It’s stuff that still, sadly, needs saying. Not, I think, because people are necessarily bigoted, but because people just don’t appreciate how it is to live the life of others around them. It’s good to be reminded.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2633"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/11a330aa3a8a116a6043b59b4d4ca20b?r=pg&s=96&d=identicon" alt="Jack" title="Jack" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jack
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2633">
+            <time datetime="Apr 4, 2016, 6:33:41 AM" pubdate>
+              2016-04-04
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hy can’t I read something these days without touthing the LGBT shit? IT industry is sick.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2634"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/11a330aa3a8a116a6043b59b4d4ca20b?r=pg&s=96&d=identicon" alt="Jack" title="Jack" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Jack
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2634">
+            <time datetime="Apr 4, 2016, 6:34:34 AM" pubdate>
+              2016-04-04
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Despite the LGBT syndrome, the article series is simply the best.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2635"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/dc117c26f9120a8ff3282c8505a168ac?r=pg&s=96&d=identicon" alt="JSteve" title="JSteve" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            JSteve
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2635">
+            <time datetime="Apr 7, 2016, 8:51:44 AM" pubdate>
+              2016-04-07
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I wanted to read this article, but the several paragraphs of political BS at the beginning completely turned me off. Yes, I’m a white straight male. No, I don’t have a problem with you (or anyone else) being different. Why don’t you stop worrying about it so much and just focus on the tech? It really has no place in this type of article.</p>
+
+<p>You’re white and male and you spent a lot of time representing females and minorities, which to me makes it sound like YOU consider them second class citizens who are unable to represent themselves. Get off the high horse and write something that doesn’t make me want to barf. I don’t hate you or people like you, but I do hate all this victimization crap.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2699"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/efb8f50e6ffe6cfbdc31f308a25606fc?r=pg&s=96&d=identicon" alt="Shayne O" title="Shayne O" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Shayne O
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2699">
+            <time datetime="Sep 26, 2016, 12:08:20 AM" pubdate>
+              2016-09-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Good work on reaching out to women and other less represented groups. Having youngsters in my family interested in coding, a lot of the attitudes seems discouraging for the girls, so I think its great folks are making an effort to reach out.</p>
+
+<p>Never mind the huffing and puffing troglodytes who weaze and moan everytime someone even suggests including folks often excluded in this industry, they are on the wrong side of history and they know it. Your doing the right thing Kyle. :)</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2727"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/7618242c9d6ceb32124c9800904c8aa7?r=pg&s=96&d=identicon" alt="Terrence Brannon" title="Terrence Brannon" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://www.metaperl.org" rel="nofollow">
+              Terrence Brannon
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2727">
+            <time datetime="Dec 10, 2016, 6:29:37 AM" pubdate>
+              2016-12-10
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Without this guide, where would one start with Clojure? I dont know and I dont want to entertain the thought. </p>
+
+<p>That being said, you do not need Leinengen to start with clojure. I was behind a corporate firewall teach myself clojure and could not access things like lein through the proxy.</p>
+
+<p>You can just download clojure. And optionally download clojure-mode and  inf-clojure from github and away you go!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2737"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/1a23d324a3f5385c3fc01786c5bdc725?r=pg&s=96&d=identicon" alt="vikram" title="vikram" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://www.erptree.com/course/fusion-financials/" rel="nofollow">
+              vikram
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2737">
+            <time datetime="Jan 11, 2017, 4:23:16 AM" pubdate>
+              2017-01-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>It is a very good one can you publish this one as a book?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2739"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3c18c38162620c52de5b1c79adab8746?r=pg&s=96&d=identicon" alt="Daniel Carpenter" title="Daniel Carpenter" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Daniel Carpenter
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2739">
+            <time datetime="Feb 1, 2017, 2:52:06 PM" pubdate>
+              2017-02-01
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you so much for this. What a wonderful resource. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2801"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/3a9da6b673e0b31da07fe059d8485f78?r=pg&s=96&d=identicon" alt="Patrick" title="Patrick" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Patrick
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2801">
+            <time datetime="Mar 24, 2017, 12:00:49 AM" pubdate>
+              2017-03-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you for writing this guide, and for your introduction. Both are awesome.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2803"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/0c0e6cb66c4bb6e39e520e25136c3ea3?r=pg&s=96&d=identicon" alt="rosazon" title="rosazon" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            rosazon
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2803">
+            <time datetime="Mar 26, 2017, 2:41:51 PM" pubdate>
+              2017-03-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>“Who is this guide for?” seriously dude, this does not belong in a technical guide. It doesn’t matter if you’re not straight or whether you’re writing for women or “people of color”. I want to learn Clojure but if you’re going to put all your emphasis on minorities (like me, mind you), then I would rather learn from someone who actually cares about teaching. You should be ashamed.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2895"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Maia" title="Maia" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Maia
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2895">
+            <time datetime="Sep 11, 2017, 5:53:27 PM" pubdate>
+              2017-09-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Ooooph, some of the comments here. :-\ I thought your intro was welcoming and personal, and I appreciated it. So far this guide is really helpful and clear, and the order is making more sense to me than other Clojure tutorials I’ve been looking at. Thank you for writing it!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2913"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/22bedcf073a01f4776cfab9eaaa3cdb9?r=pg&s=96&d=identicon" alt="cig0" title="cig0" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://www.linkedin.com/in/martincigorraga/" rel="nofollow">
+              cig0
+            </a>
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2913">
+            <time datetime="Nov 12, 2017, 4:59:00 PM" pubdate>
+              2017-11-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>If you like to avoid as much as possible to clutter your base system with cruft, there’s an official Clojure Docker container ready to rock with everything you might need: <a href="https://hub.docker.com/_/clojure/" rel="nofollow">https://hub.docker.com/_/clojure/</a></p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2972"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/788814e1cf0b714c87b845ee840565e1?r=pg&s=96&d=identicon" alt="Pankaj Doharey" title="Pankaj Doharey" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Pankaj Doharey
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2972">
+            <time datetime="Jul 29, 2018, 2:13:29 AM" pubdate>
+              2018-07-29
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Well Said “All it takes to be a good engineer, scientist, or mathematician is your curiosity, your passion, the right teaching material, and putting in the hours.”</p>
+
+<p>I say the same thing to all the people i have encountered and tried to explain why they can program, but unfortunately most people dont believe themselves.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2986"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/30d695948e9cedcec3f7f79f62c71e95?r=pg&s=96&d=identicon" alt="Gary Rawlings" title="Gary Rawlings" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Gary Rawlings
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2986">
+            <time datetime="Sep 26, 2018, 4:17:33 AM" pubdate>
+              2018-09-26
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I did a course on LISP at Uni 24+ years ago and haven’t touched the language since, but recently had the need to learn Clojure. What I remember from 24 years ago was that I found it very confusing and went on through my career to focus on OO languages instead.</p>
+
+<p>I wish my lecturer explained it like you have as I thought this was a great intro and makes much more sense!</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2995"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Ken" title="Ken" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ken
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2995">
+            <time datetime="Nov 12, 2018, 5:37:31 PM" pubdate>
+              2018-11-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I gotta say, regardless of what may or may not be true in your introduction, technical teaching posts/articles/etc. and SJW-ism simply don’t mix.</p>
+
+ 
+
+<p>WALLACE: How are we going to get rid of racism until …?</p>
+
+<p>FREEMAN: Stop talking about it. I’m going to stop calling you a white man. And I’m going to ask you to stop calling me a black man. I know you as Mike Wallace. You know me as Morgan Freeman. You’re not going to say, “I know this white guy named Mike Wallace.” Hear what I’m saying?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2999"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/f6a9ed4d0603452bd4266b1480526b01?r=pg&s=96&d=identicon" alt="Tod" title="Tod" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Tod
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-2999">
+            <time datetime="Nov 28, 2018, 9:55:44 PM" pubdate>
+              2018-11-28
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Kyle,
+I don’t know. All the personal stuff at the beginning sort of cleared my mind. Then your essay was very clear. Have you read Frege?</p>
+
+<p>I did find your model complex sentence amusing.
+Is the dog’s mother named ‘Michelle’? And ‘together’ is cruft, redundant.
+“Lindsay, my best friend, took the dog which we found together at the pound on fourth street, for a walk with her mother Michelle.”
+But I know what point you were making.
+Thanks for the write-up. Understand that there is more. Yeah! 
+Going to read again. It was rather soothing. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3494"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="" title="" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            anonymous
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-3494">
+            <time datetime="Jul 12, 2021, 3:05:09 AM" pubdate>
+              2021-07-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>真的非常cool</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3507"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="" title="" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            anonymous
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-3507">
+            <time datetime="Aug 3, 2021, 7:37:23 AM" pubdate>
+              2021-08-03
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Nice</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-3711"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Ahmad " title="Ahmad " />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Ahmad 
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-3711">
+            <time datetime="Mar 24, 2022, 3:33:57 AM" pubdate>
+              2022-03-24
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thanks for this guide. Nevermind the people getting furious about a really kind introductory paragraph to make some people that might have a rough time feel included. They could have just skipped that part if they didn’t like it. I think it’s refreshing to see something personal, makes the rest of the guide feel more human. I read your story too and it was touching.</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-4254"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/18a887613be1838f47055e2c04d639e8?r=pg&s=96&d=identicon" alt="Andy" title="Andy" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Andy
+          
+          
+          on
+          <a href="/posts/301-clojure-from-the-ground-up-welcome#comment-4254">
+            <time datetime="Feb 22, 2023, 4:16:31 PM" pubdate>
+              2023-02-22
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>An opening paragraph about people being different? You should hear what my C# / Java colleagues think about me being a functional programmer, let alone programming in (dare we say it)… LISP. ;)</p>
+
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="301" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="eeGVEdO9KjEPf1pSKVGutI3JU64gFttts/EKdoprXxA1GdY8SusDAX2VbaUc7ntEZ30HcBLyda2+nosu" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>

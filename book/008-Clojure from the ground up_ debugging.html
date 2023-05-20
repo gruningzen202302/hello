@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clojure from the ground up: debugging</title>
+
+    
+
+    
+
+    <!-- styles -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/pure-min.css" integrity="sha384-LTIDeidl25h2dPxrB2Ekgc9c7sEC3CWGM6HeFmuDNUjX76Ert4Z4IY714dhZHPLd" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.5/build/grids-responsive-min.css">
+
+    <link rel="preload" as="font" href="/fonts/klavika-medium-webfont.woff" />
+    <link href="/css/screen.css" rel="stylesheet" type="text/css" />
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-MXDP37S6QL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-MXDP37S6QL');
+    </script>
+  </head>
+  <body>
+    <div id="adminbar">
+  
+    <form id="login" action="/login" method="post" class="pure-form">
+      <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+      <input type="hidden" name="next_page" id="admin_next_page" value="/posts/319-clojure-from-the-ground-up-debugging" />
+      <input type="text" name="login" id="admin_login" placeholder="Login" />
+      <input type="password" name="password" id="admin_password" placeholder="Password" />
+      <input type="submit" name="action" value="Log in" class="pure-button pure-button-primary" />
+    </form>
+  
+  <div class="clear"></div>
+</div>
+
+
+    <header>
+      <nav>
+        <ul>
+          <li class="logo"><a id="logo" href="/"><span>Aphyr</span></a></li>
+          <li class="menu about"><a href="/about"><span>About</span></a></li>
+          <li class="menu blog"><a href="/posts"><span>Blog</span></a></li>
+          <li class="menu photos"><a href="/photos"><span>Photos</span></a></li>
+          <li class="menu code"><a href="http://github.com/aphyr"><span>Code</span></a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <div id="content">
+      
+
+      
+
+
+
+<div class="pure-g text-content">
+  <article class="post sheet pure-u-1">
+    <div class="bar pure-g">
+      <h1 class="pure-u-1 pure-u-md-4-5">
+        <a href="/posts/319-clojure-from-the-ground-up-debugging">Clojure from the ground up: debugging</a>
+      </h1>
+
+      <div class="meta pure-u-1 pure-u-md-1-5">
+        <div class="tags"><a href="/tags/software">Software</a> <a href="/tags/clojure">Clojure</a> <a href="/tags/clojure-from-the-ground-up">Clojure from the ground up</a></div>
+        <time datetime="Aug 26, 2014, 9:27:05 PM" pubdate>
+          2014-08-26
+        </time>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>Previously: <a href="https://aphyr.com/posts/312-clojure-from-the-ground-up-modeling">Modeling</a>.</p>
+<p>Writing software can be an exercise in frustration. Useless error messages, difficult-to-reproduce bugs, missing stacktrace information, obscure functions without documentation, and unmaintained libraries all stand in our way. As software engineers, our most useful skill isn’t so much <em>knowing how to solve a problem</em> as <em>knowing how to explore a problem that we haven’t seen before</em>. Experience is important, but even experienced engineers face unfamiliar bugs every day. When a problem doesn’t bear a resemblance to anything we’ve seen before, we fall back on <em>general cognitive strategies</em> to explore–and ultimately solve–the problem.</p>
+<p>There’s an excellent book by the mathematician George Polya: <a href="http://www.amazon.com/How-Solve-It-Mathematical-Princeton/dp/069111966X">How to Solve It</a>, which tries to catalogue how successful mathematicians approach unfamiliar problems. When I catch myself banging my head against a problem for more than a few minutes, I try to back up and consider his <a href="http://math.berkeley.edu/~gmelvin/polya.pdf">principles</a>. Sometimes, just taking the time to slow down and reflect can get me out of a rut.</p>
+<ol>
+<li>Understand the problem.</li>
+<li>Devise a plan.</li>
+<li>Carry out the plan</li>
+<li>Look back</li>
+</ol>
+<p>Seems easy enough, right? Let’s go a little deeper.</p>
+<h2><a href="#understanding-the-problem" id="understanding-the-problem">Understanding the problem</a></h2>
+<p>Well <em>obviously</em> there’s a problem, right? The program failed to compile, or a test spat out bizarre numbers, or you hit an unexpected exception. But try to dig a little deeper than that. Just having a careful description of the problem can make the solution obvious.</p>
+<blockquote>
+<p>Our audit program detected that users can double-withdraw cash from their accounts.</p>
+</blockquote>
+<p>What does your program do? Chances are your program is large and complex, so try to <em>isolate</em> the problem as much as possible. Find <em>preconditions</em> where the error holds.</p>
+<blockquote>
+<p>The problem occurs after multiple transfers between accounts.</p>
+</blockquote>
+<p>Identify specific lines of code from the stacktrace that are involved, specific data that’s being passed around. Can you find a particular function that’s misbehaving?</p>
+<blockquote>
+<p>The balance transfer function sometimes doesn’t increase or decrease the account values correctly.</p>
+</blockquote>
+<p>What are that function’s inputs and outputs? Are the inputs what you expected? What did you expect the result to be, given those arguments? It’s not enough to know “it doesn’t work”–you need to know exactly what <em>should</em> have happened. Try to find conditions where the function works correctly, so you can map out the boundaries of the problem.</p>
+<blockquote>
+<p>Trying to transfer $100 from A to B works as expected, as does a transfer of $50 from B to A. Running a million random transfers between accounts, sequentially, results in correct balances. The problem only seems to happen in production.</p>
+</blockquote>
+<p>If your function–or functions it calls–uses mutable state, like an agent, atom, or ref, the value of those references matters too. This is why you should avoid mutable state wherever possible: each mutable variable introduces another dimension of possible behaviors for your program. Print out those values when they’re read, and after they’re written, to get a description of what the function is actually doing. I am a huge believer in sprinkling <code>(prn x)</code> throughout one’s code to print how state evolves when the program runs.</p>
+<blockquote>
+<p>Each balance is stored in a separate atom. When two transfers happen at the same time involving the same accounts, the new value of one or both atoms may not reflect the transfer correctly.</p>
+</blockquote>
+<p>Look for <em>invariants</em>: properties that should always be true of a program. Devise a test to look for where those invariants are broken. Consider each individual step of the program: does it preserve all the invariants you need? If it doesn’t, what ensures those invariants are restored correctly?</p>
+<blockquote>
+<p>The total amount of money in the system should be constant–but sometimes changes!</p>
+</blockquote>
+<p>Draw diagrams, and invent a notation to talk about the problem. If you’re accessing fields in a vector, try drawing the vector as a set of boxes, and drawing the fields it accesses, step by step on paper. If you’re manipulating a tree, draw one! Figure out a way to write down the state of the system: in letters, numbers, arrows, graphs, whatever you can dream up.</p>
+<pre><code>Transferring $5 from A to B in transaction 1, and $5 from B to A in transaction 2:
+
+Transaction  |  A  |  B
+-------------+-----+-----
+txn1 read    |  10 |  10   ; Transaction 1 sees 10, 10
+txn1 write A |   5 |  10   ; A and B now out-of-sync
+txn2 read    |   5 |  10   ; Transaction 2 sees 5, 10
+txn1 write B |   5 |  15   ; Transaction 1 completes
+txn2 write A |  10 |  15   ; Transaction 2 writes based on out-of-sync read
+txn2 write B |   5 |  5    ; Should have been 10, 10!
+</code></pre>
+<p>This doesn’t <em>solve</em> the problem, but helps us <em>explore</em> the problem in depth. Sometimes this makes the solution obvious–other times, we’re just left with a pile of disjoint facts. Even if things <em>look</em> jumbled-up and confusing, don’t despair! Exploring gives the brain the pieces; it’ll link them together over time.</p>
+<p>Armed with a detailed <em>description</em> of the problem, we’re much better equipped to solve it.</p>
+<h2><a href="#devise-a-plan" id="devise-a-plan">Devise a plan</a></h2>
+<p>Our brains are excellent pattern-matchers, but not that great at tracking abstract logical operations. Try changing your viewpoint: rotating the problem into a representation that’s a little more tractable for your mind. Is there a similar problem you’ve seen in the past? Is this a well-known problem?</p>
+<p>Make sure you know how to <em>check</em> the solution. With the problem isolated to a single function, we can write a test case that verifies the account balances are correct. Then we can experiment freely, and have some confidence that we’ve actually found a solution.</p>
+<p>Can you solve a <em>related</em> problem? If only concurrent transfers trigger the problem, could we solve the issue by ensuring transactions never take place concurrently–e.g. by wrapping the operation in a lock? Could we solve it by <em>logging</em> all transactions, and replaying the log? Is there a simpler variant of the problem that might be tractable–maybe one that always <em>overcounts</em>, but never <em>undercounts</em>?</p>
+<p>Consider your assumptions. We rely on layers of abstraction in writing software–that changing a variable is atomic, that lexical variables don’t change, that adding 1 and 1 always gives 2. Sometimes, parts of the computer <em>fail</em> to guarantee those abstractions hold. The CPU might–very rarely–fail to divide numbers correctly. A library might, for supposedly valid input, spit out a bad result. A numeric algorithm might fail to converge, and spit out wrong numbers. To avoid questioning <em>everything</em>, start in your own code, and work your way down to the assumptions themselves. See if you can devise tests that check the language or library is behaving as you expect.</p>
+<p>Can you avoid solving the problem altogether? Is there a library, database, or language feature that does transaction management for us? Is integrating that library worth the reduced complexity in our application?</p>
+<p>We’re not mathematicians; we’re engineers. Part theorist, yes, but also part mechanic. Some problems take a more abstract approach, and others are better approached by tapping it with a wrench and checking the service manual. If other people have solved your problem already, using their solution can be much simpler than devising your own.</p>
+<p>Can you think of a way to get more diagnostic information? Perhaps we could log more data from the functions that are misbehaving, or find a way to dump and replay transactions from the live program. Some problems <em>disappear</em> when instrumented; these are the hardest to solve, but also the most rewarding.</p>
+<p>Combine key phrases in a Google search: the name of the library you’re using, the type of exception thrown, any error codes or log messages. Often you’ll find a StackOverflow result, a mailing list post, or a Github issue that describes your problem. This works well when you know the technical terms for your problem–in our case, that we’re performing a <em>atomic</em>, <em>transactional</em> transfer between two variables. Sometimes, though, you don’t <em>know</em> the established names for your problem, and have to resort to blind queries like “variables out of sync” or “overwritten data”–which are much more difficult.</p>
+<p>When you get stuck exploring on your own, try asking for help. Collect your description of the problem, the steps you took, and what you expected the program to do. Include any stacktraces or error messages, log files, and the smallest section of source code required to reproduce the problem. Also include the versions of software used–in Clojure, typically the JVM version (<code>java -version</code>), Clojure version (<code>project.clj</code>), and any other relevant library versions.</p>
+<p>If the project has a Github page or public issue tracker, like Jira, you can try filing an issue there. Here’s a <a href="https://github.com/aphyr/riemann-dash/issues/66">particularly well-written issue</a> filed by a user on one of my projects. Note that this user included installation instructions, the command they ran, and the stacktrace it printed. The more specific a description you provide, the easier it is for someone else to understand your problem and help!</p>
+<p>Sometimes you need to talk through a problem interactively. For that, I prefer IRC–many projects have a channel on <a href="https://libera.chat">the Libera IRC network</a> where you can ask basic questions. Remember to be respectful of the channel’s time; there may be hundreds of users present, and they have to sort through everything you write. Paste your problem description into a <em>pastebin</em> like <a href="https://gist.github.com/">Gist</a>, then mention the link in IRC with a short–say a few sentences–description of the problem. I try asking in a channel devoted to a specific library or program first, then back off to a more general channel, like #clojure. There’s no need to ask “Can I ask a question” first–just jump in.</p>
+<p>Since the transactional problem we’ve been exploring seems like a general issue with atoms, I might ask in #clojure</p>
+<pre><code>aphyr &gt; Hi! Does anyone know the right way to change multiple atoms at the same time?
+aphyr &gt; This function and test case (http://gist.github.com/...) seems to double-
+        or under-count when invoked concurrently.
+</code></pre>
+<p>Finally, you can join the project’s email list, and ask your question there. Turnaround times are longer, but you’ll often find a more in-depth response to your question via email. This applies especially if you and the maintainer are in different time zones, or if they’re busy with life. You can also ask specific problems on StackOverflow or other message boards; users there can be incredibly helpful.</p>
+<p>Remember, other engineers are taking time away from their work, family, friends, and hobbies to help you. It’s always polite to give them time to answer first–they may have other priorities. A sincere thank-you is always appreciated–as is paying it forward by answering other users’ questions on the list or channel!</p>
+<h3><a href="#dealing-with-abuse" id="dealing-with-abuse">Dealing with abuse</a></h3>
+<p>Sadly, some women, LGBT people, and so on experience harassment on IRC or in other discussion circles. They may be asked inappropriate personal questions, insulted, threatened, assumed to be straight, to be a man, and so on. Sometimes other users will attack questioners for inexperience. Exclusion can be overt (“Read the fucking docs, faggot!”) or more subtle (“Hey dudes, what’s up?”). It only takes one hurtful experience this to sour someone on an entire community.</p>
+<p>If this happens to you, <b>place your own well-being first</b>. You are <em>not</em> obligated to fix anyone else’s problems, or to remain in a social context that makes you uncomfortable.</p>
+<p>That said, be aware the other people in a channel may not share your culture. English may not be their main language, or they may have said something hurtful without realizing its impact. Explaining how the comment made you feel can jar a well-meaning but unaware person into reconsidering their actions.</p>
+<p>Other times, people are just <em>mean</em>–and it only takes one to ruin everybody’s day. When this happens, you can appeal to a moderator. On IRC, moderators are sometimes identified by an <code>@</code> sign in front of their name; on forums, they may have a special mark on their username or profile. Large projects may have an official policy for reporting abuse on their website or in the channel topic. If there’s no policy, try asking whoever seems in charge for help. Most projects have a primary maintainer or community manager with the power to mute or ban malicious users.</p>
+<p>Again, these ways of dealing with abuse are <em>optional</em>. You have no responsibility to provide others with endless patience, and it is not your responsibility to fix a toxic culture. You can always log off and try something else. There are many communities which will welcome and support you–it may just take a few tries to find the right fit.</p>
+<p>If you don’t find community, you can <em>build</em> it. Starting your own IRC channel, mailing list, or discussion group with a few friends can be a great way to help each other learn in a supportive environment. And if trolls ever come calling, you’ll be able to ban them personally.</p>
+<p>Now, back to problem-solving.</p>
+<h2><a href="#execute-the-plan" id="execute-the-plan">Execute the plan</a></h2>
+<p>Sometimes we can make a quick fix in the codebase, test it by hand, and move on. But for more serious problems, we’ll need a more involved process. I always try to get a reproducible test suite–one that runs in a matter of seconds–so that I can continually check my work.</p>
+<p>Persist. Many problems require grinding away for some time. Mix blind experimentation with sitting back and planning. Periodically re-evaluate your work–have you made progress? Identified a sub-problem that can be solved independently? Developed a new notation?</p>
+<p>If you get stuck, try a new tack. Save your approach as a comment or using <code>git stash</code>, and start fresh. Maybe using a different concurrency primitive is in order, or rephrasing the data structure entirely. Take a reading break and review the documentation for the library you’re trying to use. Read the <em>source code</em> for the functions you’re calling–even if you don’t understand exactly what it does, it might give you clues to how things work under the hood.</p>
+<p>Bounce your problem off a friend. Grab a sheet of paper or whiteboard, describe the problem, and work through your thinking with that person. Their understanding of the problem might be totally off-base, but can still give you valuable insight. Maybe they know exactly what the problem is, and can point you to a solution in thirty seconds!</p>
+<p>Finally, take a break. Go home. Go for a walk. Lift heavy, run hard, space out, drink with your friends, practice music, read a book. Just before sleep, go over the problem once more in your head; I often wake up with a new algorithm or new questions burning to get out. Your unconscious mind can come up with unexpected insights if given time <em>away</em> from the problem!</p>
+<p>Some folks swear by time in the shower, others by  hiking, or with pen and paper in a hammock. Find what works for you! The important thing seems to be giving yourself <em>away</em> from struggling with the problem.</p>
+<h2><a href="#look-back" id="look-back">Look back</a></h2>
+<p>Chances are you’ll know as soon as your solution works. The program compiles, transactions generate the correct amounts, etc. Now’s an important time to <em>solidify</em> your work.</p>
+<p>Bolster your tests. You may have made the problem <em>less likely</em>, but not actually solved it. Try a more aggressive, randomized test; one that runs for longer, that generates a broader class of input. Try it on a copy of the production workload before deploying your change.</p>
+<p>Identify <em>why</em> the new system works. Pasting something in from StackOverflow may get you through the day, but won’t help you solve similar problems in the future. Try to really understand <em>why</em> the program went wrong, and how the new pieces work together to prevent the problem. Is there a more general underlying problem? Could you generalize your technique to solve a related problem? If you’ll encounter this type of issue frequently, could you build a function or library to help build other solutions?</p>
+<p>Document the solution. Write down your description of the problem, and why your changes fix it, as comments in the source code. Use that same description of the solution in your commit message, or attach it as a comment to the resources you used online, so that other people can come to the same understanding.</p>
+<h2><a href="#debugging-clojure" id="debugging-clojure">Debugging Clojure</a></h2>
+<p>With these general strategies in mind, I’d like to talk specifically about the debugging <em>Clojure</em> code–especially understanding its <em>stacktraces</em>. Consider this simple program for baking cakes:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">ns </span><span class="nv">scratch.debugging</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">bake</span>
+  <span class="s">&quot;Bakes a cake for a certain amount of time, returning a cake with a new</span>
+<span class="s">  :tastiness level.&quot;</span>
+  <span class="p">[</span><span class="nv">pie</span> <span class="nv">temp</span> <span class="nv">time</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">assoc </span><span class="nv">pie</span> <span class="ss">:tastiness</span>
+         <span class="p">(</span><span class="nf">condp</span> <span class="p">(</span><span class="nb">* </span><span class="nv">temp</span> <span class="nv">time</span><span class="p">)</span> <span class="nv">&lt;</span>
+           <span class="mi">400</span> <span class="ss">:burned</span>
+           <span class="mi">350</span> <span class="ss">:perfect</span>
+           <span class="mi">300</span> <span class="ss">:soggy</span><span class="p">)))</span>
+</code></pre>
+<p>And in the REPL</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">bake</span> <span class="p">{</span><span class="ss">:flavor</span> <span class="ss">:blackberry</span><span class="p">}</span> <span class="mi">375</span> <span class="mf">10.25</span><span class="p">)</span>
+
+<span class="nv">ClassCastException</span> <span class="nv">java.lang.Double</span> <span class="nv">cannot</span> <span class="nv">be</span> <span class="nb">cast </span><span class="nv">to</span> <span class="nv">clojure.lang.IFn</span>  <span class="nv">scratch.debugging/bake</span> <span class="p">(</span><span class="nf">debugging.clj</span><span class="ss">:8</span><span class="p">)</span>
+</code></pre>
+<p>This is not particularly helpful. Let’s print a full stacktrace using <code>pst</code>:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pst</span><span class="p">)</span>
+<span class="nv">ClassCastException</span> <span class="nv">java.lang.Double</span> <span class="nv">cannot</span> <span class="nv">be</span> <span class="nb">cast </span><span class="nv">to</span> <span class="nv">clojure.lang.IFn</span>
+	<span class="nv">scratch.debugging/bake</span> <span class="p">(</span><span class="nf">debugging.clj</span><span class="ss">:8</span><span class="p">)</span>
+	<span class="nv">user/eval1223</span> <span class="p">(</span><span class="nf">form-init4495957503656407289.clj</span><span class="ss">:1</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Compiler.eval</span> <span class="p">(</span><span class="nf">Compiler.java</span><span class="ss">:6619</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Compiler.eval</span> <span class="p">(</span><span class="nf">Compiler.java</span><span class="ss">:6582</span><span class="p">)</span>
+	<span class="nv">clojure.core/eval</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:2852</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl/read-eval-print--6588/fn--6591</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:259</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl/read-eval-print--6588</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:259</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl/fn--6597</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:277</span><span class="p">)</span>
+	<span class="nv">clojure.main/repl</span> <span class="p">(</span><span class="nf">main.clj</span><span class="ss">:277</span><span class="p">)</span>
+	<span class="nv">clojure.tools.nrepl.middleware.interruptible-eval/evaluate/fn--591</span> <span class="p">(</span><span class="nf">interruptible_eval.clj</span><span class="ss">:56</span><span class="p">)</span>
+	<span class="nv">clojure.core/apply</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:617</span><span class="p">)</span>
+	<span class="nv">clojure.core/with-bindings*</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:1788</span><span class="p">)</span>
+</code></pre>
+<p>The first line tells us the <em>type</em> of the error: a <code>ClassCastException</code>. Then there’s some explanatory text: we can’t cast a <code>java.lang.Double</code> to a <code>clojure.lang.IFn</code>. The indented lines show the functions that led to the error. The first line is the deepest function, where the error actually occurred: the <code>bake</code> function in the <code>scratch.debugging</code> namespace. In parentheses is the file name (<code>debugging.clj</code>) and line number (<code>8</code>) from the code that caused the error. Each following line shows the function that <em>called</em> the previous line. In the REPL, our code is invoked from a special function compiled by the REPL itself–with an automatically generated name like <code>user/eval1223</code>, and that function is invoked by the Clojure compiler, and the REPL tooling. Once we see something like <code>Compiler.eval</code> at the repl, we can generally skip the rest.</p>
+<p>As a general rule, we want to look at the <em>deepest</em> (earliest) point in the stacktrace <em>that we wrote</em>. Sometimes an error will arise from deep within a library or Clojure itself–but it was probably <em>invoked</em> by our code somewhere. We’ll skim down the lines until we find our namespace, and start our investigation at that point.</p>
+<p>Our case is simple: <code>bake.clj</code>, on line 8, seems to be the culprit.</p>
+<pre><code><span></span>         <span class="p">(</span><span class="nf">condp</span> <span class="p">(</span><span class="nb">* </span><span class="nv">temp</span> <span class="nv">time</span><span class="p">)</span> <span class="nv">&lt;</span>
+</code></pre>
+<p>Now let’s consider the error itself: <code>ClassCastException: java.lang.Double cannot be cast to clojure.lang.IFn</code>. This implies we had a <code>Double</code> and tried to cast it to an <code>IFn</code>–but what does “cast” mean? For that matter, what’s a <code>Double</code>, or an <code>IFn</code>?</p>
+<p>A quick google search for <a href="https://www.google.com/search?q=java.lang.double">java.lang.Double</a> reveals that it’s a <em>class</em> (a Java type) with some <a href="http://docs.oracle.com/javase/7/docs/api/java/lang/Double.html">basic documentation</a>. “The Double class wraps a value of the primitive type <code>double</code> in an object” is not particularly informative–but the “class hierarchy” at the top of the page shows that a <code>Double</code> is a kind of <code>java.lang.Number</code>. Let’s experiment at the REPL:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="mi">4</span><span class="p">)</span>
+<span class="nv">java.lang.Long</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="mf">4.5</span><span class="p">)</span>
+<span class="nv">java.lang.Double</span>
+</code></pre>
+<p>Indeed: decimal numbers in Clojure appear to be doubles. One of the expressions in that <code>condp</code> call was probably a decimal. At first we might suspect the literal values <code>300</code>, <code>350</code>, or <code>400</code>–but those are <code>Long</code>s, not <code>Doubles</code>. The only <code>Double</code> we passed in was the time duration <code>10.25</code>–which appears in <code>condp</code> as <code>(* temp time)</code>. That first argument was a <code>Double</code>, but <em>should</em> have been an IFn.</p>
+<p><a href="https://www.google.com/search?q=clojure.lang.IFn">What the heck is an IFn?</a> Its <a href="https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/IFn.java">source code</a> has a comment:</p>
+<blockquote>
+<p>IFn provides complete access to invoking any of Clojure’s API’s. You can also access any other library written in Clojure, after adding
+either its source or compiled form to the classpath.</p>
+</blockquote>
+<p>So IFn has to do with <em>invoking</em> Clojure’s API. Ah–<code>Fn</code> probably stands for <em>function</em>–and this class is chock full of things like <code>invoke(Object arg1, Object arg2)</code>. That suggests that IFn is about <em>calling functions</em>. And the <code>I</code>? Google <a href="https://www.google.com/search?q=java+interface+starts+with+i">suggests</a> it’s a Java convention for an <em>interface</em>–whatever that is. Remember, we don’t have to understand <em>everything</em>–just enough to get by. There’s plenty to explore later.</p>
+<p>Let’s check our hypothesis in the repl:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.IFn</span> <span class="mf">2.5</span><span class="p">)</span>
+<span class="nv">false</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.IFn</span> <span class="nv">conj</span><span class="p">)</span>
+<span class="nv">true</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">instance? </span><span class="nv">clojure.lang.IFn</span> <span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">inc </span><span class="nv">x</span><span class="p">)))</span>
+<span class="nv">true</span>
+</code></pre>
+<p>So <code>Doubles</code> aren’t IFns–but Clojure built-in functions, and anonymous functions, both are. Let’s double-check the docs for <code>condp</code> again:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">doc </span><span class="nv">condp</span><span class="p">)</span>
+<span class="nv">-------------------------</span>
+<span class="nv">clojure.core/condp</span>
+<span class="p">([</span><span class="nv">pred</span> <span class="nv">expr</span> <span class="o">&amp;</span> <span class="nv">clauses</span><span class="p">])</span>
+<span class="nv">Macro</span>
+  <span class="nv">Takes</span> <span class="nv">a</span> <span class="nv">binary</span> <span class="nv">predicate</span>, <span class="nv">an</span> <span class="nv">expression</span>, <span class="nb">and </span><span class="nv">a</span> <span class="nb">set </span><span class="nv">of</span> <span class="nv">clauses.</span>
+  <span class="nv">Each</span> <span class="nv">clause</span> <span class="nv">can</span> <span class="nb">take </span><span class="nv">the</span> <span class="nv">form</span> <span class="nv">of</span> <span class="nv">either</span><span class="err">:</span>
+
+  <span class="nv">test-expr</span> <span class="nv">result-expr</span>
+
+  <span class="nv">test-expr</span> <span class="ss">:&gt;&gt;</span> <span class="nv">result-fn</span>
+
+  <span class="nv">Note</span> <span class="ss">:&gt;&gt;</span> <span class="nv">is</span> <span class="nv">an</span> <span class="nv">ordinary</span> <span class="nv">keyword.</span>
+
+  <span class="nv">For</span> <span class="nv">each</span> <span class="nv">clause</span>, <span class="p">(</span><span class="nf">pred</span> <span class="nv">test-expr</span> <span class="nv">expr</span><span class="p">)</span> <span class="nv">is</span> <span class="nv">evaluated.</span> <span class="nv">If</span> <span class="nv">it</span> <span class="nv">returns</span>
+  <span class="nv">logical</span> <span class="nv">true</span>, <span class="nv">the</span> <span class="nv">clause</span> <span class="nv">is</span> <span class="nv">a</span> <span class="nv">match.</span> <span class="nv">If</span> <span class="nv">a</span> <span class="nv">binary</span> <span class="nv">clause</span> <span class="nv">matches</span>, <span class="nv">the</span>
+  <span class="nv">result-expr</span> <span class="nv">is</span> <span class="nv">returned</span>, <span class="k">if </span><span class="nv">a</span> <span class="nv">ternary</span> <span class="nv">clause</span> <span class="nv">matches</span>, <span class="nv">its</span> <span class="nv">result-fn</span>,
+  <span class="nv">which</span> <span class="nv">must</span> <span class="nv">be</span> <span class="nv">a</span> <span class="nv">unary</span> <span class="nv">function</span>, <span class="nv">is</span> <span class="nv">called</span> <span class="nv">with</span> <span class="nv">the</span> <span class="nv">result</span> <span class="nv">of</span> <span class="nv">the</span>
+  <span class="nv">predicate</span> <span class="nv">as</span> <span class="nv">its</span> <span class="nv">argument</span>, <span class="nv">the</span> <span class="nv">result</span> <span class="nv">of</span> <span class="nv">that</span> <span class="nv">call</span> <span class="nv">being</span> <span class="nv">the</span> <span class="nv">return</span>
+  <span class="nv">value</span> <span class="nv">of</span> <span class="nv">condp.</span> <span class="nv">A</span> <span class="nv">single</span> <span class="nv">default</span> <span class="nv">expression</span> <span class="nv">can</span> <span class="nv">follow</span> <span class="nv">the</span> <span class="nv">clauses</span>,
+  <span class="nb">and </span><span class="nv">its</span> <span class="nv">value</span> <span class="nv">will</span> <span class="nv">be</span> <span class="nv">returned</span> <span class="k">if </span><span class="nv">no</span> <span class="nv">clause</span> <span class="nv">matches.</span> <span class="nv">If</span> <span class="nv">no</span> <span class="nv">default</span>
+  <span class="nv">expression</span> <span class="nv">is</span> <span class="nv">provided</span> <span class="nb">and </span><span class="nv">no</span> <span class="nv">clause</span> <span class="nv">matches</span>, <span class="nv">an</span>
+  <span class="nv">IllegalArgumentException</span> <span class="nv">is</span> <span class="nv">thrown.clj</span>
+</code></pre>
+<p>That’s a lot to take in! No wonder we got it wrong! We’ll take it slow, and look at the arguments.</p>
+<pre><code><span></span><span class="p">(</span><span class="nf">condp</span> <span class="p">(</span><span class="nb">* </span><span class="nv">temp</span> <span class="nv">time</span><span class="p">)</span> <span class="nv">&lt;</span>
+</code></pre>
+<p>Our <code>pred</code> was <code>(* temp time)</code> (a <code>Double</code>), and our <code>expr</code> was the comparison function <code>&lt;</code>. For each clause, <code>(pred test-expr expr)</code> is evaluated, so that would expand to something like</p>
+<pre><code><span></span><span class="p">((</span><span class="nb">* </span><span class="nv">temp</span> <span class="nv">time</span><span class="p">)</span> <span class="mi">400</span> <span class="nv">&lt;</span><span class="p">)</span>
+</code></pre>
+<p>Which evaluates to something like</p>
+<pre><code><span></span><span class="p">(</span><span class="mf">123.45</span> <span class="mi">400</span> <span class="nv">&lt;</span><span class="p">)</span>
+</code></pre>
+<p>But this isn’t a valid Lisp program! It starts with a number, not a function. We should have written <code>(&lt; 123.45 400)</code>. Our arguments are backwards!</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">bake</span>
+  <span class="s">&quot;Bakes a cake for a certain amount of time, returning a cake with a new</span>
+<span class="s">  :tastiness level.&quot;</span>
+  <span class="p">[</span><span class="nv">pie</span> <span class="nv">temp</span> <span class="nv">time</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">assoc </span><span class="nv">pie</span> <span class="ss">:tastiness</span>
+         <span class="p">(</span><span class="nf">condp</span> <span class="nb">&lt; </span><span class="p">(</span><span class="nb">* </span><span class="nv">temp</span> <span class="nv">time</span><span class="p">)</span>
+           <span class="mi">400</span> <span class="ss">:burned</span>
+           <span class="mi">350</span> <span class="ss">:perfect</span>
+           <span class="mi">300</span> <span class="ss">:soggy</span><span class="p">)))</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.debugging</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="nv">nil</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">bake</span> <span class="p">{</span><span class="ss">:flavor</span> <span class="ss">:chocolate</span><span class="p">}</span> <span class="mi">375</span> <span class="mf">10.25</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:tastiness</span> <span class="ss">:burned</span>, <span class="ss">:flavor</span> <span class="ss">:chocolate</span><span class="p">}</span>
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">bake</span> <span class="p">{</span><span class="ss">:flavor</span> <span class="ss">:chocolate</span><span class="p">}</span> <span class="mi">450</span> <span class="mf">0.8</span><span class="p">)</span>
+<span class="p">{</span><span class="ss">:tastiness</span> <span class="ss">:perfect</span>, <span class="ss">:flavor</span> <span class="ss">:chocolate</span><span class="p">}</span>
+</code></pre>
+<p>Mission accomplished! We read the stacktrace as a <em>path</em> to a part of the program where things went wrong. We identified the deepest part of that path in <em>our</em> code, and looked for a problem there. We discovered that we had reversed the arguments to a function, and after some research and experimentation in the REPL, figured out the right order.</p>
+<p>An aside on types: some languages have a <em>stricter</em> type system than Clojure’s, in which the types of variables are explicitly declared in the program’s source code. Those languages can detect type errors–when a variable of one type is used in place of another, incompatible, type–and offer more precise feedback. In Clojure, the compiler does not generally enforce types at compile time, which allows for significant flexibility–but requires more rigorous testing to expose these errors.</p>
+<h2><a href="#higher-order-stacktraces" id="higher-order-stacktraces">Higher order stacktraces</a></h2>
+<p>The stacktrace shows us a <em>path</em> through the program, moving downwards through functions. However, that path may not be straightforward. When data is handed off from one part of the program to another, the stacktrace may not show the <em>origin</em> of an error. When <em>functions</em> are handed off from one part of the program to another, the resulting traces can be tricky to interpret indeed.</p>
+<p>For instance, say we wanted to make some picture frames out of wood, but didn’t know how much wood to buy. We might sketch out a program like this:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">perimeter</span>
+  <span class="s">&quot;Given a rectangle, returns a vector of its edge lengths.&quot;</span>
+  <span class="p">[</span><span class="nv">rect</span><span class="p">]</span>
+  <span class="p">[(</span><span class="ss">:x</span> <span class="nv">rect</span><span class="p">)</span>
+   <span class="p">(</span><span class="ss">:y</span> <span class="nv">rect</span><span class="p">)</span>
+   <span class="p">(</span><span class="ss">:z</span> <span class="nv">rect</span><span class="p">)</span>
+   <span class="p">(</span><span class="ss">:y</span> <span class="nv">rect</span><span class="p">)])</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">frame</span>
+  <span class="s">&quot;Given a mat width, and a photo rectangle, figure out the size of the frame</span>
+<span class="s">  required by adding the mat width around all edges of the photo.&quot;</span>
+  <span class="p">[</span><span class="nv">mat-width</span> <span class="nv">rect</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">margin</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">rect</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:x</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">margin</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">rect</span><span class="p">))</span>
+     <span class="ss">:y</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">margin</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">rect</span><span class="p">))}))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">failure-rate</span>
+  <span class="s">&quot;Sometimes the wood is knotty or we screw up a cut. We'll assume we need a</span>
+<span class="s">  spare segment once every 8.&quot;</span>
+  <span class="mi">1</span><span class="nv">/8</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">spares</span>
+  <span class="s">&quot;Given a list of segments, figure out roughly how many of each distinct size</span>
+<span class="s">  will go bad, and emit a sequence of spare segments, assuming we screw up</span>
+<span class="s">  `failure-rate` of them.&quot;</span>
+  <span class="p">[</span><span class="nv">segments</span><span class="p">]</span>
+  <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">segments</span>
+       <span class="c1">; Compute a map of each segment length to the number of</span>
+       <span class="c1">; segments we'll need of that size.</span>
+       <span class="nv">frequencies</span>
+       <span class="c1">; Make a list of spares for each segment length,</span>
+       <span class="c1">; based on how often we think we'll screw up.</span>
+       <span class="p">(</span><span class="nb">mapcat </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span> <span class="p">[</span><span class="nv">segment</span> <span class="nv">n</span><span class="p">]]</span>
+                 <span class="p">(</span><span class="nb">repeat </span><span class="p">(</span><span class="nb">* </span><span class="nv">failure-rate</span> <span class="nv">n</span><span class="p">)</span>
+                         <span class="nv">segment</span><span class="p">)))))</span>
+
+<span class="p">(</span><span class="k">def </span><span class="nv">cut-size</span>
+  <span class="s">&quot;How much extra wood do we need for each cut? Let's say a mitred cut for a</span>
+<span class="s">  1-inch frame needs a full inch.&quot;</span>
+  <span class="mi">1</span><span class="p">)</span>
+
+<span class="p">(</span><span class="kd">defn </span><span class="nv">total-wood</span>
+  <span class="p">[</span><span class="nv">mat-width</span> <span class="nv">photos</span><span class="p">]</span>
+  <span class="s">&quot;Given a mat width and a collection of photos, compute the total linear</span>
+<span class="s">  amount of wood we need to buy in order to make frames for each, given a</span>
+<span class="s">  2-inch mat.&quot;</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">segments</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">photos</span>
+                      <span class="c1">; Convert photos to frame dimensions</span>
+                      <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial </span><span class="nv">frame</span> <span class="nv">mat-width</span><span class="p">))</span>
+                      <span class="c1">; Convert frames to segments</span>
+                      <span class="p">(</span><span class="nb">mapcat </span><span class="nv">perimeter</span><span class="p">))]</span>
+
+    <span class="c1">; Now, take segments</span>
+    <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">segments</span>
+         <span class="c1">; Add the spares</span>
+         <span class="p">(</span><span class="nb">concat </span><span class="p">(</span><span class="nf">spares</span> <span class="nv">segments</span><span class="p">))</span>
+         <span class="c1">; Include a cut between each segment</span>
+         <span class="p">(</span><span class="nf">interpose</span> <span class="nv">cut-size</span><span class="p">)</span>
+         <span class="c1">; And sum the whole shebang.</span>
+         <span class="p">(</span><span class="nb">reduce </span><span class="nv">+</span><span class="p">))))</span>
+
+<span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="p">[{</span><span class="ss">:x</span> <span class="mi">8</span>
+       <span class="ss">:y</span> <span class="mi">10</span><span class="p">}</span>
+      <span class="p">{</span><span class="ss">:x</span> <span class="mi">10</span>
+       <span class="ss">:y</span> <span class="mi">8</span><span class="p">}</span>
+      <span class="p">{</span><span class="ss">:x</span> <span class="mi">20</span>
+       <span class="ss">:y</span> <span class="mi">30</span><span class="p">}]</span>
+     <span class="p">(</span><span class="nf">total-wood</span> <span class="mi">2</span><span class="p">)</span>
+     <span class="p">(</span><span class="nb">println </span><span class="s">&quot;total inches:&quot;</span><span class="p">))</span>
+</code></pre>
+<p>Running this program yields a curious stacktrace. We’ll print the <em>full</em> trace (not the shortened one that comes with <code>pst</code>) for the last exception <code>*e</code> with the <code>.printStackTrace</code> function.</p>
+<pre><code>user=&gt; (.printStackTrace *e)
+java.lang.ClassCastException: clojure.lang.PersistentArrayMap cannot be cast to java.lang.Number, compiling:(scratch/debugging.clj:73:23)
+	at clojure.lang.Compiler.load(Compiler.java:7142)
+	at clojure.lang.RT.loadResourceScript(RT.java:370)
+	at clojure.lang.RT.loadResourceScript(RT.java:361)
+	at clojure.lang.RT.load(RT.java:440)
+	at clojure.lang.RT.load(RT.java:411)
+        ...
+  	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.lang.ClassCastException: clojure.lang.PersistentArrayMap cannot be cast to java.lang.Number
+	at clojure.lang.Numbers.multiply(Numbers.java:146)
+	at clojure.lang.Numbers.multiply(Numbers.java:3659)
+	at scratch.debugging$frame.invoke(debugging.clj:26)
+	at clojure.lang.AFn.applyToHelper(AFn.java:156)
+	at clojure.lang.AFn.applyTo(AFn.java:144)
+	at clojure.core$apply.invoke(core.clj:626)
+	at clojure.core$partial$fn__4228.doInvoke(core.clj:2468)
+	at clojure.lang.RestFn.invoke(RestFn.java:408)
+	at clojure.core$map$fn__4245.invoke(core.clj:2557)
+	at clojure.lang.LazySeq.sval(LazySeq.java:40)
+	at clojure.lang.LazySeq.seq(LazySeq.java:49)
+	at clojure.lang.RT.seq(RT.java:484)
+	at clojure.core$seq.invoke(core.clj:133)
+	at clojure.core$map$fn__4245.invoke(core.clj:2551)
+	at clojure.lang.LazySeq.sval(LazySeq.java:40)
+	at clojure.lang.LazySeq.seq(LazySeq.java:49)
+	at clojure.lang.RT.seq(RT.java:484)
+	at clojure.core$seq.invoke(core.clj:133)
+	at clojure.core$apply.invoke(core.clj:624)
+	at clojure.core$mapcat.doInvoke(core.clj:2586)
+	at clojure.lang.RestFn.invoke(RestFn.java:423)
+	at scratch.debugging$total_wood.invoke(debugging.clj:62)
+        ...
+</code></pre>
+<p>First: this trace has <em>two parts</em>. The top-level error (a <code>CompilerException</code>) appears first, and is followed by the exception that <em>caused</em> the <code>CompilerException</code>: a <code>ClassCastException</code>. This makes the stacktrace read somewhat out of order, since the deepest part of the trace occurs in the <em>first</em> line of the <em>last</em> exception. We read <code>C B A</code> then <code>F E D</code>. This is an old convention in the Java language, and the cause of no end of frustration.</p>
+<p>Notice that this representation of the stacktrace is less friendly than <code>(pst)</code>. We’re seeing the Java Virtual Machine (JVM)’s internal representation of Clojure functions, which look like <code>clojure.core$partial$fn__4228.doInvoke</code>. This corresponds to the namespace <code>clojure.core</code>, in which there is a function called <code>partial</code>, inside of which is an <em>anonymous</em> function, here named <code>fn__4228</code>. Calling a Clojure function is written, in the JVM, as <code>.invoke</code> or <code>.doInvoke</code>.</p>
+<p>So: the root cause was a <code>ClassCastException</code>, and it tells us that Clojure expected a <code>java.lang.Number</code>, but found a <code>PersistentArrayMap</code>. We might guess that <code>PersistentArrayMap</code> is something to do with the map data structure, which we used in this program:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">1</span><span class="p">})</span>
+<span class="nv">clojure.lang.PersistentArrayMap</span>
+</code></pre>
+<p>And we’d be right. We can also tell, by reading down the stacktrace looking for our <code>scratch.debugging</code> namespace, where the error took place: <code>scratch.debugging$frame</code>, on line <code>26</code>.</p>
+<pre><code><span></span>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">margin</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">rect</span><span class="p">)]</span>
+</code></pre>
+<p>There’s our multiplication operation <code>*</code>, which we might assume expands to <code>clojure.lang.Numbers.multiply</code>. But the <em>path</em> to the error is odd.</p>
+<pre><code><span></span>                 <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">photos</span>
+                      <span class="c1">; Convert photos to frame dimensions</span>
+                      <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial </span><span class="nv">frame</span> <span class="nv">mat-width</span><span class="p">))</span>
+</code></pre>
+<p>In <code>total-wood</code>, we call <code>(map (partial frame mat-width) photos)</code> right away, so we’d expect the stacktrace to go from <code>total-wood</code> to <code>map</code> to <code>frame</code>. But this is <em>not</em> what happens. Instead, <code>total-wood</code> invokes something called <code>RestFn</code>–a piece of Clojure plumbing–which in turn calls <code>mapcat</code>.</p>
+<pre><code>	at clojure.core$mapcat.doInvoke(core.clj:2586)
+	at clojure.lang.RestFn.invoke(RestFn.java:423)
+   	at scratch.debugging$total_wood.invoke(debugging.clj:62)
+</code></pre>
+<p>Why doesn’t <code>total-wood</code> call <code>map</code> first? Well it <em>did</em>–but <code>map</code> doesn’t actually apply its function to anything in the <code>photos</code> vector when invoked. Instead, it returns a <em>lazy</em> sequence–one which applies <code>frame</code> only when elements are asked for.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">type</span> <span class="p">(</span><span class="nb">map inc </span><span class="p">(</span><span class="nb">range </span><span class="mi">10</span><span class="p">)))</span>
+<span class="nv">clojure.lang.LazySeq</span>
+</code></pre>
+<p>Inside each <code>LazySeq</code> is a box containing a function. When you ask a <code>LazySeq</code> for its first value, it calls that function to return a new sequence–and <em>that’s</em> when <code>frame</code> gets invoked. What we’re seeing in this stacktrace is the <code>LazySeq</code> internal machinery at work–<code>mapcat</code> asks it for a value, and the LazySeq asks <code>map</code> to generate that value.</p>
+<pre><code>	at clojure.core$partial$fn__4228.doInvoke(core.clj:2468)
+	at clojure.lang.RestFn.invoke(RestFn.java:408)
+	at clojure.core$map$fn__4245.invoke(core.clj:2557)
+	at clojure.lang.LazySeq.sval(LazySeq.java:40)
+	at clojure.lang.LazySeq.seq(LazySeq.java:49)
+	at clojure.lang.RT.seq(RT.java:484)
+	at clojure.core$seq.invoke(core.clj:133)
+	at clojure.core$map$fn__4245.invoke(core.clj:2551)
+	at clojure.lang.LazySeq.sval(LazySeq.java:40)
+	at clojure.lang.LazySeq.seq(LazySeq.java:49)
+	at clojure.lang.RT.seq(RT.java:484)
+	at clojure.core$seq.invoke(core.clj:133)
+	at clojure.core$apply.invoke(core.clj:624)
+	at clojure.core$mapcat.doInvoke(core.clj:2586)
+	at clojure.lang.RestFn.invoke(RestFn.java:423)
+	at scratch.debugging$total_wood.invoke(debugging.clj:62)
+</code></pre>
+<p>In fact we pass through <code>map</code>’s laziness <em>twice</em> here: a quick peek at <code>(source mapcat)</code> shows that it expands into a <code>map</code> call itself, and then there’s a <em>second</em> map: the one we created in in <code>total-wood</code>. Then an odd thing happens–we hit something called <code>clojure.core$partial$fn__4228</code>.</p>
+<pre><code><span></span>  <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial </span><span class="nv">frame</span> <span class="nv">mat-width</span><span class="p">)</span> <span class="nv">photos</span><span class="p">)</span>
+</code></pre>
+<p>The <code>frame</code> function takes two arguments: a mat width and a photo. We wanted a function that takes just <em>one</em> argument: a photo. <code>(partial frame mat-width)</code> took <code>mat-width</code> and generated a <em>new function</em> which takes one arg–call it <code>photo</code>–and calls <code>(frame mat-width photo)</code>. That automatically generated function, returned by <code>partial</code>, is what <code>map</code> uses to generate new elements of its sequence on demand.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nb">partial + </span><span class="mi">1</span><span class="p">)</span>
+<span class="o">#</span><span class="nv">&lt;core$partial$fn__4228</span> <span class="nv">clojure.core$partial$fn__4228</span><span class="o">@</span><span class="mi">243634</span><span class="nv">f2&gt;</span>
+<span class="nv">user=&gt;</span> <span class="p">((</span><span class="nb">partial + </span><span class="mi">1</span><span class="p">)</span> <span class="mi">4</span><span class="p">)</span>
+<span class="mi">5</span>
+</code></pre>
+<p>That’s why we see control flow through <code>clojure.core$partial$fn__4228</code> (an anonymous function defined inside <code>clojure.core/partial</code>) on the way to <code>frame</code>.</p>
+<pre><code>Caused by: java.lang.ClassCastException: clojure.lang.PersistentArrayMap cannot be cast to java.lang.Number
+	at clojure.lang.Numbers.multiply(Numbers.java:146)
+	at clojure.lang.Numbers.multiply(Numbers.java:3659)
+	at scratch.debugging$frame.invoke(debugging.clj:26)
+	at clojure.lang.AFn.applyToHelper(AFn.java:156)
+	at clojure.lang.AFn.applyTo(AFn.java:144)
+	at clojure.core$apply.invoke(core.clj:626)
+	at clojure.core$partial$fn__4228.doInvoke(core.clj:2468)
+</code></pre>
+<p>And there’s our suspect! <code>scratch.debugging/frame</code>, at line <code>26</code>. To return to that line again:</p>
+<pre><code><span></span>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">margin</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">rect</span><span class="p">)]</span>
+</code></pre>
+<p><code>*</code> is a multiplication, and <code>2</code> is obviously a number, but <code>rect</code>… <code>rect</code> is a map here. Aha! We meant to multiply the <code>mat-width</code> by two, not the rectangle.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">frame</span>
+  <span class="s">&quot;Given a mat width, and a photo rectangle, figure out the size of the frame</span>
+<span class="s">  required by adding the mat width around all edges of the photo.&quot;</span>
+  <span class="p">[</span><span class="nv">mat-width</span> <span class="nv">rect</span><span class="p">]</span>
+  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">margin</span> <span class="p">(</span><span class="nb">* </span><span class="mi">2</span> <span class="nv">mat-width</span><span class="p">)]</span>
+    <span class="p">{</span><span class="ss">:x</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">margin</span> <span class="p">(</span><span class="ss">:x</span> <span class="nv">rect</span><span class="p">))</span>
+     <span class="ss">:y</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">margin</span> <span class="p">(</span><span class="ss">:y</span> <span class="nv">rect</span><span class="p">))}))</span>
+</code></pre>
+<p>I believe we’ve fixed the bug, then. Let’s give it a shot!</p>
+<h2><a href="#the-unbearable-lightness-of-nil" id="the-unbearable-lightness-of-nil">The unbearable lightness of nil</a></h2>
+<p>There’s one more bug lurking in this program. This one’s stacktrace is short.</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.debugging</span> <span class="ss">:reload</span><span class="p">)</span>
+
+<span class="nv">CompilerException</span> <span class="nv">java.lang.NullPointerException</span>, <span class="nv">compiling</span><span class="err">:</span><span class="p">(</span><span class="nf">scratch/debugging.clj</span><span class="ss">:73:23</span><span class="p">)</span> 
+<span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">pst</span><span class="p">)</span>
+<span class="nv">CompilerException</span> <span class="nv">java.lang.NullPointerException</span>, <span class="nv">compiling</span><span class="err">:</span><span class="p">(</span><span class="nf">scratch/debugging.clj</span><span class="ss">:73:23</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Compiler.load</span> <span class="p">(</span><span class="nf">Compiler.java</span><span class="ss">:7142</span><span class="p">)</span>
+	<span class="nv">clojure.lang.RT.loadResourceScript</span> <span class="p">(</span><span class="nf">RT.java</span><span class="ss">:370</span><span class="p">)</span>
+	<span class="nv">clojure.lang.RT.loadResourceScript</span> <span class="p">(</span><span class="nf">RT.java</span><span class="ss">:361</span><span class="p">)</span>
+	<span class="nv">clojure.lang.RT.load</span> <span class="p">(</span><span class="nf">RT.java</span><span class="ss">:440</span><span class="p">)</span>
+	<span class="nv">clojure.lang.RT.load</span> <span class="p">(</span><span class="nf">RT.java</span><span class="ss">:411</span><span class="p">)</span>
+	<span class="nv">clojure.core/load/fn--5066</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:5641</span><span class="p">)</span>
+	<span class="nv">clojure.core/load</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:5640</span><span class="p">)</span>
+	<span class="nv">clojure.core/load-one</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:5446</span><span class="p">)</span>
+	<span class="nv">clojure.core/load-lib/fn--5015</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:5486</span><span class="p">)</span>
+	<span class="nv">clojure.core/load-lib</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:5485</span><span class="p">)</span>
+	<span class="nv">clojure.core/apply</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:626</span><span class="p">)</span>
+	<span class="nv">clojure.core/load-libs</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:5524</span><span class="p">)</span>
+<span class="nv">Caused</span> <span class="nv">by</span><span class="err">:</span>
+<span class="nv">NullPointerException</span> 
+	<span class="nv">clojure.lang.Numbers.ops</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:961</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Numbers.add</span> <span class="p">(</span><span class="nf">Numbers.java</span><span class="ss">:126</span><span class="p">)</span>
+	<span class="nv">clojure.core/+</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:951</span><span class="p">)</span>
+	<span class="nv">clojure.core.protocols/fn--6086</span> <span class="p">(</span><span class="nf">protocols.clj</span><span class="ss">:143</span><span class="p">)</span>
+	<span class="nv">clojure.core.protocols/fn--6057/G--6052--6066</span> <span class="p">(</span><span class="nf">protocols.clj</span><span class="ss">:19</span><span class="p">)</span>
+	<span class="nv">clojure.core.protocols/seq-reduce</span> <span class="p">(</span><span class="nf">protocols.clj</span><span class="ss">:27</span><span class="p">)</span>
+	<span class="nv">clojure.core.protocols/fn--6078</span> <span class="p">(</span><span class="nf">protocols.clj</span><span class="ss">:53</span><span class="p">)</span>
+	<span class="nv">clojure.core.protocols/fn--6031/G--6026--6044</span> <span class="p">(</span><span class="nf">protocols.clj</span><span class="ss">:13</span><span class="p">)</span>
+	<span class="nv">clojure.core/reduce</span> <span class="p">(</span><span class="nf">core.clj</span><span class="ss">:6287</span><span class="p">)</span>
+	<span class="nv">scratch.debugging/total-wood</span> <span class="p">(</span><span class="nf">debugging.clj</span><span class="ss">:69</span><span class="p">)</span>
+	<span class="nv">scratch.debugging/eval1560</span> <span class="p">(</span><span class="nf">debugging.clj</span><span class="ss">:81</span><span class="p">)</span>
+	<span class="nv">clojure.lang.Compiler.eval</span> <span class="p">(</span><span class="nf">Compiler.java</span><span class="ss">:6703</span><span class="p">)</span>
+</code></pre>
+<p>On line 69, <code>total-wood</code> calls <code>reduce</code>, which dives through a series of functions from <code>clojure.core.protocols</code> before emerging in <code>+</code>: the function we passed to <code>reduce</code>. Reduce is trying to combine two elements from its collection of wood segments using <code>+</code>, but one of them was <code>nil</code>. Clojure calls this a <code>NullPointerException</code>. In <code>total-wood</code>, we constructed the sequence of segments this way:</p>
+<pre><code><span></span>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">segments</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">photos</span>
+                      <span class="c1">; Convert photos to frame dimensions</span>
+                      <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial </span><span class="nv">frame</span> <span class="nv">mat-width</span><span class="p">))</span>
+                      <span class="c1">; Convert frames to segments</span>
+                      <span class="p">(</span><span class="nb">mapcat </span><span class="nv">perimeter</span><span class="p">))]</span>
+
+    <span class="c1">; Now, take segments</span>
+    <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">segments</span>
+         <span class="c1">; Add the spares</span>
+         <span class="p">(</span><span class="nb">concat </span><span class="p">(</span><span class="nf">spares</span> <span class="nv">segments</span><span class="p">))</span>
+         <span class="c1">; Include a cut between each segment</span>
+         <span class="p">(</span><span class="nf">interpose</span> <span class="nv">cut-size</span><span class="p">)</span>
+         <span class="c1">; And sum the whole shebang.</span>
+         <span class="p">(</span><span class="nb">reduce </span><span class="nv">+</span><span class="p">))))</span>
+</code></pre>
+<p>Where did the <code>nil</code> value come from? The stacktrace <em>doesn’t say</em>, because the sequence <code>reduce</code> is traversing didn’t have any problem <em>producing</em> the <code>nil</code>. <code>reduce</code> asked for a value and the sequence happily produced a <code>nil</code>. We only had a problem when it came time to <em>combine</em> the <code>nil</code> with the next value, using <code>+</code>.</p>
+<p>A stacktrace like this is something like a murder mystery: we know the program died in the reducer, that it was shot with a <code>+</code>, and the bullet was a <code>nil</code>–but we don’t know where the bullet came from. The trail runs cold. We need <em>more forensic information</em>–more hints about the <code>nil</code>’s origin–to find the culprit.</p>
+<p>Again, this is a class of error largely preventable with static type systems. If you have worked with a statically typed language in the past, it may be interesting to consider that almost every Clojure function takes <code>Option[A]</code> and does something more-or-less sensible, returning <code>Option[B]</code>. Whether the error propagates as a <code>nil</code> or an <code>Option</code>, there can be similar difficulties in localizing the cause of the problem.</p>
+<p>Let’s try printing out the state as <code>reduce</code> goes along:</p>
+<pre><code><span></span>    <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">segments</span>
+         <span class="c1">; Add the spares</span>
+         <span class="p">(</span><span class="nb">concat </span><span class="p">(</span><span class="nf">spares</span> <span class="nv">segments</span><span class="p">))</span>
+         <span class="c1">; Include a cut between each segment</span>
+         <span class="p">(</span><span class="nf">interpose</span> <span class="nv">cut-size</span><span class="p">)</span>
+         <span class="c1">; And sum the whole shebang.</span>
+         <span class="p">(</span><span class="nb">reduce </span><span class="p">(</span><span class="k">fn </span><span class="p">[</span><span class="nv">acc</span> <span class="nv">x</span><span class="p">]</span> <span class="p">(</span><span class="nb">prn </span><span class="nv">acc</span> <span class="nv">x</span><span class="p">)</span> <span class="p">(</span><span class="nb">+ </span><span class="nv">acc</span> <span class="nv">x</span><span class="p">))))))</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.debugging</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="mi">12</span> <span class="mi">1</span>
+<span class="mi">13</span> <span class="mi">14</span>
+<span class="mi">27</span> <span class="mi">1</span>
+<span class="mi">28</span> <span class="nv">nil</span>
+
+<span class="nv">CompilerException</span> <span class="nv">java.lang.NullPointerException</span>, <span class="nv">compiling</span><span class="err">:</span><span class="p">(</span><span class="nf">scratch/debugging.clj</span><span class="ss">:73:56</span><span class="p">)</span> 
+</code></pre>
+<p>Not every value is nil! There’s a <code>14</code> there which looks like a plausible segment for a frame, and two one-inch buffers from <code>cut-size</code>. We can rule out <code>interpose</code> because it inserts a <code>1</code> every time, and that <code>1</code> reduces correctly. But where’s that <code>nil</code> coming from? Is from <code>segments</code> or <code>(spares segments)</code>?</p>
+<pre><code><span></span>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">segments</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">photos</span>
+                      <span class="c1">; Convert photos to frame dimensions</span>
+                      <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial </span><span class="nv">frame</span> <span class="nv">mat-width</span><span class="p">))</span>
+                      <span class="c1">; Convert frames to segments</span>
+                      <span class="p">(</span><span class="nb">mapcat </span><span class="nv">perimeter</span><span class="p">))]</span>
+
+    <span class="p">(</span><span class="nb">prn </span><span class="ss">:segments</span> <span class="nv">segments</span><span class="p">)</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.debugging</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="ss">:segments</span> <span class="p">(</span><span class="mi">12</span> <span class="mi">14</span> <span class="nv">nil</span> <span class="mi">14</span> <span class="mi">14</span> <span class="mi">12</span> <span class="nv">nil</span> <span class="mi">12</span> <span class="mi">24</span> <span class="mi">34</span> <span class="nv">nil</span> <span class="mi">34</span><span class="p">)</span>
+</code></pre>
+<p>It is present in <code>segments</code>. Let’s trace it backwards through the sequence’s creation. It’d be handy to have a function like <code>prn</code> that <em>returned</em> its input, so we could spy on values as they flowed through the <code>-&gt;&gt;</code> macro.</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">spy</span>
+  <span class="p">[</span><span class="o">&amp;</span> <span class="nv">args</span><span class="p">]</span>
+  <span class="p">(</span><span class="nb">apply prn </span><span class="nv">args</span><span class="p">)</span>
+  <span class="p">(</span><span class="nb">last </span><span class="nv">args</span><span class="p">))</span>
+</code></pre>
+<pre><code><span></span>  <span class="p">(</span><span class="k">let </span><span class="p">[</span><span class="nv">segments</span> <span class="p">(</span><span class="nf">-&gt;&gt;</span> <span class="nv">photos</span>
+                      <span class="c1">; Convert photos to frame dimensions</span>
+                      <span class="p">(</span><span class="nb">map </span><span class="p">(</span><span class="nb">partial </span><span class="nv">frame</span> <span class="nv">mat-width</span><span class="p">))</span>
+                      <span class="p">(</span><span class="nf">spy</span> <span class="ss">:frames</span><span class="p">)</span>
+                      <span class="c1">; Convert frames to segments</span>
+                      <span class="p">(</span><span class="nb">mapcat </span><span class="nv">perimeter</span><span class="p">))]</span>
+</code></pre>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.debugging</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="ss">:frames</span> <span class="p">({</span><span class="ss">:x</span> <span class="mi">12</span>, <span class="ss">:y</span> <span class="mi">14</span><span class="p">}</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">14</span>, <span class="ss">:y</span> <span class="mi">12</span><span class="p">}</span> <span class="p">{</span><span class="ss">:x</span> <span class="mi">24</span>, <span class="ss">:y</span> <span class="mi">34</span><span class="p">})</span>
+<span class="ss">:segments</span> <span class="p">(</span><span class="mi">12</span> <span class="mi">14</span> <span class="nv">nil</span> <span class="mi">14</span> <span class="mi">14</span> <span class="mi">12</span> <span class="nv">nil</span> <span class="mi">12</span> <span class="mi">24</span> <span class="mi">34</span> <span class="nv">nil</span> <span class="mi">34</span><span class="p">)</span>
+</code></pre>
+<p>Ah! So the frames are intact, but the <em>perimeters</em> are bad. Let’s check the <code>perimeter</code> function:</p>
+<pre><code><span></span><span class="p">(</span><span class="kd">defn </span><span class="nv">perimeter</span>
+  <span class="s">&quot;Given a rectangle, returns a vector of its edge lengths.&quot;</span>
+  <span class="p">[</span><span class="nv">rect</span><span class="p">]</span>
+  <span class="p">[(</span><span class="ss">:x</span> <span class="nv">rect</span><span class="p">)</span>
+   <span class="p">(</span><span class="ss">:y</span> <span class="nv">rect</span><span class="p">)</span>
+   <span class="p">(</span><span class="ss">:z</span> <span class="nv">rect</span><span class="p">)</span>
+   <span class="p">(</span><span class="ss">:y</span> <span class="nv">rect</span><span class="p">)])</span>
+</code></pre>
+<p>Spot the typo? We wrote <code>:z</code> instead of <code>:x</code>. Since the frame didn’t have a <code>:z</code> field, it returned <code>nil</code>! That’s the origin of our <code>NullPointerException</code>. With the bug fixed, we can re-run and find:</p>
+<pre><code><span></span><span class="nv">user=&gt;</span> <span class="p">(</span><span class="nf">use</span> <span class="ss">'scratch.debugging</span> <span class="ss">:reload</span><span class="p">)</span>
+<span class="nv">total</span> <span class="nv">inches</span><span class="err">:</span> <span class="mi">319</span>
+</code></pre>
+<p>Whallah!</p>
+<h2><a href="#recap" id="recap">Recap</a></h2>
+<p>As we solve more and more problems, we get faster at debugging–at skipping over irrelevant log data, figuring out exactly what input was at fault, knowing what terms to search for, and developing a network of peers and mentors to ask for help. But when we encounter unexpected bugs, it can help to fall back on a family of problem-solving tactics.</p>
+<p>We explore the problem thoroughly, localizing it to a particular function, variable, or set of inputs. We identify the boundaries of the problem, carving away parts of the system that work as expected. We develop new notation, maps, and diagrams of the problem space, precisely characterizing it in a variety of modes.</p>
+<p>With the problem identified, we search for extant solutions–or related problems others have solved in the past. We trawl through issue trackers, mailing list posts, blogs, and forums like Stackoverflow, or, for more theoretical problems, academic papers, Mathworld, and Wikipedia, etc. If searching reveals nothing, we try rephrasing the problem, relaxing the constraints, adding debugging statements, and solving smaller subproblems. When all else fails, we ask for help from our peers, or from the community in IRC, mailing lists, and so on, or just take a break.</p>
+<p>We learned to explore Clojure stacktraces as a trail into our programs, leading to the place where an error occurred. But not all paths are linear, and we saw how lazy operations and higher-order functions create inversions and intermediate layers in the stacktrace. Then we learned how to debug values that were <em>distant</em> from the trace, by adding logging statements and working our way closer to the origin.</p>
+<p>Programming languages and us, their users, are engaged in a continual dialogue. We may speak more formally, verbosely, with many types and defensive assertions–or we may speak quickly, generally, in fuzzy terms. The more precise we are with the specifications of our program’s types, the more the program can assist us when things go wrong. Conversely, those specifications <em>harden</em> our programs into strong but <em>rigid</em> forms, and rigid structures are harder to bend into new shapes.</p>
+<p>In Clojure we strike a more dynamic balance: we speak in generalities, but we pay for that flexibility. Our errors are harder to trace to their origins. While the Clojure compiler can warn us of some errors, like mis-spelled variable names, it cannot (without a library like <a href="https://github.com/clojure/core.typed">core.typed</a>) tell us when we have incorrectly assumed an object will be of a certain type. Even very rigid languages, like Haskell, cannot identify some errors, like reversing the arguments to a subtraction function. <em>Some</em> tests are always necessary, though types are a huge boon.</p>
+<p>No matter what language we write in, we use a balance of types and tests to <em>validate</em> our assumptions, both when the program is compiled and when it is run.</p>
+<p>The errors that arise in compilation or runtime aren’t <em>rebukes</em> so much as <em>hints</em>. Don’t despair! They point the way towards understanding one’s program in more detail–though the errors may be cryptic. Over time we get better at reading our language’s errors and making our programs more robust.</p>
+<p>In the next chapter, we discuss <a href="https://aphyr.com/posts/352-clojure-from-the-ground-up-polymorphism">polymorphism</a>.</p>
+
+    </div>
+  </div>
+</article>
+<div class="text-content">
+  <a id="comments"></a>
+
+  <div id="comment-1966"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/e0d9971908c46da1f9534933760083c6?r=pg&s=96&d=identicon" alt="Daniel Compton" title="Daniel Compton" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Daniel Compton
+          
+          
+          on
+          <a href="/posts/319-clojure-from-the-ground-up-debugging#comment-1966">
+            <time datetime="Oct 11, 2014, 4:21:22 PM" pubdate>
+              2014-10-11
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Another extremely useful library I use for debugging is <a href="https://github.com/clojure/tools.trace" rel="nofollow">clojure.tools.trace</a>. Among other things it lets you trace (print) the values passed in and returned from a function, either your own or a library that you are using. It often makes debugging very quick because you can see the context of function calls that led to an exception being thrown. </p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1968"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/311c342bfd324eb9d3603222f7f36f24?r=pg&s=96&d=identicon" alt="mathiasx" title="mathiasx" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="http://blog.mattgauger.com" rel="nofollow">
+              mathiasx
+            </a>
+          
+          
+          on
+          <a href="/posts/319-clojure-from-the-ground-up-debugging#comment-1968">
+            <time datetime="Oct 15, 2014, 4:25:29 PM" pubdate>
+              2014-10-15
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>I think there’s a small mistake in the highlighting for the <code>spares</code> function. It looks like it parsed the square brackets for fn arguments as a markdown link in the anonymous function inside the <code>mapcat</code>.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-1983"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/294de3557d9d00b3d2d8a1e6aab028cf?r=pg&s=96&d=identicon" alt="Yu Shen" title="Yu Shen" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Yu Shen
+          
+          
+          on
+          <a href="/posts/319-clojure-from-the-ground-up-debugging#comment-1983">
+            <time datetime="Nov 13, 2014, 8:31:06 PM" pubdate>
+              2014-11-13
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Thank you very much for providing very grounded tutorial for Clojure. It’s the best for beginner who has little experience with JVM/Java. The others often assumed background with Java. With your tutorial, I now feel that I’m more comfortable to use Clojure for real world problem, not just toy ones. </p>
+
+<p>I’ve finished reading all up to this debugging post, and eagerly am waiting for more. </p>
+
+<p>From your example in this section of picture frame material estimation, while I appreciate your effort in creating a somehow fuzzy example to embed some bugs.  it occurred to me that some of such bugs might be better avoided with more explicit design modeling, especially visualized modeling of the concepts involved, such as rectangle, mat, etc. </p>
+
+<p>It’s my observation, that Clojure/Lisp community has heavy focus on elegant syntactic expression of concepts, but somehow avoided visual modeling of the concepts. Maybe, it’s consider too trivial, and too much “object oriented”, such as UML. </p>
+
+<p>With some experience with UML, I feel that its graphic modeling language really helps to clarify conceptual modeling, and help to grasp more concept relationship with certain degree of intuition. </p>
+
+<p>Although object oriented programming as program construction has the fatal drawback of state dependency, lack of reference transparency, but it’s conceptual modeling techniques helps for programming at large for higher level reasoning of complex system design and construction. </p>
+
+<p>For functional programming (FP), I feel that it may also need some visual design language to visualize in two dimensions the function relationship to make FP better handle higher level of abstraction, required for programming at large. For instance, in your blog section on modeling with Clojure, I found it very hard to follow the model and intuition of rocket launch model. I feel some diagram would help me to grasp the reasoning, and your insights.</p>
+
+<p>So it’s my wish, if you could teach us on (visual) modeling design with Clojure (FP) paradigm. </p>
+
+<p>Again thanks a lot for your great contribution to Clojure community to make Clojure further grounded. </p>
+
+<p>Yu</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2118"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/58610a64fc8638eec8d2239d80d4046f?r=pg&s=96&d=identicon" alt="Gregg Williams" title="Gregg Williams" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Gregg Williams
+          
+          
+          on
+          <a href="/posts/319-clojure-from-the-ground-up-debugging#comment-2118">
+            <time datetime="Feb 14, 2015, 9:58:16 PM" pubdate>
+              2015-02-14
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Many thanks for this article! As an intense dabbler in Clojure (for five years now!), I learned a lot–not least of which was how to read the Java stacktrace (always a source of frustration for me).</p>
+
+<p>This is a magazine-article length post, which of necessity took a long time to write. Thank you for your generosity! This will be a go-to article for many Clojure learners.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2547"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/fb0bdbf18101aa257fb3613b07058d7b?r=pg&s=96&d=identicon" alt="Didier A." title="Didier A." />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            Didier A.
+          
+          
+          on
+          <a href="/posts/319-clojure-from-the-ground-up-debugging#comment-2547">
+            <time datetime="Oct 23, 2015, 1:41:25 PM" pubdate>
+              2015-10-23
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Is this series over? The previous article mentioned so many awesome ideas for chapters. This is an amazing series. I’d love to buy a book of it, or just continue reading it on the web.</p>
+
+<p>Any news if there’s plan on making those chapters happen?</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+  <div id="comment-2593"
+       class="comment pure-g gutter-sm
+               
+                 anonymous
+               
+               
+               ">
+
+    <div class="public avatar pure-u-1-9">
+      
+        <img class="pure-img" src="https://www.gravatar.com/avatar/2ee4bf552ca59c2f324e666a3de008bd?r=pg&s=96&d=identicon" alt="Agam" title="Agam" />
+      
+    </div>
+
+    <div class="pure-u-7-9">
+      <div class="sheet">
+        <div class="meta">
+          
+            <a href="https://agambrahma.com" rel="nofollow">
+              Agam
+            </a>
+          
+          
+          on
+          <a href="/posts/319-clojure-from-the-ground-up-debugging#comment-2593">
+            <time datetime="Jan 12, 2016, 4:46:24 PM" pubdate>
+              2016-01-12
+            </time>
+          </a>
+
+          
+        </div>
+
+        <div class="body">
+          <p>Hi, thanks for the great series, wishing for more! </p>
+
+<p>Small typo: in the <code>total-wood</code> function, the doctoring mentions a specific size for the mat width, though this is not true, it uses the width passed in.</p>
+
+        </div>
+      </div>
+    </div>
+
+    <div class="owned avatar pure-u-1-9">
+      
+    </div>
+  </div>
+
+
+  <a id="post-comment"></a>
+<div class="pure-g">
+  <div class="pure-u-1-9"></div>
+
+  <div class="pure-u-1 pure-u-md-7-9">
+    <div class="comment-form sheet">
+      <h1>Post a Comment</h1>
+
+      <form class="comment-form pure-form pure-form-stacked" action="/comments"
+                                                             method="post">
+
+        
+
+        <fieldset>
+          <div class="spaced">
+            <legend>Comments are moderated. Links have <code>nofollow</code>. Seriously, spammers, give it a rest.</legend>
+          </div>
+
+          <p class="dont-read-me">
+          Please avoid writing anything here unless you're a computer.
+          <label for="captcha">Captcha</label>
+          <input type="text" name="captcha" id="captcha" />
+
+          This is also a trap:
+          <label for="comment">Comment</label>
+          <textarea name="comment" id="comment"></textarea>
+          </p>
+
+          <div class="pure-g gutter">
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="name">Name</label>
+              <input class="pure-input-1" type="text" id="name" name="name" value="" />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="email">E-Mail <span class="meta">(for <a href="https://gravatar.com">Gravatar</a>, not published)</span></label>
+              <input class="pure-input-1" type="text" id="email" name="email" value="" required />
+            </div>
+
+            <div class="pure-u-1 pure-u-lg-1-3">
+              <label for="http">Personal URL</label>
+              <input class="pure-input-1" type="text" id="http" name="http" value="" />
+            </div>
+          </div>
+
+          <label for="body">Comment</label>
+          <textarea class="pure-input-1" id="body" name="body" rows="12" required=""></textarea>
+
+          <div class="meta">
+            Supports <a href="https://guides.github.com/features/mastering-markdown/">Github-flavored Markdown</a>, including <code>[links](http://foo.com/)</code>, <code>*emphasis*</code>, <code>_underline_</code>, <code>`code`</code>, and <code>&gt; blockquotes</code>. Use <code>```clj</code> on its own line to start an (e.g.) Clojure code block, and <code>```</code> to end the block.
+            </legend>
+
+            <input type="hidden" name="post_id" value="319" />
+            <input type="hidden" name="photo_id" value="" />
+
+            <input id="__anti-forgery-token" name="__anti-forgery-token" type="hidden" value="6zdJ8TI1dtbiL1gPrxFO4LninezQiTRINGcJbaX7Fp+bP7hnGbRBjTSjhHqgNhBMIa42if8iKPtRrV/y" />
+
+            <input type="submit" class="pure-button pure-button-primary" value="Post Comment" />
+        </fieldset>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+
+    <footer id="colophon">
+      Copyright © 2023 Kyle Kingsbury.<br />
+      Also on: <a rel="me" href="https://woof.group/@aphyr">Mastodon</a> and <a rel="me" href="https://github.com/aphyr">Github</a>.</p>
+    </footer>
+
+  <!-- Google Analytics -->
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-9527251-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+   var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+   })();
+  </script>
+
+    
+    
+
+    <script src="/js"></script>
+  </body>
+</html>
