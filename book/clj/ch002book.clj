@@ -3,7 +3,7 @@
             [clojure.string :as string]
             [clojure.test :refer [is are]]))
 
-;;  (comment
+(comment
 ;;    Clojure from the ground up: basic types     window.dataLayer = window.dataLayer || \[\]; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-MXDP37S6QL');
 ;;  
 ;;      
@@ -846,4 +846,6 @@
 ;;  Also on: [Mastodon](https://woof.group/@aphyr) and [Github](https://github.com/aphyr).
 ;;  
 ;;  var \_gaq = \_gaq || \[\]; \_gaq.push(\['\_setAccount', 'UA-9527251-1'\]); \_gaq.push(\['\_trackPageview'\]); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')\[0\]; s.parentNode.insertBefore(ga, s); })();
-;;    text)
+;;    text
+
+)
