@@ -238,16 +238,20 @@
 ;;   
 ;;   `<` means “strictly less than”, and works just like `<=`, except that no two values may be equal.
 ;;   
-;;       user=> (<= 1 1 2)
+;;       user=> 
+  (<= 1 1 2)
 ;;       true
-;;       user=> (< 1 1 2)
+;;       user=> 
+  (< 1 1 2)
 ;;       false
 ;;       
 ;;   
 ;;   Their friends `>` and `>=` mean “greater than” and “greater than or equal to”, respectively, and assert that numbers are in descending order.
 ;;   
-;;       user=> (> 3 2 1)
+;;       user=> 
+  (> 3 2 1)
 ;;       true
+  (> 3 2 2 1)
 ;;       user=> (> 1 2 3)
 ;;       false
 ;;       
@@ -256,8 +260,12 @@
 ;;   
 ;;       user=> (inc 5)
 ;;       6
-;;       user=> (dec 5)
+;;       user=> 
+  (dec 5)
 ;;       4
+
+  (< (dec Byte/MAX_VALUE) Byte/MAX_VALUE)
+  (> (dec Byte/MAX_VALUE) (- Byte/MAX_VALUE 2 ))
 ;;       
 ;;   
 ;;   One final note: equality tests can take more than 2 numbers as well.
@@ -287,23 +295,33 @@
 ;;       "1"
 ;;       user=> (str true)
 ;;       "true"
-;;       user=> (str '(1 2 3))
+;;       user=> 
+  (str '(1 2 3))
 ;;       "(1 2 3)"
-;;       user=> (str nil)
+;;       user=> 
+  (str nil)
 ;;       ""
 ;;       
 ;;   
 ;;   `str` can also _combine_ things together into a single string, which we call “concatenation”.
 ;;   
-;;       user=> (str "meow " 3 " times")
+;;       user=> 
+  (str "meow " 3 " times")
 ;;       "meow 3 times"
 ;;       
 ;;   
 ;;   To look for patterns in text, we can use a [regular expression](http://www.regular-expressions.info/tutorial.html), which is a tiny language for describing particular arrangements of text. `re-find` and `re-matches` look for occurrences of a regular expression in a string. To find a cat:
 ;;   
-;;       user=> (re-find #"cat" "mystic cat mouse")
+;;       user=> 
+  (re-find #"cat" "mystic cat mouse")
 ;;       "cat"
-;;       user=> (re-find #"cat" "only dogs here")
+
+  
+  (re-matches #"cat" "mystic cat mouse")
+  (re-matches #"cat" "cat")
+
+;;       user=> 
+  (re-find #"cat" "only dogs here")
 ;;       nil
 ;;       
 ;;   
@@ -311,7 +329,8 @@
 ;;   
 ;;   With `re-matches`, you can extract particular parts of a string which match an expression. Here we find two strings, separated by a `:`. The parentheses mean that the regular expression should _capture_ that part of the match. We get back a list containing the part of the string that matched the first parentheses, followed by the part that matched the second parentheses.
 ;;   
-;;       user=> (rest (re-matches #"(.+):(.+)" "mouse:treat"))
+;;       user=> 
+  (rest (re-matches #"(.+):(.+)" "mouse:treat"))
 ;;       ("mouse" "treat")
 ;;       
 ;;   
@@ -350,9 +369,11 @@
 ;;       false
 ;;       user=> (and true true true)
 ;;       true
-;;       user=> (and 1 2 3)
+;;       user=> 
+  (and 1 2 3)
 ;;       3
 ;;       
+  (and 1 2 0 3)
 ;;   
 ;;   Similarly, `or` returns the first positive value.
 ;;   
@@ -377,7 +398,8 @@
 ;;   
 ;;   We saw symbols in the previous chapter; they’re bare strings of characters, like `foo` or `+`.
 ;;   
-;;       user=> (class 'str)
+;;       user=> 
+  (class 'str)
 ;;       clojure.lang.Symbol
 ;;       
 ;;   
