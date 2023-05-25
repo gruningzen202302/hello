@@ -61,3 +61,11 @@ clj꞉user꞉> 
 clj꞉ch001book꞉> 
 nil
 clj꞉ch001book꞉> 
+127
+clj꞉ch001book꞉> 
+127
+clj꞉ch001book꞉> 
+java.lang.Double
+clj꞉ch001book꞉> 
+"(1 2 3)"
+clj꞉ch001book꞉> 
