@@ -1,8 +1,8 @@
 (ns ch001book)
 
-(comment 
-(* 5 8)
-(print "Clojure from the ground up  basic types")
+(comment
+  (* 5 8)
+  (print "Clojure from the ground up  basic types")
 
 ;; window.dataLayer = window.dataLayer || \[\]; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-MXDP37S6QL');
 ;;   
@@ -55,7 +55,7 @@
 ;;   
 ;;   How big is 263 - 1?
 ;;   
-  (+(- java.lang.Long/MAX_VALUE 1) 1)
+  (+ (- java.lang.Long/MAX_VALUE 1) 1)
 ;;       9223372036854775807
 ;;       
 ;;   
@@ -88,13 +88,13 @@
 ;;   There are also smaller numbers.
 ;;   
 ;;       user=> 
-        (type (int 0))
+  (type (int 0))
 ;;       java.lang.Integer
 ;;       user=> 
-        (type (short 0))
+  (type (short 0))
 ;;       java.lang.Short
 ;;       user=> 
-        (type (byte 0))
+  (type (byte 0))
 ;;       java.lang.Byte
 ;;       
 ;;   
@@ -107,11 +107,11 @@
 ;;       user=> 
 ;;       Byte/MAX_VALUE
 ;;       127
-    (byte 127)
-    (inc (- Byte/MAX_VALUE 1))
-    (byte 129)
-    (byte (inc Byte/MAX_VALUE))
-    (- (inc Byte/MAX_VALUE ) 1)
+  (byte 127)
+  (inc (- Byte/MAX_VALUE 1))
+  (byte 129)
+  (byte (inc Byte/MAX_VALUE))
+  (- (inc Byte/MAX_VALUE) 1)
 ;;      
 ;;   
 ;;   [Fractional numbers](#fractional-numbers)
@@ -130,7 +130,7 @@
 ;;   Floating point math is [complicated](http://en.wikipedia.org/wiki/Floating_point), and we won’t get bogged down in the details just yet. The important thing to know is floats and doubles are _approximations_. There are limits to their correctness:
 ;;   
 ;;       user=> 
-       (inc 0.99999999999999999)
+  (inc 0.99999999999999999)
 ;;       2.0
 ;;       
 ;;   
@@ -179,8 +179,8 @@
 ;;       user=> 
   (/ 1 2)
 ;;        1/2 
-  (type(/ 1 2))
-  (float(/ 1 2))
+  (type (/ 1 2))
+  (float (/ 1 2))
 ;;       
 ;;   
 ;;   Putting the verb _first_ in each list allows us to add or multiply more than one number in the same step:
@@ -203,7 +203,7 @@
   (- 5 1)
 
   (- 5)
-  
+
 ;;       user=> (/ 24 2 3)
 ;;       4
 ;;       
@@ -265,7 +265,7 @@
 ;;       4
 
   (< (dec Byte/MAX_VALUE) Byte/MAX_VALUE)
-  (> (dec Byte/MAX_VALUE) (- Byte/MAX_VALUE 2 ))
+  (> (dec Byte/MAX_VALUE) (- Byte/MAX_VALUE 2))
 ;;       
 ;;   
 ;;   One final note: equality tests can take more than 2 numbers as well.
@@ -316,7 +316,7 @@
   (re-find #"cat" "mystic cat mouse")
 ;;       "cat"
 
-  
+
   (re-matches #"cat" "mystic cat mouse")
   (re-matches #"cat" "cat")
 
@@ -333,6 +333,9 @@
   (rest (re-matches #"(.+):(.+)" "mouse:treat"))
 ;;       ("mouse" "treat")
 ;;       
+  (re-matches #"(.+):(.+)" "mouse:treat")
+  (rest (re-matches #"(.+):(.+)" "mouse:treat"))
+  (rest (re-matches #"(.+):(.+)" "mouse:treat"))
 ;;   
 ;;   Regular expressions are a powerful tool for searching and matching text, especially when working with data files. Since regexes work the same in most languages, you can use any guide online to learn more. It’s not something you have to master right away; just learn specific tricks as you find you need them. For a deeper guide, try Fitzgerald’s [Introducing Regular Expressions](http://shop.oreilly.com/product/0636920012337.do).
 ;;   
@@ -341,13 +344,15 @@
 ;;   
 ;;   Everything in Clojure has a sort of charge, a truth value, sometimes called “truthiness”. `true` is positive and `false` is negative. `nil` is negative, too.
 ;;   
-;;       user=> (boolean true)
+;;       user=> 
+  (boolean true)
+
 ;;       true
-;;       user=> (boolean false)
 ;;       false
-;;       user=> (boolean nil)
+;;       user=>
+  (boolean nil)
 ;;       false
-;;       
+  (boolean false)
 ;;   
 ;;   Every other value in Clojure is positive.
 ;;   
@@ -357,7 +362,8 @@
 ;;       true
 ;;       user=> (boolean "hi there")
 ;;       true
-;;       user=> (boolean str)
+;;       user=> 
+  (boolean str)
 ;;       true
 ;;       
 ;;   
@@ -374,20 +380,26 @@
 ;;       3
 ;;       
   (and 1 2 0 3)
+  (and 1 2 nil 3)
+  (and 1 false nil 3)
 ;;   
 ;;   Similarly, `or` returns the first positive value.
 ;;   
-;;       user=> (or false 2 3)
+;;       user=> 
+  (or false 2 3)
 ;;       2
-;;       user=> (or false nil)
-;;       nil
+;;       user=> 
+  (or false nil)
+  (or  nil false)
 ;;       
 ;;   
 ;;   And `not` inverts the logical sense of a value:
 ;;   
-;;       user=> (not 2)
+;;       user=> 
+  (not 2)
 ;;       false
-;;       user=> (not nil)
+;;       user=> 
+  (not nil)
 ;;       true
 ;;       
 ;;   
@@ -402,14 +414,17 @@
   (class 'str)
 ;;       clojure.lang.Symbol
 ;;       
+  (class 'abc)
 ;;   
 ;;   Symbols can have either short or full names. The short name is used to refer to things locally. The _fully qualified_ name is used to refer unambiguously to a symbol from anywhere. If I were a symbol, my name would be “Kyle”, and my full name “Kyle Kingsbury.”
 ;;   
 ;;   Symbol names are separated with a `/`. For instance, the symbol `str` is also present in a family called `clojure.core`; the corresponding full name is `clojure.core/str`.
 ;;   
-;;       user=> (= str clojure.core/str)
+;;       user=> 
+  (= str clojure.core/str)
 ;;       true
-;;       user=> (name 'clojure.core/str)
+;;       user=> 
+  (name 'clojure.core/str)
 ;;       "str"
 ;;       
 ;;   
@@ -426,11 +441,15 @@
 ;;   
 ;;   Closely related to symbols and strings are _keywords_, which begin with a `:`. Keywords are like strings in that they’re made up of text, but are specifically intended for use as _labels_ or _identifiers_. These _aren’t_ labels in the sense of symbols: keywords aren’t replaced by any other value. They’re just names, by themselves.
 ;;   
-;;       user=> (type :cat)
+;;       user=> 
+  (type :cat)
+
 ;;       clojure.lang.Keyword
-;;       user=> (str :cat)
+;;       user=> 
+  (str :cat)
 ;;       ":cat"
-;;       user=> (name :cat)
+;;       user=> 
+  (name :cat)
 ;;       "cat"
 ;;       
 ;;   
@@ -441,36 +460,54 @@
 ;;   
 ;;   A collection is a group of values. It’s a _container_ which provides some structure, some framework, for the things that it holds. We say that a collection contains _elements_, or _members_. We saw one kind of collection–a list–in the previous chapter.
 ;;   
-;;       user=> '(1 2 3)
+;;       user=> 
+  '(1 2 3)
 ;;       (1 2 3)
-;;       user=> (type '(1 2 3))
+;;       user=> 
+  (type '(1 2 3))
 ;;       clojure.lang.PersistentList
 ;;       
 ;;   
 ;;   Remember, we _quote_ lists with a `'` to prevent them from being evaluated. You can also construct a list using `list`:
 ;;   
-;;       user=> (list 1 2 3)
+;;       user=> 
+  (list 1 2 3)
 ;;       (1 2 3)
 ;;       
 ;;   
 ;;   Lists are comparable just like every other value:
 ;;   
-;;       user=> (= (list 1 2) (list 1 2))
+;;       user=> 
+  (= (list 1 2) (list 1 2))
 ;;       true
 ;;       
+  (= '(1 2) (list 1 2))
 ;;   
+;;  (= (1 2) (list 1 2)) => Excecution error
+
 ;;   You can modify a list by `conj`oining an element onto it:
 ;;   
-;;       user=> (conj '(1 2 3) 4)
+;;       user=> 
+  '(1 2 3)
+  (conj '(1 2 3) 4)
+
 ;;       (4 1 2 3)
 ;;       
 ;;   
 ;;   We added 4 to the list–but it appeared at the _front_. Why? Internally, lists are stored as a _chain_ of values: each link in the chain is a tiny box which holds the value and a connection to the next link. This data structure, called a linked list, offers immediate access to the first element.
 ;;   
-;;       user=> (first (list 1 2 3))
+;;       user=> 
+  (first (list 1 2 3))
 ;;       1
 ;;       
+  (first (list nil 2 3))
 ;;   
+  (first (list 'abc 2 3))
+
+  (first (list))
+
+  (not (first (list)))
+
 ;;   But getting to the second element requires an extra hop down the chain
 ;;   
 ;;       user=> (second (list 1 2 3))
@@ -479,7 +516,9 @@
 ;;   
 ;;   and the third element a hop after that, and so on.
 ;;   
-;;       user=> (nth (list 1 2 3) 2)
+;;       user=> 
+  (nth (list 1 2 3) 0)
+  (nth (list 1 2 3) 2)
 ;;       3
 ;;       
 ;;   
@@ -492,23 +531,28 @@
 ;;   
 ;;   Vectors are surrounded by square brackets, just like lists are surrounded by parentheses. Because vectors _aren’t_ evaluated like lists are, there’s no need to quote them:
 ;;   
-;;       user=> [1 2 3]
+;;       user=> 
+  [1 2 3]
 ;;       [1 2 3]
-;;       user=> (type [1 2 3])
+;;       user=> 
+  (type [1 2 3])
 ;;       clojure.lang.PersistentVector
 ;;       
 ;;   
 ;;   You can also create vectors with `vector`, or change other structures into vectors with `vec`:
 ;;   
-;;       user=> (vector 1 2 3)
+;;       user=> 
+  (vector 1 2 3)
 ;;       [1 2 3]
-;;       user=> (vec (list 1 2 3))
+;;       user=> 
+  (vec (list 1 2 3))
 ;;       [1 2 3]
 ;;       
 ;;   
 ;;   `conj` on a vector adds to the _end_, not the _start_:
 ;;   
-;;       user=> (conj [1 2 3] 4)
+;;       user=> 
+  (conj [1 2 3] 4)
 ;;       [1 2 3 4]
 ;;       
 ;;   
@@ -516,17 +560,21 @@
 ;;   
 ;;   In addition to `first`, you’ll often want to get the _remaining_ elements in a collection. There are two ways to do this:
 ;;   
-;;       user=> (rest [1 2 3])
+;;       user=> 
+  (rest [1 2 3])
 ;;       (2 3)
-;;       user=> (next [1 2 3])
+;;       user=> 
+  (next [1 2 3])
 ;;       (2 3)
 ;;       
 ;;   
 ;;   `rest` and `next` both return “everything but the first element”. They differ only by what happens when there are no remaining elements:
 ;;   
-;;       user=> (rest [1])
+;;       user=> 
+  (rest [1])
 ;;       ()
-;;       user=> (next [1])
+;;       user=> 
+  (next [1])
 ;;       nil
 ;;       
 ;;   
@@ -907,4 +955,27 @@
 ;;   
 ;;  
 
- )
+  )
+
+(comment
+  ;; = re-matches - Example 1 = 
+  
+  ;; The distinction is that re-find tries to find _any part_ of the string
+  ;; that matches the pattern, but re-matches only matches if the _entire_
+  ;; string matches the pattern.
+  (re-matches #"hello" "hello, world")
+ ;; nil
+  
+  (re-matches #"hello.*" "hello, world")
+  ;;"hello, world"
+  
+  (re-matches #"hello, (.*)" "hello, world")
+  ;;["hello, world" "world"]
+  
+  ;; See also:
+  clojure.core/re-find
+  clojure.core/subs
+  clojure.core/re-groups
+  clojure.core/re-pattern
+  :rcf)
+
