@@ -637,10 +637,8 @@
 
   "Sets are surrounded by `#{...}`. Notice that though we gave the elements `:a`, `:b`, and `:c`, they came out in a different order. In general, the order of sets can shift at any time. If you want a particular order, you can ask for it as a list or vector:"
 ;;       user=> 
-  (
-  print (sort #{:a :b :c})
-   )
-  
+  (print (sort #{:a :b :c}))
+
   (vec #{:a :b :c})
   (:Vec #{:a :b :c})
 
@@ -653,98 +651,136 @@
 ;;   
 ;;   Or ask for the elements in sorted order:
 ;;   
-;;       (sort #{:a :b :c})
+  (sort #{:a :b :c})
 ;;       (:a :b :c)
 ;;       
 ;;   
 ;;   `conj` on a set adds an element:
 ;;   
-;;       user=> (conj #{:a :b :c} :d)
+;;       user=> 
+  (conj #{:a :b :c} :d)
 ;;       #{:a :c :b :d}
-;;       user=> (conj #{:a :b :c} :a)
+;;       user=> 
+  (conj #{:a :b :c} :a)
 ;;       #{:a :c :b}
 ;;       
 ;;   
-;;   Sets never contain an element more than once, so `conj`ing an element which is already present does nothing. Conversely, one removes elements with `disj`:
+;;*   Sets never contain an element more than once, so `conj`ing an element which is already present does nothing. Conversely, one removes elements with `disj`:
 ;;   
-;;       user=> (disj #{"hornet" "hummingbird"} "hummingbird")
+;;       user=> 
+  (disj #{"hornet" "hummingbird"} "hummingbird")
 ;;       #{"hornet"}
 ;;       
 ;;   
-;;   The most common operation with a set is to check whether something is inside it. For this we use `contains?`.
+;;   *The most common operation with a set is to check whether something is inside it. For this we use `contains?`.
 ;;   
-;;       user=> (contains? #{1 2 3} 3)
+;;       user=> 
+  (contains? #{1 2 3} 3)
 ;;       true
-;;       user=> (contains? #{1 2 3} 5)
+;;       user=> 
+  (contains? #{1 2 3} 5)
 ;;       false
 ;;       
+  (contains? #{1 2 3} nil)
+  (contains? #{} false)
 ;;   
-;;   Like vectors, you can use the set _itself_ as a verb. Unlike `contains?`, this expression returns the element itself (if it was present), or `nil`.
+;;   *Like vectors, you can use the set _itself_ as a verb. Unlike `contains?`, this expression returns the element itself (if it was present), or `nil`.
 ;;   
-;;       user=> (#{1 2 3} 3)
+;;       user=> 
+  (#{1 2 3} 3)
 ;;       3
-;;       user=> (#{1 2 3} 4)
+;;       user=> 
+  (#{1 2 3} 4)
 ;;       nil
 ;;       
 ;;   
-;;   You can make a set out of any other collection with `set`.
+;;   *You can make a set out of any other collection with `set`.
 ;;   
-;;       user=> (set [:a :b :c])
+;;       user=> 
+  (set [:a :b :c])
 ;;       #{:a :c :b}
-;;       
+  (set [1 2 3 3 4])    
 ;;   
-;;   [Maps](#maps)
+;;  * [Maps](#maps)
 ;;   -------------
 ;;   
-;;   The last collection on our tour is the _map_: a data structure which associates _keys_ with _values_. In a dictionary, the keys are words and the definitions are the values. In a library, keys are call signs, and the books are values. Maps are indexes for looking things up, and for representing different pieces of named information together. Here’s a cat:
+  " The last collection on our tour is the _map_: a data structure which associates _keys_ with _values_. In a dictionary, the keys are words and the definitions are the values. In a library, keys are call signs, and the books are values. Maps are indexes for looking things up, and for representing different pieces of named information together. Here’s a cat:"
 ;;   
-;;       user=> {:name "mittens" :weight 9 :color "black"}
+;;       user=> 
+  {:name "mittens" :weight 9 :color "black"}
 ;;       {:weight 9, :name "mittens", :color "black"}
 ;;       
 ;;   
 ;;   Maps are surrounded by braces `{...}`, filled by alternating keys and values. In this map, the three keys are `:name`, `:color`, and `:weight`, and their values are `"mittens"`, `"black"`, and 9, respectively. We can look up the corresponding value for a key with `get`:
 ;;   
-;;       user=> (get {"cat" "meow" "dog" "woof"} "cat")
+;;       user=>
+  (get {"cat" "meow" "dog" "woof"} "cat")
 ;;       "meow"
-;;       user=> (get {:a 1 :b 2} :c)
+  
+  (str 
+   "The color is ", 
+   (get   
+    {:name "mittens" :weight 9 :color "black"},
+    :color))
+  
+  ;;       user=> 
+  (get {:a 1 :b 2} :c)
 ;;       nil
 ;;       
 ;;   
-;;   `get` can also take a _default_ value to return instead of nil, if the key doesn’t exist in that map.
+;;   *`get` can also take a _default_ value to return instead of nil, if the key doesn’t exist in that map.
 ;;   
-;;       user=> (get {:glinda :good} :wicked :not-here)
+;;       user=> 
+  (get {:glinda :good} :wicked :not-here)
 ;;       :not-here
 ;;       
 ;;   
-;;   Since lookups are so important for maps, we can use a map as a verb directly:
+  (get {:glinda :good} :wicked `asd )
+
+;;   *Since lookups are so important for maps, we can use a map as a verb directly:
 ;;   
-;;       user=> ({"amlodipine" 12 "ibuprofen" 50} "ibuprofen")
+;;       user=> 
+  ({"amlodipine" 12 "ibuprofen" 50} "ibuprofen")
 ;;       50
 ;;       
+  ({"amlodipine" 12 "ibuprofen" 50} :ibuprofen)
+
+  ({:amlodipine 12 :ibuprofen 50} "ibuprofen")
+
+  ({:amlodipine 12 :ibuprofen 50} "ibuprofen")
 ;;   
-;;   And conversely, keywords can _also_ be used as verbs, which look themselves up in maps:
+  ({:amlodipine 12 :ibuprofen 50} :ibuprofen)
+
+  ;;   *And conversely, keywords can _also_ be used as verbs, which look themselves up in maps:
 ;;   
-;;       user=> (:raccoon {:weasel "queen" :raccoon "king"})
+;;       user=> 
+  (:raccoon {:weasel "queen" :raccoon "king"})
 ;;       "king"
 ;;       
 ;;   
-;;   You can add a value for a given key to a map with `assoc`.
+;;*   You can add a value for a given key to a map with `assoc`.
 ;;   
-;;       user=> (assoc {:bolts 1088} :camshafts 3)
+;;       user=> 
+  (assoc {:bolts 1088} :camshafts 3)
 ;;       {:camshafts 3 :bolts 1088}
-;;       user=> (assoc {:camshafts 3} :camshafts 2)
+;;       user=> 
+  (assoc {:camshafts 3} :camshafts 2)
 ;;       {:camshafts 2}
 ;;       
 ;;   
-;;   Assoc adds keys if they aren’t present, and _replaces_ values if they’re already there. If you associate a value onto `nil`, it creates a new map.
+;;*   Assoc adds keys if they aren’t present, and _replaces_ values if they’re already there. If you associate a value onto `nil`, it creates a new map.
 ;;   
-;;       user=> (assoc nil 5 2)
+;;       user=> 
+  (assoc nil 5 2)
 ;;       {5 2}
 ;;       
+  (assoc nil :5 2)
+  (assoc nil :5 'a)
 ;;   
-;;   You can combine maps together using `merge`, which yields a map containing all the elements of _all_ given maps, preferring the values from later ones.
+;;   *You can combine maps together using `merge`, which yields a map containing all the elements of _all_ given maps, preferring the values from later ones.
 ;;   
-;;       user=> (merge {:a 1 :b 2} {:b 3 :c 4})
+;;       user=> 
+  (merge {:a 1 :b 2} {:b 3 :c 4})
 ;;       {:c 4, :a 1, :b 3}
 ;;       
 ;;   
@@ -982,7 +1018,7 @@
 ;;   var \_gaq = \_gaq || \[\]; \_gaq.push(\['\_setAccount', 'UA-9527251-1'\]); \_gaq.push(\['\_trackPageview'\]); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = ('https:' == document.locationotocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')\[0\]; s.parentNode.insertBefore(ga, s); })();
 ;;   
 ;;  
-     )
+  
 
 (comment
   ;; = re-matches - Example 1 = 
@@ -1006,3 +1042,4 @@
   clojure.core/re-pattern
   :rcf)
 
+)
