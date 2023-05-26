@@ -78,11 +78,9 @@
 ;;   * We can also provide _multiple_ bindings. Since Clojure doesn’t care about spacing, alignment, or newlines, I’ll write this on multiple lines for clarity.
 ;;   
 ;;       user=> 
-  (let 
-   [
-    person   "joseph" 
-    num-cats 186
-    ] 
+  (let
+   [person   "joseph"
+    num-cats 186]
     (str person " has " num-cats " cats!"))
 ;;       "joseph has 186 cats!"
 ;;       
@@ -90,38 +88,42 @@
 ;; *  When multiple bindings are given, they are evaluated in order. Later bindings can use previous bindings.
 ;;   
 ;;       user=> 
-  (let [cats 3 legs (* 4 cats)] 
+  (let [cats 3 legs (* 4 cats)]
     (str legs " legs all together"))
 ;;       "12 legs all together"
 ;;       
 ;; 
-"  
+  "  
 ;; So fundamentally, `let` defines the meaning of symbols within an expression. When Clojure evaluates a `let`, it replaces all occurrences of those symbols in the rest of the `let` expression with their corresponding values, then evaluates the rest of the expression.
- "  
+ "
 ;;   
 ;;*   [Functions](#functions)
 ;;   -----------------------
 ;;   
-;;   We saw in [chapter one](http://aphyr.com/posts/301-clojure-from-the-ground-up-first-principles) that Clojure evaluates lists by _substituting_ some other value in their place:
+;;*   We saw in [chapter one](http://aphyr.com/posts/301-clojure-from-the-ground-up-first-principles) that Clojure evaluates lists by _substituting_ some other value in their place:
 ;;   
-;;       user=> (inc 1)
+;;       user=> 
+  (inc 1)
 ;;       2
 ;;       
 ;;   
-;;   `inc` takes any number, and is replaced by that number plus one. That sounds an awful lot like a let:
+;;  * `inc` takes any number, and is replaced by that number plus one. That sounds an awful lot like a let:
 ;;   
-;;       user=> (let [x 1] (+ x 1))
+;;       user=> 
+  (let [x 1] (+ x 1))
 ;;       2
 ;;       
 ;;   
-;;   If we bound `x` to `5` instead of `1`, this expression would evaluate to `6`. We can think about `inc` like a let expression, but without particular values provided for the symbols.
+;;   *If we bound `x` to `5` instead of `1`, this expression would evaluate to `6`. We can think about `inc` like a let expression, but without particular values provided for the symbols.
 ;;   
-;;       (let [x] (+ x 1))
-;;       
+;; 
+  ;(let [x] (+ x 1))
+;; Syntax error    
 ;;   
-;;   We can’t actually evaluate this program, because there’s no value for `x` yet. It could be 1, or 4, or 1453. We say that `x` is _unbound_, because it has no binding to a particular value. This is the nature of the _function_: an expression with unbound symbols.
+;;*   We can’t actually evaluate this program, because there’s no value for `x` yet. It could be 1, or 4, or 1453. We say that `x` is _unbound_, because it has no binding to a particular value. This is the nature of the _function_: an expression with unbound symbols.
 ;;   
-;;       user=> (fn [x] (+ x 1))
+;;       user=> 
+  (fn [x] (+ x 1))
 ;;       #<user$eval293$fn__294 user$eval293$fn__294@663fc37>
 ;;       
 ;;   
