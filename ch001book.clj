@@ -784,22 +784,31 @@
 ;;       {:c 4, :a 1, :b 3}
 ;;       
 ;;   
-;;   Finally, to remove a value, use `dissoc`.
+;;*   Finally, to remove a value, use `dissoc`.
 ;;   
-;;       user=> (dissoc {:potatoes 5 :mushrooms 2} :mushrooms)
+;;       user=> 
+  (dissoc {:potatoes 5 :mushrooms 2} :mushrooms)
 ;;       {:potatoes 5}
 ;;       
 ;;   
-;;   [Putting it all together](#putting-it-all-together)
+  (get (dissoc {:potatoes 5 :mushrooms 2}, :potatoes) :potatoes)
+  
+  (dissoc {:potatoes 5 :mushrooms 2} :mushrooms)
+
+  (dissoc {:potatoes 5 :mushrooms 2} :mushrooms)
+  )
+
+" [Putting it all together] (#putting-it-all-together)"
+  
 ;;   ---------------------------------------------------
 ;;   
-;;   All these collections and types can be combined freely. As software engineers, we model the world by creating a particular _representation_ of the problem in the program. Having a rich set of values at our disposal allows us to talk about complex problems. We might describe a person:
+;;* All these collections and types can be combined freely. As software engineers, we model the world by creating a particular _representation_ of the problem in the program. Having a rich set of values at our disposal allows us to talk about complex problems. We might describe a person:
 ;;   
-;;       {:name "Amelia Earhart"
-;;        :birth 1897
-;;        :death 1939
-;;        :awards {"US"    #{"Distinguished Flying Cross" "National Women's Hall of Fame"}
-;;                 "World" #{"Altitude record for Autogyro" "First to cross Atlantic twice"}}}
+       {:name "Amelia Earhart"
+        :birth 1897
+        :death 1939
+        :awards {"US"    #{"Distinguished Flying Cross" "National Women's Hall of Fame"}
+                 "World" #{"Altitude record for Autogyro" "First to cross Atlantic twice"}}}
 ;;       
 ;;   
 ;;   Or a recipe:
@@ -823,17 +832,18 @@
 ;;        "Uruguay"     {2008 46.3 2009 46.3 2010 45.3}}
 ;;       
 ;;   
-;;   In Clojure, we _compose_ data structures to form more complex values; to talk about bigger ideas. We use operations like `first`, `nth`, `get`, and `contains?` to extract specific information from these structures, and modify them using `conj`, `disj`, `assoc`, `dissoc`, and so on.
+;;   *In Clojure, we _compose_ data structures to form more complex values; to talk about bigger ideas. We use operations like `first`, `nth`, `get`, and `contains?` to extract specific information from these structures, and modify them using `conj`, `disj`, `assoc`, `dissoc`, and so on.
 ;;   
-;;   We started this chapter with a discussion of _types_: groups of similar objects which obey the same rules. We learned that bigints, longs, ints, shorts, and bytes are all integers, that doubles and floats are approximations to decimal numbers, and that ratios represent fractions exactly. We learned the differences between strings for text, symbols as references, and keywords as short labels. Finally, we learned how to compose, alter, and inspect collections of elements. Armed with the basic nouns of Clojure, we’re ready to write a broad array of programs.
+;;*   We started this chapter with a discussion of _types_: groups of similar objects which obey the same rules. We learned that bigints, longs, ints, shorts, and bytes are all integers, that doubles and floats are approximations to decimal numbers, and that ratios represent fractions exactly. We learned the differences between strings for text, symbols as references, and keywords as short labels. Finally, we learned how to compose, alter, and inspect collections of elements. Armed with the basic nouns of Clojure, we’re ready to write a broad array of programs.
 ;;   
-;;   I’d like to conclude this tour with one last type of value. We’ve inspected dozens of types so far–but what happens when you turn the camera on itself?
+;;*   I’d like to conclude this tour with one last type of value. We’ve inspected dozens of types so far–but what happens when you turn the camera on itself?
 ;;   
-;;       user=> (type type)
+;;       user=>
+(type type)
 ;;       clojure.core$type
 ;;       
 ;;   
-;;   What _is_ this `type` thing, exactly? What _are_ these verbs we’ve been learning, and where do they come from? This is the central question of [chapter three: functions](http://aphyr.com/posts/303-clojure-from-the-ground-up-functions).
+;;  * What _is_ this `type` thing, exactly? What _are_ these verbs we’ve been learning, and where do they come from? This is the central question of [chapter three: functions](http://aphyr.com/posts/303-clojure-from-the-ground-up-functions).
 ;;   
 ;;   ![Kevin Whitefoot](https://www.gravatar.com/avatar/0562351d3bdfca86c83600f5c7401a67?r=pg&s=96&d=identicon "Kevin Whitefoot")
 ;;   
@@ -1020,26 +1030,26 @@
 ;;  
   
 
-(comment
+  (comment
   ;; = re-matches - Example 1 = 
-  
+    
   ;; The distinction is that re-find tries to find _any part_ of the string
   ;; that matches the pattern, but re-matches only matches if the _entire_
   ;; string matches the pattern.
-  (re-matches #"hello" "hello, world")
+    (re-matches #"hello" "hello, world")
  ;; nil
-  
-  (re-matches #"hello.*" "hello, world")
+    
+    (re-matches #"hello.*" "hello, world")
   ;;"hello, world"
-  
-  (re-matches #"hello, (.*)" "hello, world")
+    
+    (re-matches #"hello, (.*)" "hello, world")
   ;;["hello, world" "world"]
-  
+    
   ;; See also:
-  clojure.core/re-find
-  clojure.core/subs
-  clojure.core/re-groups
-  clojure.core/re-pattern
-  :rcf)
+    clojure.core/re-find
+    clojure.core/subs
+    clojure.core/re-groups
+    clojure.core/re-pattern
+    :rcf)
 
-)
+  
