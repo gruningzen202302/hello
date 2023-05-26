@@ -9,38 +9,8 @@
 ; You can make Calva auto-select this.
 ;   - See https://calva.io/connect-sequences/
 ; 
-; Starting Jack-in Terminal: pushd /home/vir/source/repos/hello ; clojure -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.0.0"},cider/cider-nrepl {:mvn/version,"0.28.5"}}}' -M:repl/conjure ; popd
-; Using host:port localhost:33885 ...
-; Hooking up nREPL sessions ...
-; Connected session: clj
-; TIPS:
-;   - You can edit the contents here. Use it as a REPL if you like.
-;   - `alt+enter` evaluates the current top level form.
-;   - `ctrl+enter` evaluates the current form.
-;   - `alt+up` and `alt+down` traverse up and down the REPL command history
-;      when the cursor is after the last contents at the prompt
-;   - Clojure lines in stack traces are peekable and clickable.
-clj꞉user꞉>  ; Use `alt+enter` to evaluate
-; Jack-in done.
-clj꞉user꞉> 
-127
-clj꞉ch001book꞉> 
-2.0
-clj꞉ch001book꞉> 
-3.0
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-; nREPL Connection was closed
-; Jacking in...
-; Connecting using "deps.edn" project type.
-; You can make Calva auto-select this.
-;   - See https://calva.io/connect-sequences/
-; 
 ; Starting Jack-in Terminal: pushd /Users/macbook/source/repos/hello ; java -jar '/Users/macbook/.vscode/extensions/betterthantomorrow.calva-2.0.363/deps.clj.jar' -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.0.0"},cider/cider-nrepl {:mvn/version,"0.28.5"}}}' -M:repl/conjure ; popd
-; Using host:port localhost:50508 ...
+; Using host:port localhost:49418 ...
 ; Hooking up nREPL sessions ...
 ; Connected session: clj
 ; TIPS:
@@ -52,203 +22,17 @@ clj꞉ch001book꞉> 
 ;   - Clojure lines in stack traces are peekable and clickable.
 ; Evaluating code from settings: 'calva.autoEvaluateCode.onConnect.clj'
 nil
-clj꞉user꞉> 
+clj꞉user꞉>  ; Use `alt+enter` to evaluate
 clj꞉user꞉> 
 ; Jack-in done.
 clj꞉user꞉> 
-; Syntax error compiling at (ch001book.clj:333:3).
-; Unable to resolve symbol: rest in this context
-clj꞉ch001book꞉> 
 nil
 clj꞉ch001book꞉> 
-127
-clj꞉ch001book꞉> 
-127
-clj꞉ch001book꞉> 
-java.lang.Double
-clj꞉ch001book꞉> 
-"(1 2 3)"
-clj꞉ch001book꞉> 
-"(1 2 3)"
-clj꞉ch001book꞉> 
-""
-clj꞉ch001book꞉> 
-"meow 3 times"
-clj꞉ch001book꞉> 
-"cat"
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-"cat"
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-("mouse" "treat")
-clj꞉ch001book꞉> 
-("mouse" "treat")
-clj꞉ch001book꞉> 
-#function[clojure.core/re-matches]
-clj꞉ch001book꞉> 
-#function[clojure.core/rest--5453]
-clj꞉ch001book꞉> 
-("mouse" "treat")
-clj꞉ch001book꞉> 
-("mouse" "treat")
-clj꞉ch001book꞉> 
-3
-clj꞉ch001book꞉> 
-["mouse:treat" "mouse" "treat"]
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-"hello, world"
-clj꞉ch001book꞉> 
-["hello, world" "world"]
-clj꞉ch001book꞉> 
-["mouse:treat" "mouse" "treat"]
-clj꞉ch001book꞉> 
-; Execution error (IllegalArgumentException) at nrepl.middleware.interruptible-eval/evaluate$fn$fn (interruptible_eval.clj:87).
-; Malformed member expression, expecting (.member target ...)
-; 
-; Syntax error reading source at (REPL:337:28).
-; Invalid token: :
-clj꞉ch001book꞉> 
-#"(.+):(.+)"
-clj꞉ch001book꞉> 
-#function[clojure.core/re-matches]
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-#function[clojure.core/str]
-clj꞉ch001book꞉> 
-#function[clojure.core/boolean]
-clj꞉ch001book꞉> 
-3
-clj꞉ch001book꞉> 
-3
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-2
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-false
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-clojure.lang.Symbol
-clj꞉ch001book꞉> 
-clojure.lang.Symbol
+"str"
 clj꞉ch001book꞉> 
 true
 clj꞉ch001book꞉> 
 "str"
 clj꞉ch001book꞉> 
-clojure.lang.Keyword
-clj꞉ch001book꞉> 
-":cat"
-clj꞉ch001book꞉> 
-"cat"
-clj꞉ch001book꞉> 
-(1 2 3)
-clj꞉ch001book꞉> 
-clojure.lang.PersistentList
-clj꞉ch001book꞉> 
-(1 2 3)
-clj꞉ch001book꞉> 
-(1 2 3)
-clj꞉ch001book꞉> 
 true
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-; Execution error (ClassCastException) at ch001book/eval7741 (REPL:486).
-; class java.lang.Long cannot be cast to class clojure.lang.IFn (java.lang.Long is in module java.base of loader 'bootstrap'; clojure.lang.IFn is in unnamed module of loader 'app')
-clj꞉ch001book꞉> 
-(1 2 3)
-clj꞉ch001book꞉> 
-(4 1 2 3)
-clj꞉ch001book꞉> 
-(1 2 3)
-clj꞉ch001book꞉> 
-1
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-abc
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-#function[clojure.core/first--5449]
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-true
-clj꞉ch001book꞉> 
-nil
-clj꞉ch001book꞉> 
-1
-clj꞉ch001book꞉> 
-3
-clj꞉ch001book꞉> 
-[1 2 3]
-clj꞉ch001book꞉> 
-clojure.lang.PersistentVector
-clj꞉ch001book꞉> 
-[1 2 3]
-clj꞉ch001book꞉> 
-[1 2 3]
-clj꞉ch001book꞉> 
-[1 2 3]
-clj꞉ch001book꞉> 
-[1 2 3]
-clj꞉ch001book꞉> 
-#function[clojure.lang.PersistentList/Primordial]
-clj꞉ch001book꞉> 
-#function[clojure.core/vec]
-clj꞉ch001book꞉> 
-[1 2 3 4]
-clj꞉ch001book꞉> 
-(2 3)
-clj꞉ch001book꞉> 
-(2 3)
-clj꞉ch001book꞉> 
-()
-clj꞉ch001book꞉> 
-nil
 clj꞉ch001book꞉> 
