@@ -59,3 +59,26 @@ clj꞉ch003book꞉> 
 ; Evaluating file: ch003book.clj
 nil
 clj꞉ch003book꞉> 
+inc
+#function[clojure.core/inc]
+clj꞉ch003book꞉> 
+(let [burrito #(list "beans" % "cheese")]
+    (burrito "carnitas"))
+("beans" "carnitas" "cheese")
+clj꞉ch003book꞉> 
+(let [twice (fn [x] (* 2 x))]
+    (+ (twice 1)
+       (twice 3)))
+8
+clj꞉ch003book꞉> 
+(+ (* 2 1)
+     (* 2 3))
+8
+clj꞉ch003book꞉> 
+(+ (* 2 1)
+     (* 2 3))
+8
+clj꞉ch003book꞉> 
+; Evaluating file: ch003book.clj
+nil
+clj꞉ch003book꞉> 

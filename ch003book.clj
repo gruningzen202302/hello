@@ -127,50 +127,61 @@
 ;;       #<user$eval293$fn__294 user$eval293$fn__294@663fc37>
 ;;       
 ;;   
-;;   Does the name of that function remind you of anything?
+;;*   Does the name of that function remind you of anything?
 ;;   
-;;       user=> inc
+;;       user=> 
+  inc
 ;;       #<core$inc clojure.core$inc@16bc0b3c>
 ;;       
 ;;   
-;;   Almost all verbs in Clojure are functions. Functions represent unrealized computation: expressions which are not yet evaluated, or incomplete. This particular function works just like `inc`: it’s an expression which has a single unbound symbol, `x`. When we _invoke_ the function with a particular value, the expressions in the function are evaluated with `x` bound to that value.
+;; *  Almost all verbs in Clojure are functions. Functions represent unrealized computation: expressions which are not yet evaluated, or incomplete. This particular function works just like `inc`: it’s an expression which has a single unbound symbol, `x`. When we _invoke_ the function with a particular value, the expressions in the function are evaluated with `x` bound to that value.
 ;;   
-;;       user=> (inc 2)
+;;       user=> 
+  (inc 2)
 ;;       3
-;;       user=> ((fn [x] (+ x 1)) 2)
+;;       user=> 
+  ((fn [x] (+ x 1)) 2)
 ;;       3
 ;;       
-;;   
+;;
+  "
 ;;   We say that `x` is this function’s _argument_, or _parameter_. When Clojure evaluates `(inc 2)`, we say that `inc` is _called_ with `2`, or that `2` is _passed_ to `inc`. The result of that _function invocation_ is the function’s _return value_. We say that `(inc 2)` _returns_ `3`.
 ;;   
 ;;   Fundamentally, functions describe the relationship between arguments and return values: given `1`, return `2`. Given `2`, return `3`, and so on. Let bindings describe a similar relationship, but with a specific set of values for those arguments. `let` is evaluated immediately, whereas `fn` is evaluated _later_, when bindings are provided.
 ;;   
 ;;   There’s a shorthand for writing functions, too: `#(+ % 1)` is equivalent to `(fn [x] (+ x 1))`. `%` takes the place of the first argument to the function. You’ll sometime see `%1`, `%2`, etc. used for the first argument, second argument, and so on.
-;;   
-;;       user=> (let [burrito #(list "beans" % "cheese")]
-;;                (burrito "carnitas"))
-;;       ("beans" "carnitas" "cheese")
+;; 
+   "
+;;       user=> 
+  (let [burrito #(list "beans" % "cheese")]
+    (burrito "carnitas"))
+
+;;   ("beans" "carnitas" "cheese")
 ;;       
 ;;   
-;;   Since functions exist to _defer_ evaluation, there’s no sense in creating and invoking them in the same expression as we’ve done here. What we want is to give _names_ to our functions, so they can be recombined in different ways.
+;;*   Since functions exist to _defer_ evaluation, there’s no sense in creating and invoking them in the same expression as we’ve done here. What we want is to give _names_ to our functions, so they can be recombined in different ways.
 ;;   
-;;       user=> (let [twice (fn [x] (* 2 x))]
-;;                (+ (twice 1)
-;;                   (twice 3)))
+;;       user=> 
+  (let [twice (fn [x] (* 2 x))]
+    (+ (twice 1)
+       (twice 3)))
 ;;       8
 ;;       
 ;;   
-;;   Compare that expression to an equivalent, expanded form:
+;;  * Compare that expression to an equivalent, expanded form:
 ;;   
-;;       user=> (+ (* 2 1)
-;;                 (* 2 3))
+;;       user=> 
+  (+ (* 2 1)
+     (* 2 3))
 ;;       
-;;   
-;;   The name `twice` is gone, and in its place is the same sort of computation–`(* 2 something)`–written twice. While we _could_ represent our programs as a single massive expression, it’d be impossible to reason about. Instead, we use functions to compact redundant expressions, by isolating common patterns of computation. Symbols help us re-use those functions (and other values) in more than one place. By giving the symbols meaningful names, we make it easier to reason about the structure of the program as a whole; breaking it up into smaller, understandable parts.
+;; 
+"  
+;;  The name `twice` is gone, and in its place is the same sort of computation–`(* 2 something)`–written twice. While we _could_ represent our programs as a single massive expression, it’d be impossible to reason about. Instead, we use functions to compact redundant expressions, by isolating common patterns of computation. Symbols help us re-use those functions (and other values) in more than one place. By giving the symbols meaningful names, we make it easier to reason about the structure of the program as a whole; breaking it up into smaller, understandable parts.
 ;;   
 ;;   This is core pursuit of software engineering: organizing expressions. Almost every programming language is in search of the right tools to break apart, name, and recombine expressions to solve large problems. In Clojure we’ll see one particular set of tools for composing programs, but the underlying ideas will transfer to many other languages.
-;;   
-;;   [Vars](#vars)
+;;
+ "
+;;***   [Vars](#vars)
 ;;   -------------
 ;;   
 ;;   We’ve used `let` to define a symbol within an expression, but what about the default meanings of `+`, `conj`, and `type`? Are they also `let` bindings? Is the whole universe one giant `let`?
