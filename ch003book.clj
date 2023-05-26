@@ -94,10 +94,12 @@
     (str legs " legs all together"))
 ;;       "12 legs all together"
 ;;       
+;; 
+"  
+;; So fundamentally, `let` defines the meaning of symbols within an expression. When Clojure evaluates a `let`, it replaces all occurrences of those symbols in the rest of the `let` expression with their corresponding values, then evaluates the rest of the expression.
+ "  
 ;;   
-;;   So fundamentally, `let` defines the meaning of symbols within an expression. When Clojure evaluates a `let`, it replaces all occurrences of those symbols in the rest of the `let` expression with their corresponding values, then evaluates the rest of the expression.
-;;   
-;;   [Functions](#functions)
+;;*   [Functions](#functions)
 ;;   -----------------------
 ;;   
 ;;   We saw in [chapter one](http://aphyr.com/posts/301-clojure-from-the-ground-up-first-principles) that Clojure evaluates lists by _substituting_ some other value in their place:
