@@ -150,7 +150,7 @@
   (+ 1 2)
 ;;       3
 ;;       user=> 
-
+  
   (+ 1 2.0)
 ;;       3.0
 ;;       
@@ -161,7 +161,7 @@
   (= 3 3.0)
 ;;       false
 ;;       user=> 
-
+  
   (== 3 3.0)
 ;;       true
 ;;       
@@ -263,7 +263,7 @@
 ;;       user=> 
   (dec 5)
 ;;       4
-
+  
   (< (dec Byte/MAX_VALUE) Byte/MAX_VALUE)
   (> (dec Byte/MAX_VALUE) (- Byte/MAX_VALUE 2))
 ;;       
@@ -315,7 +315,7 @@
 ;;       user=> 
   (re-find #"cat" "mystic cat mouse")
 ;;       "cat"
-
+  
 
   (re-matches #"cat" "mystic cat mouse")
   (re-matches #"cat" "cat")
@@ -484,7 +484,7 @@
   (= '(1 2) (list 1 2))
 ;;   
 ;;  (= (1 2) (list 1 2)) => Excecution error
-
+  
 ;;   You can modify a list by `conj`oining an element onto it:
 ;;   
 ;;       user=> 
@@ -588,38 +588,62 @@
 ;;   
 ;;   And figure out how big the vector is with `count`:
 ;;   
-;;       user=> (count [1 2 3])
+;;       user=> 
+  (count [1 2 3])
+
 ;;       3
 ;;       
 ;;   
 ;;   Because vectors are intended for looking up elements by index, we can also use them directly as _verbs_:
 ;;   
-;;       user=> ([:a :b :c] 1)
+;;       user=> 
+  ([:a :b :c] 1)
 ;;       :b
 ;;       
-;;   
-;;   So we took the vector containing three keywords, and asked “What’s the element at index 1?” Lisp, like most (but not all!) modern languages, counts up from _zero_, not one. Index 0 is the first element, index 1 is the second element, and so on. In this vector, finding the element at index 1 evaluates to `:b`.
+  ([:a :b :c] -1)
+;;Excecution error
+  ;;   
+  "So we took the vector containing three keywords, and asked “What’s the element at index 1?” Lisp, like most (but not all!) modern languages, counts up from _zero_, not one. Index 0 is the first element, index 1 is the second element, and so on. In this vector, finding the element at index 1 evaluates to `:b`."
 ;;   
 ;;   Finally, note that vectors and lists containing the same elements are considered equal in Clojure:
 ;;   
-;;       user=> (= '(1 2 3) [1 2 3])
+;;       user=>
+  (= '(1 2 3) [1 2 3])
 ;;       true
 ;;       
+  (= '(1 2 3) [1 3 2])
 ;;   
-;;   In almost all contexts, you can consider vectors, lists, and other sequences as interchangeable. They only differ in their performance characteristics, and in a few data-structure-specific operations.
+  (= '(1 3 2) [1 2 3])
+
+  "In almost all contexts, you can consider vectors, lists, and other sequences as interchangeable. They only differ in their performance characteristics, and in a few data-structure-specific operations."
 ;;   
 ;;   [Sets](#sets)
 ;;   -------------
 ;;   
-;;   Sometimes you want an unordered collection of values; especially when you plan to ask questions like “does the collection have the number 3 in it?” Clojure, like most languages, calls these collections _sets_.
-;;   
-;;       user=> #{:a :b :c}
+  "   Sometimes you want an unordered collection of values; especially when you plan to ask questions like “does the collection have the number 3 in it?” Clojure, like most languages, calls these collections _sets_.
+";;   
+;;       user=> 
+  #{:a :b :c}
 ;;       #{:a :c :b}
-;;       
-;;   
-;;   Sets are surrounded by `#{...}`. Notice that though we gave the elements `:a`, `:b`, and `:c`, they came out in a different order. In general, the order of sets can shift at any time. If you want a particular order, you can ask for it as a list or vector:
-;;   
-;;       user=> (vec #{:a :b :c})
+  
+
+  #{:c :d :e}
+  (#{:c :d :e} type)
+
+
+   ;;)
+  
+
+
+  "Sets are surrounded by `#{...}`. Notice that though we gave the elements `:a`, `:b`, and `:c`, they came out in a different order. In general, the order of sets can shift at any time. If you want a particular order, you can ask for it as a list or vector:"
+;;       user=> 
+  (
+  print (sort #{:a :b :c})
+   )
+  
+  (vec #{:a :b :c})
+  (:Vec #{:a :b :c})
+  (:clojure.core/Vec #{:a :b :c})
 ;;       [:a :c :b]
 ;;       
 ;;   
@@ -954,7 +978,7 @@
 ;;   var \_gaq = \_gaq || \[\]; \_gaq.push(\['\_setAccount', 'UA-9527251-1'\]); \_gaq.push(\['\_trackPageview'\]); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = ('https:' == document.locationotocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')\[0\]; s.parentNode.insertBefore(ga, s); })();
 ;;   
 ;;  
-
+  
   )
 
 (comment
