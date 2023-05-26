@@ -9,8 +9,8 @@
 ; You can make Calva auto-select this.
 ;   - See https://calva.io/connect-sequences/
 ; 
-; Starting Jack-in Terminal: pushd /Users/macbook/source/repos/hello ; java -jar '/Users/macbook/.vscode/extensions/betterthantomorrow.calva-2.0.363/deps.clj.jar' -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.0.0"},cider/cider-nrepl {:mvn/version,"0.28.5"}}}' -M:repl/conjure ; popd
-; Using host:port localhost:51399 ...
+; Starting Jack-in Terminal: pushd /Users/macbook/source/repos/hello ; java -jar '/Users/macbook/.vscode/extensions/betterthantomorrow.calva-2.0.364/deps.clj.jar' -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.0.0"},cider/cider-nrepl {:mvn/version,"0.28.5"}}}' -M:repl/conjure ; popd
+; Using host:port localhost:52425 ...
 ; Hooking up nREPL sessions ...
 ; Connected session: clj
 ; TIPS:
@@ -21,32 +21,41 @@
 ;      when the cursor is after the last contents at the prompt
 ;   - Clojure lines in stack traces are peekable and clickable.
 ; Evaluating code from settings: 'calva.autoEvaluateCode.onConnect.clj'
+(when-let [requires (resolve 'clojure.main/repl-requires)] (clojure.core/apply clojure.core/require @requires))
 nil
 clj꞉user꞉>  ; Use `alt+enter` to evaluate
 clj꞉user꞉> 
 ; Jack-in done.
 clj꞉user꞉> 
-#{:e :c :d}
-clj꞉ch001book꞉> 
-; Syntax error compiling at (ch001book.clj:631:3).
-; Unable to resolve symbol: type in this context
-clj꞉ch001book꞉> 
-; Execution error (ArityException) at ch001book/eval5605 (REPL:640).
-; Wrong number of args (0) passed to: clojure.lang.PersistentHashSet
-clj꞉ch001book꞉> 
-; Syntax error compiling at (ch001book.clj:640:3).
-; Unable to resolve symbol: first in this context
-clj꞉ch001book꞉> 
-; Syntax error compiling at (ch001book.clj:640:3).
-; Unable to resolve symbol: type in this context
-clj꞉ch001book꞉> 
+(ns ch003book
+  (:require [clojure.repl :refer [source apropos dir pst doc find-doc]]
+            [clojure.string :as string]
+            [clojure.test :refer [is are]]))
 nil
-clj꞉ch001book꞉> 
-; Syntax error compiling at (ch001book.clj:640:3).
-; Unable to resolve symbol: Vec in this context
-clj꞉ch001book꞉> 
+clj꞉ch003book꞉> 
+(inc 1)
+2
+clj꞉ch003book꞉> 
+(let [x 1] (+ x 1))
+2
+clj꞉ch003book꞉> 
+; Evaluating file: ch003book.clj
 nil
-clj꞉ch001book꞉> 
-; Syntax error compiling at (ch001book.clj:640:3).
-; Unable to resolve symbol: print in this context
-clj꞉ch001book꞉> 
+clj꞉ch003book꞉> 
+(let [x] (+ x 1))
+; Syntax error macroexpanding clojure.core/let at (ch003book.clj:121:8).
+; [x] - failed: even-number-of-forms? at: [:bindings] spec: :clojure.core.specs.alpha/bindings
+clj꞉ch003book꞉> 
+(let [x] (+ x 1))
+; Syntax error macroexpanding clojure.core/let at (ch003book.clj:121:2).
+; [x] - failed: even-number-of-forms? at: [:bindings] spec: :clojure.core.specs.alpha/bindings
+clj꞉ch003book꞉> 
+'(let [x] (+ x 1))
+(let [x] (+ x 1))
+clj꞉ch003book꞉> 
+(fn [x] (+ x 1))
+#function[ch003book/eval7635/fn--7636]
+clj꞉ch003book꞉> 
+; Evaluating file: ch003book.clj
+nil
+clj꞉ch003book꞉> 
