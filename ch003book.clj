@@ -68,7 +68,8 @@
 ;;   
 ;;   But that definition doesn’t apply outside the let:
 ;;   
-;;       user=> (+ 2 3)
+;;       user=> 
+  (+ 2 3)
 ;;       5
 ;;       
 ;;   
@@ -86,9 +87,11 @@
 ;;   
 ;;       user=> 
   (let [cats 3 legs (* 4 cats)]
-    (str legs " legs all together"))
+  (str legs " legs all together"))
 ;;       "12 legs all together"
 ;;       
+  (let [cats 3 legs (* 4 cats)]
+  (str "The " cats " cats have " legs " legs all together"))
 ;; 
   "  
 ;; So fundamentally, `let` defines the meaning of symbols within an expression. When Clojure evaluates a `let`, it replaces all occurrences of those symbols in the rest of the `let` expression with their corresponding values, then evaluates the rest of the expression.
@@ -113,8 +116,11 @@
 ;;   
 ;;   *If we bound `x` to `5` instead of `1`, this expression would evaluate to `6`. We can think about `inc` like a let expression, but without particular values provided for the symbols.
 ;;   
-;; 
-  ;(let [x] (+ x 1))
+;;  
+  (let [x 5] (+ x 1))
+;; => 6
+
+  ;;(let [x ] (+ x 1))
 ;; Syntax error    
 ;;   
 ;;*   We can’t actually evaluate this program, because there’s no value for `x` yet. It could be 1, or 4, or 1453. We say that `x` is _unbound_, because it has no binding to a particular value. This is the nature of the _function_: an expression with unbound symbols.
@@ -137,8 +143,8 @@
   (inc 2)
 ;;       3
 ;;       user=> 
-  ((fn [x] (+ x 1)) 2)
-;;       3
+  ((fn [x] (+ x 1)) 99)
+;;       100
 ;;       
 ;;
   "
