@@ -10,7 +10,7 @@
 ;   - See https://calva.io/connect-sequences/
 ; 
 ; Starting Jack-in Terminal: pushd /Users/macbook/source/repos/hello ; java -jar '/Users/macbook/.vscode-insiders/extensions/betterthantomorrow.calva-2.0.364/deps.clj.jar' -Sdeps '{:deps {nrepl/nrepl {:mvn/version,"1.0.0"},cider/cider-nrepl {:mvn/version,"0.28.5"}}}' -M:repl/conjure ; popd
-; Using host:port localhost:50987 ...
+; Using host:port localhost:49289 ...
 ; Hooking up nREPL sessions ...
 ; Connected session: clj
 ; TIPS:
@@ -26,49 +26,12 @@ clj꞉user꞉>  ; Use `alt+enter` to evaluate
 clj꞉user꞉> 
 ; Jack-in done.
 clj꞉user꞉> 
-"joseph has 186 cats!"
+#'ch003book/cats
 clj꞉ch003book꞉> 
-"The 3cats have12 legs all together"
+; Syntax error compiling var at (ch003book.clj:200:3).
+; Unable to resolve var: user/cats in this context
 clj꞉ch003book꞉> 
-"The 3 cats have12 legs all together"
+clojure.lang.Var
 clj꞉ch003book꞉> 
-"The 3 cats have 12 legs all together"
-clj꞉ch003book꞉> 
-2
-clj꞉ch003book꞉> 
-2
-clj꞉ch003book꞉> 
-; Syntax error macroexpanding clojure.core/let at (ch003book.clj:120:3).
-; [x] - failed: even-number-of-forms? at: [:bindings] spec: :clojure.core.specs.alpha/bindings
-clj꞉ch003book꞉> 
-6
-clj꞉ch003book꞉> 
-6
-clj꞉ch003book꞉> 
-#function[ch003book/eval7620/fn--7621]
-clj꞉ch003book꞉> 
-#function[clojure.core/inc]
-clj꞉ch003book꞉> 
-3
-clj꞉ch003book꞉> 
-3
-clj꞉ch003book꞉> 
-; Syntax error compiling at (ch003book.clj:0:0).
-; Can't take value of a macro: #'clojure.core/fn
-clj꞉ch003book꞉> 
-3
-clj꞉ch003book꞉> 
-3
-clj꞉ch003book꞉> 
-3
-clj꞉ch003book꞉> 
-100
-clj꞉ch003book꞉> 
-("beans" "carnitas" "cheese")
-clj꞉ch003book꞉> 
-8
-clj꞉ch003book꞉> 
-8
-clj꞉ch003book꞉> 
-8
+#'ch003book/cats
 clj꞉ch003book꞉> 

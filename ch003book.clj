@@ -87,11 +87,11 @@
 ;;   
 ;;       user=> 
   (let [cats 3 legs (* 4 cats)]
-  (str legs " legs all together"))
+    (str legs " legs all together"))
 ;;       "12 legs all together"
 ;;       
   (let [cats 3 legs (* 4 cats)]
-  (str "The " cats " cats have " legs " legs all together"))
+    (str "The " cats " cats have " legs " legs all together"))
 ;; 
   "  
 ;; So fundamentally, `let` defines the meaning of symbols within an expression. When Clojure evaluates a `let`, it replaces all occurrences of those symbols in the rest of the `let` expression with their corresponding values, then evaluates the rest of the expression.
@@ -178,7 +178,7 @@
      (* 2 3))
 ;;       
 ;; 
-"  
+  "  
 ;;  The name `twice` is gone, and in its place is the same sort of computation–`(* 2 something)`–written twice. While we _could_ represent our programs as a single massive expression, it’d be impossible to reason about. Instead, we use functions to compact redundant expressions, by isolating common patterns of computation. Symbols help us re-use those functions (and other values) in more than one place. By giving the symbols meaningful names, we make it easier to reason about the structure of the program as a whole; breaking it up into smaller, understandable parts.
 ;;   
 ;;   This is core pursuit of software engineering: organizing expressions. Almost every programming language is in search of the right tools to break apart, name, and recombine expressions to solve large problems. In Clojure we’ll see one particular set of tools for composing programs, but the underlying ideas will transfer to many other languages.
@@ -186,18 +186,23 @@
  "
 ;;***   [Vars](#vars)
 ;;   -------------
+;; 
+  " 
+   We’ve used `let` to define a symbol within an expression, but what about the default meanings of `+`, `conj`, and `type`? Are they also `let` bindings? Is the whole universe one giant `let`?
+   
+   Well, not exactly. That’s one way to think about default bindings, but it’s brittle. We’d need to wrap our whole program in a new `let` expression every time we wanted to change the meaning of a symbol. And moreover, once a `let` is defined, there’s no way to change it. If we want to redefine symbols for _everyone_–even code that we didn’t write–we need a new construct: a _mutable_ variable.
+ "
 ;;   
-;;   We’ve used `let` to define a symbol within an expression, but what about the default meanings of `+`, `conj`, and `type`? Are they also `let` bindings? Is the whole universe one giant `let`?
-;;   
-;;   Well, not exactly. That’s one way to think about default bindings, but it’s brittle. We’d need to wrap our whole program in a new `let` expression every time we wanted to change the meaning of a symbol. And moreover, once a `let` is defined, there’s no way to change it. If we want to redefine symbols for _everyone_–even code that we didn’t write–we need a new construct: a _mutable_ variable.
-;;   
-;;       user=> (def cats 5)
+;;       user=> 
+  (def cats 5)
 ;;       #'user/cats
-;;       user=> (type #'user/cats)
+;;       user=> 
+  (type #'ch003book/cats)
 ;;       clojure.lang.Var
-;;       
-;;   
-;;   `def` _defines_ a type of value we haven’t seen before: a var. Vars, like symbols, are references to other values. When evaluated, a symbol pointing to a var is replaced by the var’s corresponding value:
+"
+  `def` _defines_ a type of value we haven’t seen before: a var. Vars, like symbols, are references to other values. When evaluated, a symbol pointing to a var is replaced by the var’s corresponding value:
+ "
+  
 ;;   
 ;;       user=> user/cats
 ;;       5
