@@ -510,18 +510,18 @@
 ;;   
 ;;   Some Lisps are written _entirely_ in terms of a few special forms, but Clojure is much less pure. Many functions bottom out in Java functions and types, or, for CLJS, in terms of Javascript. Any time you see an expression like `(. clojure.lang.Numbers (add x y))`, there’s Java code underneath. Below Java lies the JVM, which might be written in C or C++, depending on which one you use. And underneath C and C++ lie more libraries, the operating system, assembler, microcode, registers, and ultimately, electrons flowing through silicon.
 ;;   
-;;   A well-designed language _isolates_ you from details you don’t need to worry about, like which logic gates or registers to use, and lets you focus on the task at hand. Good languages also need to allow escape hatches for performance or access to dangerous functionality, as we saw with Vars. You can write entire programs entirely in terms of Clojure, but sometimes, for performance or to use tools from other languages, you’ll rely on Java. The Clojure code is easy to explore with `doc` and `source`, but Java can be more opaque–I usually rely on the java source files and online documentation.
+;;*   A well-designed language _isolates_ you from details you don’t need to worry about, like which logic gates or registers to use, and lets you focus on the task at hand. Good languages also need to allow escape hatches for performance or access to dangerous functionality, as we saw with Vars. You can write entire programs entirely in terms of Clojure, but sometimes, for performance or to use tools from other languages, you’ll rely on Java. The Clojure code is easy to explore with `doc` and `source`, but Java can be more opaque–I usually rely on the java source files and online documentation.
 ;;   
-;;   [Review](#review)
+"   [Review](#review)"
 ;;   -----------------
 ;;   
-;;   We’ve seen how `let` associates names with values in a particular expression, and how Vars allow for _mutable_ bindings which apply universally. and whose definitions can change over time. We learned that Clojure verbs are functions, which express the general shape of an expression but with certain values _unbound_. Invoking a function _binds_ those variables to specific values, allowing evaluation of the function to proceed.
+;;*   We’ve seen how `let` associates names with values in a particular expression, and how Vars allow for _mutable_ bindings which apply universally. and whose definitions can change over time. We learned that Clojure verbs are functions, which express the general shape of an expression but with certain values _unbound_. Invoking a function _binds_ those variables to specific values, allowing evaluation of the function to proceed.
 ;;   
-;;   Functions _decompose_ programs into simpler pieces, expressed in terms of one another. Short, meaningful names help us understand what those functions (and other values) mean.
+;; *  Functions _decompose_ programs into simpler pieces, expressed in terms of one another. Short, meaningful names help us understand what those functions (and other values) mean.
 ;;   
-;;   Finally, we learned how to introspect Clojure functions with `doc` and `source`, and saw the definition of some basic Clojure functions. The [Clojure cheatsheet](http://clojure.org/cheatsheet) gives a comprehensive list of the core functions in the language, and is a great starting point when you have to solve a problem but don’t know what functions to use.
+;;  * Finally, we learned how to introspect Clojure functions with `doc` and `source`, and saw the definition of some basic Clojure functions. The [Clojure cheatsheet](http://clojure.org/cheatsheet) gives a comprehensive list of the core functions in the language, and is a great starting point when you have to solve a problem but don’t know what functions to use.
 ;;   
-;;   We’ll see a broad swath of those functions in [Chapter 4: Sequences](http://aphyr.com/posts/304-clojure-from-the-ground-up-sequences).
+;;  * We’ll see a broad swath of those functions in [Chapter 4: Sequences](http://aphyr.com/posts/304-clojure-from-the-ground-up-sequences).
 ;;   
 ;;   _My thanks to Zach Tellman, Kelly Sommers, and Michael R Bernstein for reviewing drafts of this chapter._
 ;;   
