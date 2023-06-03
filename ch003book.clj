@@ -119,7 +119,7 @@
 ;;  
   (let [x 5] (+ x 1))
 ;; => 6
-
+  
   ;;(let [x ] (+ x 1))
 ;; Syntax error    
 ;;   
@@ -156,12 +156,15 @@
 ;; 
    "
 ;;       user=> 
-  (let [burrito #(list "beans" % "cheese")]
+  (let [burrito #(list "beans" % "cheese")] 
     (burrito "carnitas"))
 
 ;;   ("beans" "carnitas" "cheese")
 ;;       
 ;;   
+  (let [listJoined #(list "first" % "last")]
+    (listJoined "middle"))
+  
 ;;*   Since functions exist to _defer_ evaluation, there’s no sense in creating and invoking them in the same expression as we’ve done here. What we want is to give _names_ to our functions, so they can be recombined in different ways.
 ;;   
 ;;       user=> 
@@ -198,149 +201,211 @@
 ;;       #'user/cats
 ;;       user=> 
   (type #'ch003book/cats)
+
 ;;       clojure.lang.Var
-"
+  "
   `def` _defines_ a type of value we haven’t seen before: a var. Vars, like symbols, are references to other values. When evaluated, a symbol pointing to a var is replaced by the var’s corresponding value:
  "
   
 ;;   
-;;       user=> user/cats
+;;       user=> 
+  ch003book/cats
 ;;       5
 ;;       
 ;;   
-;;   `def` also _binds_ the symbol `cats` (and its globally qualified equivalent `user/cats`) to that var.
+;;*   `def` also _binds_ the symbol `cats` (and its globally qualified equivalent `user/cats`) to that var.
 ;;   
-;;       user=> user/cats
+;;       user=>
+  ch003book/cats
 ;;       5
-;;       user=> cats
+;;       user=> 
+  cats
 ;;       5
 ;;       
 ;;   
-;;   When we said in chapter one that `inc`, `list`, and friends were symbols that pointed to functions, that wasn’t the whole story. The symbol `inc` points to the var `#'inc`, which in turn points to the function `#<core$inc clojure.core$inc@16bc0b3c>`. We can see the intermediate var with `resolve`:
+;;*When we said in chapter one that `inc`, `list`, and friends were symbols that pointed to functions, that wasn’t the whole story. The symbol `inc` points to the var `#'inc`, which in turn points to the function `#<core$inc clojure.core$inc@16bc0b3c>`. We can see the intermediate var with `resolve`:
 ;;   
-;;       user=> 'inc
+;;       user=> 
+  'inc
 ;;       inc ; the symbol
-;;       user=> (resolve 'inc)
+;;       user=> 
+  (resolve 'inc)
 ;;       #'clojure.core/inc ; the var
-;;       user=> (eval 'inc)
+;;       user=> 
+  (eval 'inc)
 ;;       #<core$inc clojure.core$inc@16bc0b3c> ; the value
 ;;       
 ;;   
-;;   Why two layers of indirection? Because unlike the symbol, we can _change_ the meaning of a Var for everyone, globally, at any time.
+;;  *Why two layers of indirection? Because unlike the symbol, we can _change_ the meaning of a Var for everyone, globally, at any time.
 ;;   
-;;       user=> (def astronauts [])
+;;       user=> 
+  (def astronauts [])
+  astronauts
 ;;       #'user/astronauts
-;;       user=> (count astronauts)
+;;       user=> 
+  (count astronauts)
+
 ;;       0
-;;       user=> (def astronauts ["Sally Ride" "Guy Bluford"])
+;;       user=> 
+  (def astronauts ["Sally Ride" "Guy Bluford"])
+  astronauts
 ;;       #'user/astronauts
-;;       user=> (count astronauts)
+;;       user=> 
+  (count astronauts)
 ;;       2
 ;;       
+;;(def astronauts 5)
+  astronauts
+  (count astronauts)
 ;;   
-;;   Notice that `astronauts` had _two_ distinct meanings, depending on _when_ we evaluated it. After the first `def`, astronauts was an empty vector. After the second `def`, it had one entry.
+;;   *Notice that `astronauts` had _two_ distinct meanings, depending on _when_ we evaluated it. After the first `def`, astronauts was an empty vector. After the second `def`, it had two entries.
 ;;   
-;;   If this seems dangerous, you’re a smart cookie. Redefining names in this way changes the meaning of expressions _everywhere_ in a program, without warning. Expressions which relied on the value of a Var could suddenly take on new, possibly incorrect, meanings. It’s a powerful tool for experimenting at the REPL, and for updating a running program, but it can have unexpected consequences. Good Clojurists use `def` to set up a program initially, and only change those definitions with careful thought.
+;;  * If this seems dangerous, you’re a smart cookie. Redefining names in this way changes the meaning of expressions _everywhere_ in a program, without warning. Expressions which relied on the value of a Var could suddenly take on new, possibly incorrect, meanings. It’s a powerful tool for experimenting at the REPL, and for updating a running program, but it can have unexpected consequences. Good Clojurists use `def` to set up a program initially, and only change those definitions with careful thought.
 ;;   
-;;   Totally redefining a Var isn’t the only option. There are safer, controlled ways to change the meaning of a Var within a particular part of a program, which we’ll explore later.
+;;   *Totally redefining a Var isn’t the only option. There are safer, controlled ways to change the meaning of a Var within a particular part of a program, which we’ll explore later.
 ;;   
-;;   [Defining functions](#defining-functions)
+  "   [Defining functions](#defining-functions)"
 ;;   -----------------------------------------
 ;;   
-;;   Armed with _def_, we’re ready to create our own named functions in Clojure.
+;;*   Armed with _def_, we’re ready to create our own named functions in Clojure.
 ;;   
-;;       user=> (def half (fn [number] (/ number 2)))
+;;       user=> 
+  (def half (fn [number] (/ number 2)))
 ;;       #'user/half
-;;       user=> (half 6)
+;;       user=>
+  (half 6)
 ;;       3
 ;;       
 ;;   
-;;   Creating a function and binding it to a var is so common that it has its own form: `defn`, short for `def` `fn`.
+;;  * Creating a function and binding it to a var is so common that it has its own form: `defn`, short for `def` `fn`.
 ;;   
-;;       user=> (defn half [number] (/ number 2))
+;;       user=> 
+  (defn theHalf [number] (/ number 2))
 ;;       #'user/half
-;;       
+;;       user=> 
+  (theHalf 6)      
 ;;   
-;;   Functions don’t have to take an argument. We’ve seen functions which take zero arguments, like `(+)`.
+;;*   Functions don’t have to take an argument. We’ve seen functions which take zero arguments, like `(+)`.
 ;;   
-;;       user=> (defn half [] 1/2)
+;;       user=> 
+  (defn oneHalf [] 1/2)
 ;;       #'user/half
-;;       user=> (half)
+;;       user=> 
+  (oneHalf)
 ;;       1/2
 ;;       
 ;;   
-;;   But if we try to use our earlier form with one argument, Clojure complains that the _arity_–the number of arguments to the function–is incorrect.
+;;  * But if we try to use our earlier form with one argument, Clojure complains that the _arity_–the number of arguments to the function–is incorrect.
 ;;   
-;;       user=> (half 10)
+;;       user=> 
+  ;;(oneHalf 10)
 ;;       
 ;;       ArityException Wrong number of args (1) passed to: user$half  clojure.lang.AFn.throwArity (AFn.java:437)
 ;;       
 ;;   
-;;   To handle _multiple_ arities, functions have an alternate form. Instead of an argument vector and a body, one provides a series of lists, each of which starts with an argument vector, followed by the body.
+;;  * To handle _multiple_ arities, functions have an alternate form. Instead of an argument vector and a body, one provides a series of lists, each of which starts with an argument vector, followed by the body.
 ;;   
-;;       user=> (defn half
-;;                ([]  1/2)
-;;                ([x] (/ x 2)))
-;;       user=> (half)
+;;       user=> 
+  (defn half 
+    ([]  1/2) 
+    ([x] (/ x 2)))
+;;       user=> 
+  (half)
 ;;       1/2
-;;       user=> (half 10)
+;;       user=> 
+  (half 10)
 ;;       5
 ;;       
+  (defn half 
+    ([]  "half of nothing") 
+    ([x] (/ x 2)))
+;;       user=> 
+  (half)
+;;       1/2
+;;       user=> 
+  (half 10)
 ;;   
-;;   Multiple arguments work just like you expect. Just specify an argument vector of two, or three, or however many arguments the function takes.
+;;*   Multiple arguments work just like you expect. Just specify an argument vector of two, or three, or however many arguments the function takes.
 ;;   
-;;       user=> (defn add
-;;                [x y]
-;;                (+ x y))
+;;       user=> 
+  (defn add [x y] (+ x y))
 ;;       #'user/add
-;;       user=> (add 1 2)
+;;       user=>
+  (add 1 2)
 ;;       3
 ;;       
 ;;   
-;;   Some functions can take _any_ number of arguments. For that, Clojure provides `&`, which slurps up all remaining arguments as a list:
+;;   *Some functions can take _any_ number of arguments. For that, Clojure provides `&`, which slurps up all remaining arguments as a list:
 ;;   
-;;       user=> (defn vargs
-;;                [x y & more-args]
-;;                {:x    x
-;;                 :y    y
-;;                 :more more-args})
+;;       user=> 
+  (defn vargs [x y & more-args]
+    {:x x :y y :more more-args})
 ;;       #'user/vargs
-;;       user=> (vargs 1)
+;;       user=> 
+  ;;(vargs 1)
 ;;       
 ;;       ArityException Wrong number of args (1) passed to: user$vargs  clojure.lang.AFn.throwArity (AFn.java:437)
-;;       user=> (vargs 1 2)
+;;       user=> 
+  (vargs 1 2)
 ;;       {:x 1, :y 2, :more nil}
-;;       user=> (vargs 1 2 3 4 5)
+;;       user=> 
+  (vargs 1 2 3 4 5)
 ;;       {:x 1, :y 2, :more (3 4 5)}
 ;;       
 ;;   
-;;   Note that `x` and `y` are mandatory, though there don’t have to be any remaining arguments.
+  (vargs 1 2 3 4 4 4)
+;;       {:x 1, :y 2, :more (3 4 5)}
+;;*   Note that `x` and `y` are mandatory, though there don’t have to be any remaining arguments.
 ;;   
-;;   To keep track of what arguments a function takes, why the function exists, and what it does, we usually include a _docstring_. Docstrings help fill in the missing context around functions, to explain their assumptions, context, and purpose to the world.
+;;*   To keep track of what arguments a function takes, why the function exists, and what it does, we usually include a _docstring_. Docstrings help fill in the missing context around functions, to explain their assumptions, context, and purpose to the world.
 ;;   
-;;       (defn launch
-;;         "Launches a spacecraft into the given orbit by initiating a
-;;          controlled on-axis burn. Does not automatically stage, but
-;;          does vector thrust, if the craft supports it."
-;;         [craft target-orbit]
-;;         "OK, we don't know how to control spacecraft yet.")
+  (defn launch
+    "Launches a spacecraft into the given orbit by initiating a
+          controlled on-axis burn. Does not automatically stage, but
+          does vector thrust, if the craft supports it."
+    [craft target-orbit]
+    "OK, we don't know how to control spacecraft yet.")
 ;;       
 ;;   
 ;;   Docstrings are used to automatically generate documentation for Clojure programs, but you can also access them from the REPL.
 ;;   
-;;       user=> (doc launch)
-;;       -------------------------
+;;       user=>  
+  ;;(doc launch)
+  
 ;;       user/launch
 ;;       ([craft target-orbit])
 ;;          Launches a spacecraft into the given orbit by initiating a
 ;;          controlled on-axis burn. Does not automatically stage, but
 ;;          does vector thrust, if the craft supports it.
 ;;       nil
+  launch
+
+  (launch "cr001" :orbit)
+
+
+  (defn launch
+    " ### Launcher 
+1. does vector thrust, 
+2. if the craft supports it.
+```clojure
+    (launch a b)
+```
+        "
+    [craft target-orbit]
+    "OK, we don't know how to control spacecraft yet.")
+
+  (defn launchDocs "# Launcher \n1. does vector thrust, \n2. it works when the craft supports it.\n### Usage:\n```clojure\n    (launch a b)\n```\n"
+    [craft target]
+    "OK, we don't know how to control spacecraft yet.")
+
+(launchDocs "cr001" :orbit)
+(meta #'launchDocs)
+;;       -------------------------
 ;;       
 ;;   
-;;   `doc` tells us the full name of the function, the arguments it accepts, and its docstring. This information comes from the `#'launch` var’s _metadata_, and is saved there by `defn`. We can inspect metadata directly with the `meta` function:
+;; *  `doc` tells us the full name of the function, the arguments it accepts, and its docstring. This information comes from the `#'launch` var’s _metadata_, and is saved there by `defn`. We can inspect metadata directly with the `meta` function:
 ;;   
-;;       (meta #'launch)
+  (meta #'launch)
 ;;       {:arglists ([craft target-orbit]), :ns #<Namespace user>, :name launch, :column 1, :doc "Launches a spacecraft into the given orbit.", :line 1, :file "NO_SOURCE_PATH"}
 ;;       
 ;;   
@@ -641,5 +706,5 @@
 ;;   
 ;;   var \_gaq = \_gaq || \[\]; \_gaq.push(\['\_setAccount', 'UA-9527251-1'\]); \_gaq.push(\['\_trackPageview'\]); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')\[0\]; s.parentNode.insertBefore(ga, s); })();
 ;;     
-
+  
   )

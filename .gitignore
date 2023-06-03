@@ -77,3 +77,4 @@ pom.xml.asc
 .calva/output-window/output.calva-repl
 .clj-kondo/.cache/v1/clj/ch003book.transit.json
 .calva/output-window/output.calva-repl
+.calva/
