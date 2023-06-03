@@ -119,7 +119,7 @@
 ;;  
   (let [x 5] (+ x 1))
 ;; => 6
-  
+
   ;;(let [x ] (+ x 1))
 ;; Syntax error    
 ;;   
@@ -156,7 +156,7 @@
 ;; 
    "
 ;;       user=> 
-  (let [burrito #(list "beans" % "cheese")] 
+  (let [burrito #(list "beans" % "cheese")]
     (burrito "carnitas"))
 
 ;;   ("beans" "carnitas" "cheese")
@@ -164,7 +164,7 @@
 ;;   
   (let [listJoined #(list "first" % "last")]
     (listJoined "middle"))
-  
+
 ;;*   Since functions exist to _defer_ evaluation, there’s no sense in creating and invoking them in the same expression as we’ve done here. What we want is to give _names_ to our functions, so they can be recombined in different ways.
 ;;   
 ;;       user=> 
@@ -206,7 +206,7 @@
   "
   `def` _defines_ a type of value we haven’t seen before: a var. Vars, like symbols, are references to other values. When evaluated, a symbol pointing to a var is replaced by the var’s corresponding value:
  "
-  
+
 ;;   
 ;;       user=> 
   ch003book/cats
@@ -283,7 +283,7 @@
   (defn theHalf [number] (/ number 2))
 ;;       #'user/half
 ;;       user=> 
-  (theHalf 6)      
+  (theHalf 6)
 ;;   
 ;;*   Functions don’t have to take an argument. We’ve seen functions which take zero arguments, like `(+)`.
 ;;   
@@ -306,8 +306,8 @@
 ;;  * To handle _multiple_ arities, functions have an alternate form. Instead of an argument vector and a body, one provides a series of lists, each of which starts with an argument vector, followed by the body.
 ;;   
 ;;       user=> 
-  (defn half 
-    ([]  1/2) 
+  (defn half
+    ([]  1/2)
     ([x] (/ x 2)))
 ;;       user=> 
   (half)
@@ -316,8 +316,8 @@
   (half 10)
 ;;       5
 ;;       
-  (defn half 
-    ([]  "half of nothing") 
+  (defn half
+    ([]  "half of nothing")
     ([x] (/ x 2)))
 ;;       user=> 
   (half)
@@ -371,7 +371,7 @@
 ;;   
 ;;       user=>  
   ;;(doc launch)
-  
+
 ;;       user/launch
 ;;       ([craft target-orbit])
 ;;          Launches a spacecraft into the given orbit by initiating a
@@ -398,8 +398,8 @@
     [craft target]
     "OK, we don't know how to control spacecraft yet.")
 
-(launchDocs "cr001" :orbit)
-(meta #'launchDocs)
+  (launchDocs "cr001" :orbit)
+  (meta #'launchDocs)
 ;;       -------------------------
 ;;       
 ;;   
@@ -409,14 +409,15 @@
 ;;       {:arglists ([craft target-orbit]), :ns #<Namespace user>, :name launch, :column 1, :doc "Launches a spacecraft into the given orbit.", :line 1, :file "NO_SOURCE_PATH"}
 ;;       
 ;;   
-;;   There’s some other juicy information in there, like the file the function was defined in and which line and column it started at, but that’s not particularly useful since we’re in the REPL, not a file. However, this _does_ hint at a way to answer our motivating question: how does the `type` function work?
+;;*   There’s some other juicy information in there, like the file the function was defined in and which line and column it started at, but that’s not particularly useful since we’re in the REPL, not a file. However, this _does_ hint at a way to answer our motivating question: how does the `type` function work?
 ;;   
-;;   [How does type work?](#how-does-type-work)
+  "[How does type work?](#how-does-type-work)"
 ;;   ------------------------------------------
 ;;   
 ;;   We know that `type` returns the type of an object:
 ;;   
-;;       user=> (type 2)
+;;       user=> 
+  (type 2)
 ;;       java.lang.long
 ;;       
 ;;   
@@ -424,25 +425,36 @@
 ;;   
 ;;       user=> type
 ;;       #<core$type clojure.core$type@39bda9b9>
-;;       user=> (type type)
+;;       user=> 
+  (type type)
 ;;       clojure.core$type
 ;;       
 ;;   
-;;   This tells us that `type` is a particular _instance_, at memory address `39bda9b9`, of the type `clojure.core$type`. `clojure.core` is a namespace which defines the fundamentals of the Clojure language, and `$type` tells us that it’s named `type` in that namespace. None of this is particularly helpful, though. Maybe we can find out more about the `clojure.core$type` by asking what its _supertypes_ are:
+;;  * This tells us that `type` is a particular _instance_, at memory address `39bda9b9`, of the type `clojure.core$type`. `clojure.core` is a namespace which defines the fundamentals of the Clojure language, and `$type` tells us that it’s named `type` in that namespace. None of this is particularly helpful, though. Maybe we can find out more about the `clojure.core$type` by asking what its _supertypes_ are:
 ;;   
-;;       user=> (supers (type type))
+  (type +)
+
+  (supers (type +))
+;;       user/launch
+  (supers (type launchDocs))
+  
+  (type launchDocs)
+  (supers (type type))
+
 ;;       #{clojure.lang.AFunction clojure.lang.IMeta java.util.concurrent.Callable clojure.lang.Fn clojure.lang.AFn java.util.Comparator java.lang.Object clojure.lang.RestFn clojure.lang.IObj java.lang.Runnable java.io.Serializable clojure.lang.IFn}
 ;;       
 ;;   
-;;   This is a set of all the types that include `type`. We say that `type` is an _instance_ of `clojure.lang.AFunction`, or that it _implements_ or _extends_ `java.util.concurrent.Callable`, and so on. Since it’s a member of `clojure.lang.IMeta` it has metadata, and since it’s a member of clojure.lang.AFn, it’s a function. Just to double check, let’s confirm that `type` is indeed a function:
+;;*   This is a set of all the types that include `type`. We say that `type` is an _instance_ of `clojure.lang.AFunction`, or that it _implements_ or _extends_ `java.util.concurrent.Callable`, and so on. Since it’s a member of `clojure.lang.IMeta` it has metadata, and since it’s a member of clojure.lang.AFn, it’s a function. Just to double check, let’s confirm that `type` is indeed a function:
 ;;   
-;;       user=> (fn? type)
+;;       user=> 
+  (fn? type)
 ;;       true
 ;;       
 ;;   
 ;;   What about its documentation?
 ;;   
-;;       user=> (doc type)
+;;       user=> 
+  ;;(doc type)
 ;;       -------------------------
 ;;       clojure.core/type
 ;;       ([x])
@@ -450,7 +462,7 @@
 ;;       nil
 ;;       
 ;;   
-;;   Ah, that’s helpful. `type` can take a single argument, which it calls `x`. If it has `:type` metadata, that’s what it returns. Otherwise, it returns the class of `x`. Let’s take a deeper look at `type`’s metadata for more clues.
+;;*   Ah, that’s helpful. `type` can take a single argument, which it calls `x`. If it has `:type` metadata, that’s what it returns. Otherwise, it returns the class of `x`. Let’s take a deeper look at `type`’s metadata for more clues.
 ;;   
 ;;       user=> (meta #'type)
 ;;       {:ns #<Namespace clojure.core>, :name type, :arglists ([x]), :column 1, :added "1.0", :static true, :doc "Returns the :type metadata of x, or its Class if none", :line 3109, :file "clojure/core.clj"}
@@ -458,7 +470,8 @@
 ;;   
 ;;   Look at that! This function was first added to Clojure in version 1.0, and is defined in the file `clojure/core.clj`, on line 3109. We could go dig up the Clojure source code and read its definition there–or we could ask Clojure to do it for us:
 ;;   
-;;       user=> (source type)
+;;       user=> i 
+  ;;(source type)
 ;;       (defn type 
 ;;         "Returns the :type metadata of x, or its Class if none"
 ;;         {:added "1.0"
@@ -706,5 +719,5 @@
 ;;   
 ;;   var \_gaq = \_gaq || \[\]; \_gaq.push(\['\_setAccount', 'UA-9527251-1'\]); \_gaq.push(\['\_trackPageview'\]); (function() { var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true; ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'; var s = document.getElementsByTagName('script')\[0\]; s.parentNode.insertBefore(ga, s); })();
 ;;     
-  
+
   )
