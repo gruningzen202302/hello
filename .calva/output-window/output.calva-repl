@@ -277,3 +277,12 @@ clj꞉ch003book꞉> 
  :name launchDocs,
  :ns #namespace[ch003book]}
 clj꞉ch003book꞉> 
+{:arglists ([craft target]),
+ :doc
+ "# Launcher \n1. does vector thrust, \n2. it works when the craft supports it.\n### Usage:\n```clojure\n    (launch a b)\n```\n",
+ :line 397,
+ :column 1,
+ :file "/Users/macbook/source/repos/hello/ch003book.clj",
+ :name launchDocs,
+ :ns #namespace[ch003book]}
+clj꞉ch003book꞉> 
