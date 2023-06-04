@@ -379,167 +379,199 @@ numbers
 ;;*   [Transforming sequences](#transforming-sequences)
 ;;   -------------------------------------------------
 ;;   
-;;   Given a sequence, we often want to find a _related_ sequence. `map`, for instance, applies a function to each element–but has a few more tricks up its sleeve.
-;;   
-;;       user=> (map (fn [n vehicle] (str "I've got " n " " vehicle "s"))
-;;                [0 200 9]
-;;                ["car" "train" "kiteboard"])
+";;   Given a sequence, we often want to find a _related_ sequence. `map`, for instance, applies a function to each element–but has a few more tricks up its sleeve.
+";;   
+;;       user=> 
+(map (fn [n vehicle] (str "I've got " n " " vehicle "s"))
+                [0 200 9]
+                ["car" "train" "kiteboard"])
 ;;       ("I've got 0 cars" "I've got 200 trains" "I've got 9 kiteboards")
 ;;       
 ;;   
-;;   If given multiple sequences, `map` calls its function with one element from each sequence in turn. So the first value will be `(f 0 "car")`, the second `(f 200 "train")`, and so on. Like a zipper, map folds together corresponding elements from multiple collections. To sum three vectors, column-wise:
-;;   
-;;       user=> (map + [1 2 3]
-;;                     [4 5 6]
-;;                     [7 8 9])
-;;       (12 15 18)
+";;   If given multiple sequences, `map` calls its function with one element from each sequence in turn. So the first value will be `(f 0 'car')`, the second `(f 200 'train')`, and so on. Like a zipper, map folds together corresponding elements from multiple collections. To sum three vectors, column-wise:
+";;   
+;;       user=> 
+(map + 
+     [1 2 3] 
+     [4 5 6] 
+     [7 8 9])
+;;  (12 15 18)
 ;;       
 ;;   
-;;   If one sequence is bigger than another, map stops at the end of the smaller one. We can exploit this to combine finite and infinite sequences. For example, to number the elements in a vector:
-;;   
-;;       user=> (map (fn [index element] (str index ". " element))
-;;                   (iterate inc 0)
-;;                   ["erlang" "ruby" "haskell"])
+";;   If one sequence is bigger than another, map stops at the end of the smaller one. We can exploit this to combine finite and infinite sequences. For example, to number the elements in a vector:
+";;   
+;;       user=> 
+(map (fn [index element] (str index ". " element)) 
+     (iterate inc 0)
+     ["erlang" "ruby" "haskell"])
 ;;       ("0. erlang" "1. ruby" "2. haskell")
 ;;       
 ;;   
-;;   Transforming elements together with their indices is so common that Clojure has a special function for it: `map-indexed`:
-;;   
-;;       user=> (map-indexed (fn [index element] (str index ". " element))
-;;                           ["erlang" "ruby" "haskell"])
+";;   Transforming elements together with their indices is so common that Clojure has a special function for it: `map-indexed`:
+";;   
+;;       user=> 
+(map-indexed (fn [index element] 
+               (str index ". " element)) 
+             ["erlang" "ruby" "haskell"])
 ;;       ("0. erlang" "1. ruby" "2. haskell")
 ;;       
 ;;   
-;;   You can also tack one sequence onto the end of another, like so:
-;;   
-;;       user=> (concat [1 2 3] [:a :b :c] [4 5 6])
+";;   You can also tack one sequence onto the end of another, like so:
+";;   
+;;       user=> 
+(concat [1 2 3] [:a :b :c] [4 5 6])
 ;;       (1 2 3 :a :b :c 4 5 6)
 ;;       
 ;;   
-;;   Another way to combine two sequences is to riffle them together, using `interleave`.
-;;   
-;;       user=> (interleave [:a :b :c] [1 2 3])
+";;   Another way to combine two sequences is to riffle them together, using `interleave`.
+";;   
+;;       user=> 
+(interleave [:a :b :c] [1 2 3])
 ;;       (:a 1 :b 2 :c 3)
 ;;       
+"
+;;   And if you want to insert a specific element between each successive pair in a sequence, try `interpose`:"
 ;;   
-;;   And if you want to insert a specific element between each successive pair in a sequence, try `interpose`:
-;;   
-;;       user=> (interpose :and [1 2 3 4])
+;;       user=> 
+(interpose :and [1 2 3 4])
 ;;       (1 :and 2 :and 3 :and 4)
 ;;       
 ;;   
-;;   To reverse a sequence, use `reverse`.
-;;   
-;;       user=> (reverse [1 2 3])
+";;   To reverse a sequence, use `reverse`.
+";;   
+;;       user=> 
+(reverse [1 2 3])
 ;;       (3 2 1)
-;;       user=> (reverse "woolf")
+;;       user=> 
+(reverse "woolf")
 ;;       (\f \l \o \o \w)
 ;;       
 ;;   
-;;   Strings are sequences too! Each element of a string is a _character_, written `\f`. You can rejoin those characters into a string with `apply str`:
-;;   
-;;       user=> (apply str (reverse "woolf"))
+";;   Strings are sequences too! Each element of a string is a _character_, written `\f`. You can rejoin those characters into a string with `apply str`:
+";;   
+;;       user=> 
+(apply str (reverse "woolf"))
 ;;       "floow"
 ;;       
-;;   
+ "  
 ;;   …and break strings up into sequences of chars with `seq`.
-;;   
-;;       user=> (seq "sato")
+;; "  
+;;       user=> 
+(seq "sato")
 ;;       (\s \a \t \o)
 ;;       
 ;;   
-;;   To randomize the order of a sequence, use `shuffle`.
-;;   
-;;       user=> (shuffle [1 2 3 4])
+";;   To randomize the order of a sequence, use `shuffle`.
+";;   
+;;       user=> 
+(shuffle [1 2 3 4])
 ;;       [3 1 2 4]
-;;       user=> (apply str (shuffle (seq "abracadabra")))
+;;       user=> 
+(apply str (shuffle (seq "abracadabra")))
 ;;       "acaadabrrab"
 ;;       
 ;;   
-;;   [Subsequences](#subsequences)
+;;*   [Subsequences](#subsequences)
 ;;   -----------------------------
 ;;   
-;;   We’ve already seen `take`, which selects the first n elements. There’s also `drop`, which removes the first n elements.
-;;   
-;;       user=> (range 10)
+";;   We’ve already seen `take`, which selects the first n elements. There’s also `drop`, which removes the first n elements.
+";;   
+;;       user=> 
+(range 10)
 ;;       (0 1 2 3 4 5 6 7 8 9)
-;;       user=> (take 3 (range 10))
+;;       user=> 
+(take 3 (range 10))
 ;;       (0 1 2)
-;;       user=> (drop 3 (range 10))
+;;       user=> 
+(drop 3 (range 10))
 ;;       (3 4 5 6 7 8 9)
 ;;       
 ;;   
-;;   And for slicing apart the other end of the sequence, we have `take-last` and `drop-last`:
-;;   
-;;       user=> (take-last 3 (range 10))
+";;   And for slicing apart the other end of the sequence, we have `take-last` and `drop-last`:
+";;   
+;;       user=> 
+(take-last 3 (range 10))
 ;;       (7 8 9)
-;;       user=> (drop-last 3 (range 10))
+;;       user=> 
+(drop-last 3 (range 10))
 ;;       (0 1 2 3 4 5 6)
 ;;       
 ;;   
-;;   `take-while` and `drop-while` work just like `take` and `drop`, but use a function to decide when to cut.
-;;   
-;;       user=> (take-while pos? [3 2 1 0 -1 -2 10])
+";;   `take-while` and `drop-while` work just like `take` and `drop`, but use a function to decide when to cut.
+";;   
+;;       user=> 
+(take-while pos? [3 2 1 0 -1 -2 10])
 ;;       (3 2 1)
 ;;       
 ;;   
-;;   In general, one can cut a sequence in twain by using `split-at`, and giving it a particular index. There’s also `split-with`, which uses a function to decide when to cut.
-;;   
-;;       (split-at 4 (range 10))
+";;   In general, one can cut a sequence in twain by using `split-at`, and giving it a particular index. There’s also `split-with`, which uses a function to decide when to cut.
+";;   
+;;       
+(split-at 4 (range 10))
 ;;       [(0 1 2 3) (4 5 6 7 8 9)]
-;;       user=> (split-with number? [1 2 3 :mark 4 5 6 :mark 7])
+;;       user=> 
+(split-with number? [1 2 3 :mark 4 5 6 :mark 7])
 ;;       [(1 2 3) (:mark 4 5 6 :mark 7)]
 ;;       
 ;;   
-;;   Notice that because indexes start at zero, sequence functions tend to have predictable numbers of elements. `(split-at 4)` yields _four_ elements in the first collection, and ensures the second collection _begins at index four_. `(range 10)` has ten elements, corresponding to the first ten indices in a sequence. `(range 3 5)` has two (since 5 - 3 is two) elements. These choices simplify the definition of recursive functions as well.
+";;   Notice that because indexes start at zero, sequence functions tend to have predictable numbers of elements. `(split-at 4)` yields _four_ elements in the first collection, and ensures the second collection _begins at index four_. `(range 10)` has ten elements, corresponding to the first ten indices in a sequence. `(range 3 5)` has two (since 5 - 3 is two) elements. These choices simplify the definition of recursive functions as well.
 ;;   
 ;;   We can select particular elements from a sequence by applying a function. To find all positive numbers in a list, use `filter`:
-;;   
-;;       user=> (filter pos? [1 5 -4 -7 3 0])
+";;   
+;;       user=> 
+(filter pos? [1 5 -4 -7 3 0])
 ;;       (1 5 3)
 ;;       
+
+(filter pos? [1 5 (+ -10 30) -7 3 0])
 ;;   
-;;   `filter` looks at each element in turn, and includes it in the resulting sequence _only_ if `(f element)` returns a truthy value. Its complement is `remove`, which only includes those elements where `(f element)` is `false` or `nil`.
-;;   
-;;       user=> (remove string? [1 "turing" :apple])
+";;   `filter` looks at each element in turn, and includes it in the resulting sequence _only_ if `(f element)` returns a truthy value. Its complement is `remove`, which only includes those elements where `(f element)` is `false` or `nil`.
+";;   
+;;       user=> 
+(remove string? [1 "turing" :apple])
+
 ;;       (1 :apple)
 ;;       
 ;;   
-;;   Finally, one can group a sequence into chunks using `partition`, `partition-all`, or `partition-by`. For instance, one might group alternating values into pairs:
-;;   
-;;       user=> (partition 2 [:cats 5 :bats 27 :crocodiles 0])
+";;   Finally, one can group a sequence into chunks using `partition`, `partition-all`, or `partition-by`. For instance, one might group alternating values into pairs:
+";;   
+;;       user=> 
+(partition 2 [:cats 5 :bats 27 :crocodiles 0])
 ;;       ((:cats 5) (:bats 27) (:crocodiles 0))
 ;;       
 ;;   
 ;;   Or separate a series of numbers into negative and positive runs:
 ;;   
-;;       (user=> (partition-by neg? [1 2 3 2 1 -1 -2 -3 -2 -1 1 2])
+;;       (user=> 
+(partition-by neg? [1 2 3 2 1 -1 -2 -3 -2 -1 1 2])
 ;;       ((1 2 3 2 1) (-1 -2 -3 -2 -1) (1 2))
 ;;       
 ;;   
-;;   [Collapsing sequences](#collapsing-sequences)
+;;   * [Collapsing sequences](#collapsing-sequences)
 ;;   ---------------------------------------------
 ;;   
-;;   After transforming a sequence, we often want to collapse it in some way; to derive some smaller value. For instance, we might want the number of times each element appears in a sequence:
-;;   
-;;       user=> (frequencies [:meow :mrrrow :meow :meow])
+";;   After transforming a sequence, we often want to collapse it in some way; to derive some smaller value. For instance, we might want the number of times each element appears in a sequence:
+";;   
+;;       user=> 
+(frequencies [:meow :mrrrow :meow :meow])
 ;;       {:meow 3, :mrrrow 1}
 ;;       
 ;;   
-;;   Or to group elements by some function:
-;;   
-;;       user=> (pprint (group-by :first [{:first "Li"    :last "Zhou"}
-;;                                        {:first "Sarah" :last "Lee"}
-;;                                        {:first "Sarah" :last "Dunn"}
-;;                                        {:first "Li"    :last "O'Toole"}]))
+";;   Or to group elements by some function:
+";;   
+;;       user=> 
+(group-by :first [{:first "Li"    :last "Zhou"}
+                                        {:first "Sarah" :last "Lee"}
+                                        {:first "Sarah" :last "Dunn"}
+                                        {:first "Li"    :last "O'Toole"}])
 ;;       {"Li"    [{:last "Zhou", :first "Li"}   {:last "O'Toole", :first "Li"}],
 ;;        "Sarah" [{:last "Lee", :first "Sarah"} {:last "Dunn", :first "Sarah"}]}
 ;;       
 ;;   
-;;   Here we’ve taken a sequence of people with first and last names, and used the `:first` keyword (which can act as a function!) to look up those first names. `group-by` used that function to produce a _map_ of first names to lists of people–kind of like an index.
-;;   
-;;   In general, we want to _combine_ elements together in some way, using a function. Where `map` treated each element independently, reducing a sequence requires that we bring some information along. The most general way to collapse a sequence is `reduce`.
-;;   
+";;   Here we’ve taken a sequence of people with first and last names, and used the `:first` keyword (which can act as a function!) to look up those first names. `group-by` used that function to produce a _map_ of first names to lists of people–kind of like an index.
+";;   
+";;   In general, we want to _combine_ elements together in some way, using a function. Where `map` treated each element independently, reducing a sequence requires that we bring some information along. The most general way to collapse a sequence is `reduce`.
+";;   
 ;;       user=> (doc reduce)
 ;;       -------------------------
 ;;       clojure.core/reduce
@@ -557,176 +589,201 @@ numbers
 ;;   
 ;;   That’s a little complicated, so we’ll start small. We need a function, `f`, which combines successive elements of the sequence. `(f state element)` will return the state for the _next_ invocation of `f`. As `f` moves along the sequence, it carries some changing state with it. The final state is the return value of `reduce`.
 ;;   
-;;       user=> (reduce + [1 2 3 4])
+;;       user=> 
+(reduce + [1 2 3 4])
 ;;       10
 ;;       
 ;;   
-;;   `reduce` begins by calling `(+ 1 2)`, which yields the state `3`. Then it calls `(+ 3 3)`, which yields `6`. Then `(+ 6 4)`, which returns `10`. We’ve taken a function over _two_ elements, and used it to combine _all_ the elements. Mathematically, we could write:
-;;   
-;;       1 + 2 + 3 + 4
+";;   `reduce` begins by calling `(+ 1 2)`, which yields the state `3`. Then it calls `(+ 3 3)`, which yields `6`. Then `(+ 6 4)`, which returns `10`. We’ve taken a function over _two_ elements, and used it to combine _all_ the elements. Mathematically, we could write:
+";;   
+";;       1 + 2 + 3 + 4
 ;;           3 + 3 + 4
 ;;               6 + 4
 ;;                  10
-;;       
+";;       
 ;;   
-;;   So another way to look at `reduce` is like sticking a function _between_ each pair of elements. To see the reducing process in action, we can use `reductions`, which returns a sequence of all the intermediate states.
-;;   
-;;       user=> (reductions + [1 2 3 4])
+";;   So another way to look at `reduce` is like sticking a function _between_ each pair of elements. To see the reducing process in action, we can use `reductions`, which returns a sequence of all the intermediate states.
+";;   
+;;       user=> 
+(reductions + [1 2 3 4])
 ;;       (1 3 6 10)
 ;;       
 ;;   
-;;   Oftentimes we include a _default_ state to start with. For instance, we could start with an empty set, and add each element to it as we go along:
-;;   
-;;       user=> (reduce conj #{} [:a :b :b :b :a :a])
+";;   Oftentimes we include a _default_ state to start with. For instance, we could start with an empty set, and add each element to it as we go along:
+";;   
+;;       user=> 
+(reduce conj #{} [:a :b :b :b :a :a])
 ;;       #{:a :b}
 ;;       
 ;;   
-;;   Reducing elements into a collection has its own name: `into`. We can conj `[key value]` vectors into a map, for instance, or build up a list:
-;;   
-;;       user=> (into {} [[:a 2] [:b 3]])
+";;   Reducing elements into a collection has its own name: `into`. We can conj `[key value]` vectors into a map, for instance, or build up a list:
+";;   
+;;       user=> 
+(into {} [[:a 2] [:b 3]])
 ;;       {:a 2, :b 3}
-;;       user=> (into (list) [1 2 3 4])
+;;       user=> 
+(into (list) [1 2 3 4])
 ;;       (4 3 2 1)
 ;;       
 ;;   
-;;   Because elements added to a list appear at the _beginning_, not the end, this expression reverses the sequence. Vectors `conj` onto the end, so to emit the elements in order, using `reduce`, we might try:
-;;   
-;;       user=> (reduce conj [] [1 2 3 4 5])
-;;       (reduce conj [] [1 2 3 4 5])
+";;   Because elements added to a list appear at the _beginning_, not the end, this expression reverses the sequence. Vectors `conj` onto the end, so to emit the elements in order, using `reduce`, we might try:
+";;   
+;;       user=> 
+(reduce conj () [1 2 3 4 5])
+
+(reduce conj #{} [1 2 3 4 5])
+;;       
+(reduce conj [] [1 2 3 4 5])
 ;;       [1 2 3 4 5]
 ;;       
 ;;   
-;;   Which brings up an interesting thought: this looks an awful lot like `map`. All that’s missing is some kind of transformation applied to each element.
-;;   
-;;       (defn my-map [f coll]
-;;         (reduce (fn [output element]
-;;                   (conj output (f element)))
-;;                 []
-;;                 coll))
-;;       user=> (my-map inc [1 2 3 4])
+";;   Which brings up an interesting thought: this looks an awful lot like `map`. All that’s missing is some kind of transformation applied to each element.
+";;   
+       (defn my-map [f coll]
+         (reduce (fn [output element]
+                   (conj output (f element)))
+                 []
+                 coll))
+;;       user=> 
+(my-map inc [1 2 3 4])
 ;;       [2 3 4 5]
 ;;       
 ;;   
-;;   Huh. `map` is just a special kind of `reduce`. What about, say, `take-while`?
-;;   
-;;       (defn my-take-while [f coll]
-;;         (reduce (fn [out elem]
-;;                   (if (f elem)
-;;                     (conj out elem)
-;;                     (reduced out)))
-;;                 []
-;;                 coll))
+";;   Huh. `map` is just a special kind of `reduce`. What about, say, `take-while`?
+";;   
+      (defn my-take-while [f coll]
+        (reduce (fn [out elem]
+                  (if (f elem)
+                    (conj out elem)
+                    (reduced out)))
+                []
+                coll))
 ;;       
-;;   
-;;   We’re using a special function here, `reduced`, to indicate that we’ve completed our reduction _early_ and can skip the rest of the sequence.
-;;   
-;;       user=> (my-take-while pos? [2 1 0 -1 0 1 2])
+(my-take-while pos? [2 1 0 -1 0 1 2])
+       ;;   
+";;   We’re using a special function here, `reduced`, to indicate that we’ve completed our reduction _early_ and can skip the rest of the sequence.
+";;   
+;;       user=> 
+(my-take-while pos? [2 1 0 -1 0 1 2])
 ;;       [2 1]
 ;;       
 ;;   
-;;   `reduce` really is the uberfunction over sequences. Almost any operation on a sequence can be expressed in terms of a reduce–though for various reasons, many of the Clojure sequence functions are not written this way. For instance, `take-while` is _actually_ defined like so:
-;;   
+";;   `reduce` really is the uberfunction over sequences. Almost any operation on a sequence can be expressed in terms of a reduce–though for various reasons, many of the Clojure sequence functions are not written this way. For instance, `take-while` is _actually_ defined like so:
+";;   
 ;;       user=> (source take-while)
-;;       (defn take-while
-;;         "Returns a lazy sequence of successive items from coll while
-;;         (pred item) returns true. pred must be free of side-effects."
-;;         {:added "1.0"
-;;          :static true}
-;;         [pred coll]
-;;         (lazy-seq
-;;          (when-let [s (seq coll)]
-;;              (when (pred (first s))
-;;                (cons (first s) (take-while pred (rest s)))))))
-;;       
+      (defn take-while-source
+        "Returns a lazy sequence of successive items from coll while
+        (pred item) returns true. pred must be free of side-effects."
+        {:added "1.0"
+         :static true}
+        [pred coll]
+        (lazy-seq
+         (when-let [s (seq coll)]
+             (when (pred (first s))
+               (cons (first s) (take-while pred (rest s)))))))
+
+
+(take-while-source pos? [2 1 0 -1 0 1 2])
 ;;   
-;;   There’s a few new pieces here, but the structure is _essentially_ the same as our initial attempt at writing `map`. When the predicate matches the first element, cons the first element onto `take-while`, applied to the rest of the sequence. That `lazy-seq` construct allows Clojure to compute this sequence _as required_, instead of right away. It defers execution to a later time.
-;;   
-;;   Most of Clojure’s sequence functions are lazy. They don’t do anything until needed. For instance, we can increment every number from zero to infinity:
-;;   
-;;       user=> (def infseq (map inc (iterate inc 0)))
+";;   There’s a few new pieces here, but the structure is _essentially_ the same as our initial attempt at writing `map`. When the predicate matches the first element, cons the first element onto `take-while`, applied to the rest of the sequence. That `lazy-seq` construct allows Clojure to compute this sequence _as required_, instead of right away. It defers execution to a later time.
+";;   
+";;   Most of Clojure’s sequence functions are lazy. They don’t do anything until needed. For instance, we can increment every number from zero to infinity:
+";;   
+;;       user=> 
+      (def infseq (map inc (iterate inc 0)))
 ;;       #'user/infseq
-;;       user=> (realized? infseq)
+;;       user=> 
+      (realized? infseq)
 ;;       false
 ;;       
 ;;   
-;;   That function returned _immediately_. Because it hasn’t done any work yet, we say the sequence is _unrealized_. It doesn’t increment any numbers at all until we ask for them:
-;;   
-;;       user=> (take 10 infseq)
+";;   That function returned _immediately_. Because it hasn’t done any work yet, we say the sequence is _unrealized_. It doesn’t increment any numbers at all until we ask for them:
+";;   
+;;       user=> 
+(take 10 infseq)
 ;;       (1 2 3 4 5 6 7 8 9 10)
-;;       user=> (realized? infseq)
+;;       user=> (
+realized? infseq)
 ;;       true
 ;;       
 ;;   
-;;   Lazy sequences also _remember_ their contents, once evaluated, for faster access.
-;;   
-;;   [Putting it all together](#putting-it-all-together)
+";;   Lazy sequences also _remember_ their contents, once evaluated, for faster access.
+";;   
+;;*   [Putting it all together](#putting-it-all-together)
 ;;   ---------------------------------------------------
 ;;   
-;;   We’ve seen how recursion generalizes a function over _one_ thing into a function over _many_ things, and discovered a rich landscape of recursive functions over sequences. Now let’s use our knowledge of sequences to solve a more complex problem: find the sum of the products of consecutive pairs of the first 1000 odd integers.
+";;   We’ve seen how recursion generalizes a function over _one_ thing into a function over _many_ things, and discovered a rich landscape of recursive functions over sequences. Now let’s use our knowledge of sequences to solve a more complex problem: find the sum of the products of consecutive pairs of the first 1000 odd integers.
 ;;   
 ;;   First, we’ll need the integers. We can start with 0, and work our way up to infinity. To save time printing an infinite number of integers, we’ll start with just the first 10.
-;;   
-;;       user=> (take 10 (iterate inc 0))
+";;   
+;;       user=> 
+(take 10 (iterate inc 0))
 ;;       (0 1 2 3 4 5 6 7 8 9)
 ;;       
 ;;   
-;;   Now we need to find only the ones which are odd. Remember, `filter` pares down a sequence to only those elements which pass a test.
-;;   
-;;       user=> (take 10 (filter odd? (iterate inc 0)))
+";;   Now we need to find only the ones which are odd. Remember, `filter` pares down a sequence to only those elements which pass a test.
+";;   
+;;       user=> 
+(take 10 (filter odd? (iterate inc 0)))
 ;;       (1 3 5 7 9 11 13 15 17 19)
 ;;       
 ;;   
-;;   For consecutive pairs, we want to take `[1 3 5 7 ...]` and find a sequence like `([1 3] [3 5] [5 7] ...)`. That sounds like a job for `partition`:
-;;   
-;;       user=> (take 3 (partition 2 (filter odd? (iterate inc 0))))
+";;   For consecutive pairs, we want to take `[1 3 5 7 ...]` and find a sequence like `([1 3] [3 5] [5 7] ...)`. That sounds like a job for `partition`:
+";;   
+;;       user=> 
+(take 3 (partition 2 (filter odd? (iterate inc 0))))
 ;;       ((1 3) (5 7) (9 11))
 ;;       
 ;;   
-;;   Not quite right–this gave us non-overlapping pairs, but we wanted overlapping ones too. A quick check of `(doc partition)` reveals the `step` parameter:
-;;   
-;;       user=> (take 3 (partition 2 1 (filter odd? (iterate inc 0))))
+";;   Not quite right–this gave us non-overlapping pairs, but we wanted overlapping ones too. A quick check of `(doc partition)` reveals the `step` parameter:
+";;   
+;;       user=> 
+(take 3 (partition 2 1 (filter odd? (iterate inc 0))))
 ;;       ((1 3) (3 5) (5 7))
 ;;       
 ;;   
-;;   Now we need to find the product for each pair. Given a pair, multiply the two pieces together… yes, that sounds like `map`:
-;;   
-;;       user=> (take 3 (map (fn [pair] (* (first pair) (second pair)))
-;;                           (partition 2 1 (filter odd? (iterate inc 0)))))
+";;   Now we need to find the product for each pair. Given a pair, multiply the two pieces together… yes, that sounds like `map`:
+";;   
+;;       user=> 
+(take 3 (map (fn [pair] (* (first pair) (second pair)))
+             (partition 2 1 (filter odd? (iterate inc 0)))))
 ;;       (3 15 35)
 ;;       
 ;;   
 ;;   Getting a bit unwieldy, isn’t it? Only one final step: sum all those products. We’ll adjust the `take` to include the first 1000, not the first 3, elements.
 ;;   
-;;       user=> (reduce +
-;;                      (take 1000
-;;                            (map (fn [pair] (* (first pair) (second pair)))
-;;                                 (partition 2 1
-;;                                           (filter odd?
-;;                                                   (iterate inc 0)))))
+;;       user=> 
+(reduce + 
+        (take 1000
+              (map (fn [pair] (* (first pair) (second pair)))
+                   (partition 2 1
+                              (filter odd?
+                                      (iterate inc 0))))))
 ;;       1335333000
 ;;       
 ;;   
-;;   The sum of the first thousand products of consecutive pairs of the odd integers starting at 0. See how each part leads to the next? This expression looks a lot like the way we phrased the problem in English–but both English and Lisp expressions are sort of backwards, in a way. The part that _happens first_ appears _deepest_, _last_, in the expression. In a chain of reasoning like this, it’d be nicer to write it in order.
-;;   
-;;       user=> (->> 0
-;;                   (iterate inc)
-;;                   (filter odd?)
-;;                   (partition 2 1)
-;;                   (map (fn [pair]
-;;                          (* (first pair) (second pair))))
-;;                   (take 1000)
-;;                   (reduce +))
+";;   The sum of the first thousand products of consecutive pairs of the odd integers starting at 0. See how each part leads to the next? This expression looks a lot like the way we phrased the problem in English–but both English and Lisp expressions are sort of backwards, in a way. The part that _happens first_ appears _deepest_, _last_, in the expression. In a chain of reasoning like this, it’d be nicer to write it in order.
+";;   
+;;       user=> 
+(->> 0
+                   (iterate inc)
+                   (filter odd?)
+                   (partition 2 1)
+                   (map (fn [pair]
+                          (* (first pair) (second pair))))
+                   (take 1000)
+                   (reduce +))
 ;;       1335333000
 ;;       
 ;;   
-;;   Much easier to read: now everything flows in order, from top to bottom, and we’ve flattened out the deeply nested expressions into a single level. This is how object-oriented languages structure their expressions: as a chain of function invocations, each acting on the previous value.
+";;   Much easier to read: now everything flows in order, from top to bottom, and we’ve flattened out the deeply nested expressions into a single level. This is how object-oriented languages structure their expressions: as a chain of function invocations, each acting on the previous value.
 ;;   
 ;;   But how is this possible? Which expression gets evaluated first? `(take 1000)` isn’t even a valid call–where’s its second argument? How are _any_ of these forms evaluated?
 ;;   
 ;;   What kind of arcane function _is_ `->>`?
 ;;   
 ;;   All these mysteries, and more, in [Chapter 5: Macros](/posts/305-clojure-from-the-ground-up-macros).
-;;   
+";;   
 ;;   [Problems](#problems)
 ;;   ---------------------
 ;;   
