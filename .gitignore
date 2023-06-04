@@ -79,3 +79,4 @@ pom.xml.asc
 .calva/output-window/output.calva-repl
 .calva/
 .calva/output-window/l
+.clj-kondo/.cache/v1/clj/chapter004.transit.json

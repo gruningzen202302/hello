@@ -1,7 +1,4 @@
-(ns welcome-to-clojure
-  (:require [clojure.repl :refer [source apropos dir pst doc find-doc]]
-            [clojure.string :as string]
-            [clojure.test :refer [is are]]))
+(ns chapter004)
 
 (comment
   
@@ -17,55 +14,66 @@
 ;;   *   [Photos](/photos)
 ;;   *   [Code](http://github.com/aphyr)
 ;;   
-;;   [Clojure from the ground up: sequences](/posts/304-clojure-from-the-ground-up-sequences)
-;;   ========================================================================================
+   "[Clojure from the ground up: sequences]";(/posts/304-clojure-from-the-ground-up-sequences)
+;;  * ========================================================================================
 ;;   
 ;;   [Software](/tags/software) [Clojure](/tags/clojure) [Clojure from the ground up](/tags/clojure-from-the-ground-up)
 ;;   
 ;;   2013-11-18
 ;;   
-;;   In [Chapter 3](/posts/303-clojure-from-the-ground-up-functions), we discovered functions as a way to _abstract_ expressions; to rephrase a particular computation with some parts missing. We used functions to transform a single value. But what if we want to apply a function to _more than one_ value at once? What about sequences?
+"   In [Chapter 3](/posts/303-clojure-from-the-ground-up-functions), we discovered functions as a way to _abstract_ expressions; to rephrase a particular computation with some parts missing. We used functions to transform a single value. But what if we want to apply a function to _more than one_ value at once? What about sequences?
 ;;   
-;;   For example, we know that `(inc 2)` increments the number 2. What if we wanted to increment _every number_ in the vector `[1 2 3]`, producing `[2 3 4]`?
-;;   
-;;       user=> (inc [1 2 3])
+   For example, we know that `(inc 2)` increments the number 2. What if we wanted to increment _every number_ in the vector `[1 2 3]`, producing `[2 3 4]`?
+";;   
+;;       user=> 
+;   
+;   (inc [1 2 3])
 ;;       ClassCastException clojure.lang.PersistentVector cannot be cast to java.lang.Number  clojure.lang.Numbers.inc (Numbers.java:110)
 ;;       
 ;;   
-;;   Clearly `inc` can only work on numbers, not on vectors. We need a different kind of tool.
-;;   
-;;   [A direct approach](#a-direct-approach)
+"  Clearly `inc` can only work on numbers, not on vectors. We need a different kind of tool.
+";;   
+;;*   [A direct approach](#a-direct-approach)
 ;;   ---------------------------------------
 ;;   
-;;   Let’s think about the problem in concrete terms. We want to increment each of three elements: the first, second, and third. We know how to get an element from a sequence by using nth, so let’s start with the first number, at index 0:
-;;   
-;;       user=> (def numbers [1 2 3])
+"  Let’s think about the problem in concrete terms. We want to increment each of three elements: the first, second, and third. We know how to get an element from a sequence by using nth, so let’s start with the first number, at index 0:
+";;   
+;;       user=> 
+(def numbers [1 2 3])
 ;;       #'user/numbers
-;;       user=> (nth numbers 0)
+;;       user=> 
+(nth numbers 0)
 ;;       1
-;;       user=> (inc (nth numbers 0))
+;;       user=> 
+(inc (nth numbers 0))
 ;;       2
+numbers
 ;;       
 ;;   
-;;   So there’s the first element incremented. Now we can do the second:
+;;  * So there’s the first element incremented. Now we can do the second:
 ;;   
-;;       user=> (inc (nth numbers 1))
+;;       user=> 
+(inc (nth numbers 1))
 ;;       3
-;;       user=> (inc (nth numbers 2))
+;;       user=> 
+(inc (nth numbers 2))
 ;;       4
 ;;       
 ;;   
-;;   And it should be straightforward to combine these into a vector…
+;;*   And it should be straightforward to combine these into a vector…
 ;;   
-;;       user=> [(inc (nth numbers 0)) (inc (nth numbers 1)) (inc (nth numbers 2))]
+;;       user=> 
+[(inc (nth numbers 0)) (inc (nth numbers 1)) (inc (nth numbers 2))]
 ;;       [2 3 4]
 ;;       
 ;;   
-;;   Success! We’ve incremented each of the numbers in the list! How about a list with only two elements?
+;;*   Success! We’ve incremented each of the numbers in the list! How about a list with only two elements?
 ;;   
-;;       user=> (def numbers [1 2])
+;;       user=> 
+(def numbers [1 2])
 ;;       #'user/numbers
-;;       user=> [(inc (nth numbers 0)) (inc (nth numbers 1)) (inc (nth numbers 2))]
+;;       user=> 
+[(inc (nth numbers 0)) (inc (nth numbers 1)) (inc (nth numbers 2))]
 ;;       
 ;;       IndexOutOfBoundsException   clojure.lang.PersistentVector.arrayFor (PersistentVector.java:107)
 ;;       
