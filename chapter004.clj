@@ -78,105 +78,129 @@ numbers
 ;;       IndexOutOfBoundsException   clojure.lang.PersistentVector.arrayFor (PersistentVector.java:107)
 ;;       
 ;;   
-;;   Shoot. We tried to get the element at index 2, but _couldn’t_, because `numbers` only has indices 0 and 1. Clojure calls that “index out of bounds”.
-;;   
-;;   We could just leave off the third expression in the vector; taking only elements 0 and 1. But the problem actually gets much worse, because we’d need to make this change _every_ time we wanted to use a different sized vector. And what of a vector with 1000 elements? We’d need 1000 `(inc (nth numbers ...))` expressions! Down this path lies madness.
-;;   
-;;   Let’s back up a bit, and try a slightly smaller problem.
-;;   
-;;   [Recursion](#recursion)
+"Shoot. We tried to get the element at index 2, but _couldn’t_, because `numbers` only has indices 0 and 1. Clojure calls that “index out of bounds”.
+";;   
+"We could just leave off the third expression in the vector; taking only elements 0 and 1. But the problem actually gets much worse, because we’d need to make this change _every_ time we wanted to use a different sized vector. And what of a vector with 1000 elements? We’d need 1000 `(inc (nth numbers ...))` expressions! Down this path lies madness.
+";;   
+"Let’s back up a bit, and try a slightly smaller problem.
+";;   
+;;*   [Recursion](#recursion)
 ;;   -----------------------
 ;;   
-;;   What if we just incremented the _first_ number in the vector? How would that work? We know that `first` finds the first element in a sequence, and `rest` finds all the remaining ones.
+   "What if we just incremented the _first_ number in the vector? How would that work? We know that `first` finds the first element in a sequence, and `rest` finds all the remaining ones."
 ;;   
-;;       user=> (first [1 2 3])
+;;       user=> 
+(first [1 2 3])
 ;;       1
-;;       user=> (rest [1 2 3])
+;;       user=> 
+(rest [1 2 3])
 ;;       (2 3)
 ;;       
 ;;   
-;;   So there’s the _pieces_ we’d need. To glue them back together, we can use a function called `cons`, which says “make a list beginning with the first argument, followed by all the elements in the second argument”.
-;;   
-;;       user=> (cons 1 [2])
+"So there’s the _pieces_ we’d need. To glue them back together, we can use a function called `cons`, which says “make a list beginning with the first argument, followed by all the elements in the second argument”.
+";;   
+;;       user=> 
+(cons 1 [2])
 ;;       (1 2)
-;;       user=> (cons 1 [2 3])
+;;       user=> 
+(cons 1 [2 3])
 ;;       (1 2 3)
-;;       user=> (cons 1 [2 3 4])
+;;       user=>   
+   
+   (cons 1 [2 3 4])
 ;;       (1 2 3 4)
+(cons 1 nil)
+
+(cons 1 '(2 3 4))
+
+(cons 1 #{1 2 3 4})
+
+(set (cons 1 #{1 2 3 4}))
 ;;       
 ;;   
-;;   OK so we can split up a sequence, increment the first part, and join them back together. Not so hard, right?
-;;   
-;;       (defn inc-first [nums]
-;;         (cons (inc (first nums))
-;;               (rest nums)))
-;;       user=> (inc-first [1 2 3 4])
+"OK so we can split up a sequence, increment the first part, and join them back together. Not so hard, right?
+";;   
+(defn inc-first [nums] 
+  (cons (inc (first nums))(rest nums)))
+;;       user=> 
+(inc-first [1 2 3 4])
 ;;       (2 2 3 4)
 ;;       
 ;;   
-;;   Hey, there we go! First element changed. Will it work with any length list?
-;;   
-;;       user=> (inc-first [5])
+"   Hey, there we go! First element changed. Will it work with any length list?
+";;   
+;;       user=> 
+(inc-first [5])
 ;;       (6)
-;;       user=> (inc-first [])
+;;       user=> 
+(inc-first [])
 ;;       
 ;;       NullPointerException   clojure.lang.Numbers.ops (Numbers.java:942)
 ;;       
 ;;   
-;;   Shoot. We can’t increment the first element of this empty vector, because it doesn’t _have_ a first element.
-;;   
-;;       user=> (first [])
+;;
+"Shoot. We can’t increment the first element of this empty vector, because it doesn’t _have_ a first element.
+";;   
+;;       user=> 
+(first [])
 ;;       nil
-;;       user=> (inc nil)
+;;       user=> 
+;(inc nil)
 ;;       
 ;;       NullPointerException   clojure.lang.Numbers.ops (Numbers.java:942)
 ;;       
 ;;   
-;;   So there are really _two_ cases for this function. If there is a first element in `nums`, we’ll increment it as normal. If there’s _no_ such element, we’ll return an empty list. To express this kind of conditional behavior, we’ll use a Clojure special form called `if`:
-;;   
+;;
+"So there are really _two_ cases for this function. If there is a first element in `nums`, we’ll increment it as normal. If there’s _no_ such element, we’ll return an empty list. To express this kind of conditional behavior, we’ll use a Clojure special form called `if`:
+";;   
 ;;       user=> (doc if)
 ;;       -------------------------
-;;       if
-;;         (if test then else?)
-;;       Special Form
+;;*       if
+;;*         (if test then else?)
+";;       Special Form
 ;;         Evaluates test. If not the singular values nil or false,
 ;;         evaluates and yields then, otherwise, evaluates and yields else. If
 ;;         else is not supplied it defaults to nil.
-;;       
+";;       
 ;;         Please see http://clojure.org/special_forms#if
 ;;       
 ;;   
 ;;   To confirm our intuition:
 ;;   
-;;       user=> (if true :a :b)
+;;       user=> 
+(if true :a :b)
 ;;       :a
-;;       user=> (if false :a :b)
+;;       user=> 
+(if false :a :b)
 ;;       :b
 ;;       
 ;;   
 ;;   Seems straightforward enough.
 ;;   
-;;       (defn inc-first [nums]
-;;         (if (first nums)
-;;           ; If there's a first number, build a new list with cons
-;;           (cons (inc (first nums))
-;;                 (rest nums))
+       (defn inc-first [nums]
+         (if (first nums)
+           ; If there's a first number, build a new list with cons
+           (cons (inc (first nums))
+                 (rest nums))
 ;;           ; If there's no first number, just return an empty list
-;;           (list)))
+           (list)))
 ;;       
-;;       user=> (inc-first [])
+;;       user=> 
+(inc-first [])
 ;;       ()
-;;       user=> (inc-first [1 2 3])
+;;       user=> 
+(inc-first [1 2 3])
 ;;       (2 2 3)
 ;;       
 ;;   
-;;   Success! Now we can handle _both_ cases: empty sequences, and sequences with things in them. Now how about incrementing that _second_ number? Let’s stare at that code for a bit.
-;;   
-;;       (rest nums)
+";;   Success! Now we can handle _both_ cases: empty sequences, and sequences with things in them. Now how about incrementing that _second_ number? Let’s stare at that code for a bit.
+";;   
+;;       
+;       (rest nums)
 ;;       
 ;;   
-;;   Hang on. That list–`(rest nums)`–that’s a list of numbers too. What if we… used our inc-first function on _that_ list, to increment _its_ first number? Then we’d have incremented both the first _and_ the second element.
-;;   
+";;   Hang on. That list–`(rest nums)`–that’s a list of numbers too. What if we… used our inc-first function on _that_ list, to increment _its_ first number? Then we’d have incremented both the first _and_ the second element.
+";;   
 ;;       (defn inc-more [nums]
 ;;         (if (first nums)
 ;;           (cons (inc (first nums))
