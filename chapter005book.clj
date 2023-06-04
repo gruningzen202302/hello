@@ -36,7 +36,7 @@
 ;;       nil
 ;;       
 ;;   
-;;   `defmacro` looks a lot like `defn`: it has a name, an optional documentation string, an argument vector, and a body–in this case, just `nil`. In this case, it looks like it simply ignored the expr `(+ 1 2)` and returned `nil`–but it’s actually deeper than that. `(+ 1 2)` was _never evaluated at all_.
+";;   `defmacro` looks a lot like `defn`: it has a name, an optional documentation string, an argument vector, and a body–in this case, just `nil`. In this case, it looks like it simply ignored the expr `(+ 1 2)` and returned `nil`–but it’s actually deeper than that. `(+ 1 2)` was _never evaluated at all_."
 ;;   
 ;;       user=> (def x 1)
 ;;       #'user/x
@@ -48,46 +48,48 @@
 ;;       1
 ;;       
 ;;   
-;;   `def` should have defined `x` to be `2` _no matter what_–but that never happened. At macroexpansion time, the expression `(ignore (+ 1 2))` was _replaced_ by the expression `nil`, which was then evaluated to `nil`. Where functions rewrite _values_, macros rewrite _code_.
+";;   `def` should have defined `x` to be `2` _no matter what_–but that never happened. At macroexpansion time, the expression `(ignore (+ 1 2))` was _replaced_ by the expression `nil`, which was then evaluated to `nil`. Where functions rewrite _values_, macros rewrite _code_.
 ;;   
 ;;   To see these different layers in play, let’s try a macro which reverses the order of arguments to a function.
-;;   
+";;   
 ;;       (defmacro rev [fun & args]
 ;;         (cons fun (reverse args)))
 ;;       
 ;;   
-;;   This macro, named `rev`, takes one mandatory argument: a function. Then it takes any number of arguments, which are collected in the list `args`. It constructs a new list, starting with the function, and followed by the arguments, in reverse order.
+";;   This macro, named `rev`, takes one mandatory argument: a function. Then it takes any number of arguments, which are collected in the list `args`. It constructs a new list, starting with the function, and followed by the arguments, in reverse order.
 ;;   
 ;;   First, we macro-expand:
-;;   
+";;   
 ;;       user=> (macroexpand '(rev str "hi" (+ 1 2)))
 ;;       (str (+ 1 2) "hi")
 ;;       
 ;;   
-;;   So the `rev` macro took `str` as the function, and `"hi"` and `(+ 1 2)` as the arguments; then constructed a new list with the same function, but the arguments reversed. When we _evaluate_ that expression, we get:
-;;   
+";;   So the `rev` macro took `str` as the function, and "
+ ;;`"hi""` and `(+ 1 2)` 
+"as the arguments; then constructed a new list with the same function, but the arguments reversed. When we _evaluate_ that expression, we get:
+";;   
 ;;       user=> (eval (macroexpand '(rev str "hi" (+ 1 2))))
 ;;       "3hi"
 ;;       
 ;;   
-;;   `macroexpand` takes an expression and returns that expression with all macros expanded. `eval` takes an expression and evaluates it. When you type an unquoted expression into the REPL, Clojure macroexpands, then evaluates. Two stages–the first transforming _code_, the second transforming _values_.
-;;   
+";;   `macroexpand` takes an expression and returns that expression with all macros expanded. `eval` takes an expression and evaluates it. When you type an unquoted expression into the REPL, Clojure macroexpands, then evaluates. Two stages–the first transforming _code_, the second transforming _values_.
+";;   
 ;;   [Across languages](#across-languages)
 ;;   -------------------------------------
 ;;   
-;;   Some languages have a _metalanguage_: a language for extending the language itself. In C, for example, macros are implemented by the [C preprocessor](http://www.rt-embedded.com/blog/archives/macros-in-the-c-programming-language/), which has its own syntax for defining expressions, matching patterns in the source code’s text, and replacing that text with other text. But that preprocessor is _not_ C–it is a separate language entirely, with special limitations. In Clojure, the metalanguage is _Clojure itself_–the full power of the language is available to restructure programs. This is called a _procedural_ macro system. Some Lisps, like Scheme, use a macro system based on templating expressions, and still others use more powerful models like _f-expressions_–but that’s a discussion for a later time.
+";;   Some languages have a _metalanguage_: a language for extending the language itself. In C, for example, macros are implemented by the [C preprocessor](http://www.rt-embedded.com/blog/archives/macros-in-the-c-programming-language/), which has its own syntax for defining expressions, matching patterns in the source code’s text, and replacing that text with other text. But that preprocessor is _not_ C–it is a separate language entirely, with special limitations. In Clojure, the metalanguage is _Clojure itself_–the full power of the language is available to restructure programs. This is called a _procedural_ macro system. Some Lisps, like Scheme, use a macro system based on templating expressions, and still others use more powerful models like _f-expressions_–but that’s a discussion for a later time.
 ;;   
 ;;   There is another key difference between Lisp macros and many other macro systems: in Lisp, the macros operate on _expressions_: the data structure of the code itself. Because Lisp code is _written_ explicitly as a data structure, a tree made out of lists, this transformation is natural. You can _see_ the structure of the code, which makes it easy to reason about its transformation. In the C preprocessor, macros operate only on _text_: there is no understanding of the underlying syntax. Even in languages like Scala which have syntactic macros, the fact that the code looks _nothing like_ the syntax tree makes it [cumbersome](http://docs.scala-lang.org/overviews/macros/overview.html) to truly restructure expressions.
 ;;   
 ;;   When people say that Lisp’s syntax is “more elegant”, or “more beautiful”, or “simpler”, this is part of what they they mean. By choosing to represent the program directly as a a data structure, we make it much easier to define complex transformations of code itself.
-;;   
-;;   [Defining new syntax](#defining-new-syntax)
+";;   
+;;  * [Defining new syntax](#defining-new-syntax)
 ;;   -------------------------------------------
 ;;   
-;;   What kind of transformations are best expressed with macros?
+";;   What kind of transformations are best expressed with macros?
 ;;   
 ;;   Most languages encode special syntactic forms–things like “define a function”, “call a function”, “define a local variable”, “if this, then that”, and so on. In Clojure, these are called _special forms_. `if` is a special form, for instance. Its definition is built into the language core itself; it cannot be reduced into smaller parts.
-;;   
+";;   
 ;;       (if (< 3 x)
 ;;         "big"
 ;;         "small")
@@ -102,8 +104,8 @@
 ;;       }
 ;;       
 ;;   
-;;   In Javascript, Ruby, and many other languages, these special forms are _fixed_. You cannot define your own syntax. For instance, one cannot define `or` in a language like JS or Ruby: it must be defined _for_ you by the language author.
-;;   
+";;   In Javascript, Ruby, and many other languages, these special forms are _fixed_. You cannot define your own syntax. For instance, one cannot define `or` in a language like JS or Ruby: it must be defined _for_ you by the language author.
+";;   
 ;;   In Clojure, `or` is just a macro.
 ;;   
 ;;       user=> (source or)
@@ -121,42 +123,42 @@
 ;;       nil
 ;;       
 ;;   
-;;   That `` ` `` operator–that’s called _syntax-quote_. It works just like regular quote–preventing evaluation of the following list–but with a twist: we can escape the quoting rule and substitute in regularly evaluated expressions using _unquote_ (`~`), and _unquote-splice_ (`~@`). Think of a syntax-quoted expression like a _template_ for code, with some parts filled in by evaluated forms.
-;;   
+";;   That `` ` `` operator–that’s called _syntax-quote_. It works just like regular quote–preventing evaluation of the following list–but with a twist: we can escape the quoting rule and substitute in regularly evaluated expressions using _unquote_ (`~`), and _unquote-splice_ (`~@`). Think of a syntax-quoted expression like a _template_ for code, with some parts filled in by evaluated forms.
+";;   
 ;;       user=> (let [x 2] `(inc x))
 ;;       (clojure.core/inc user/x)
 ;;       user=> (let [x 2] `(inc ~x))
 ;;       (clojure.core/inc 2)
 ;;       
 ;;   
-;;   See the difference? `~x` _substitutes_ the value of x, instead of using `x` as an unevaluated symbol. This code is essentially just shorthand for something like
-;;   
+";;   See the difference? `~x` _substitutes_ the value of x, instead of using `x` as an unevaluated symbol. This code is essentially just shorthand for something like
+";;   
 ;;       user=> (let [x 2] (list 'clojure.core/inc x))
 ;;       (inc 2)
 ;;       
 ;;   
-;;   … where we explicitly constructed a new list with the quoted symbol `'inc` and the current value of `x`. Syntax quote just makes it easier to read the code, since the quoted and expanded expressions have similar shapes.
+";;   … where we explicitly constructed a new list with the quoted symbol `'inc` and the current value of `x`. Syntax quote just makes it easier to read the code, since the quoted and expanded expressions have similar shapes.
 ;;   
 ;;   The `~@` unquote splice works just like `~`, except it explodes a list into _multiple_ expressions in the resulting form:
-;;   
+";;   
 ;;       user=> `(foo ~[1 2 3])
 ;;       (user/foo [1 2 3])
 ;;       user=> `(foo ~@[1 2 3])
 ;;       (user/foo 1 2 3)
 ;;       
 ;;   
-;;   `~@` is particularly useful when a function or macro takes an _arbitrary_ number of arguments. In the definition of `or`, it’s used to expand `(or a b c)` _recursively_.
-;;   
+";;   `~@` is particularly useful when a function or macro takes an _arbitrary_ number of arguments. In the definition of `or`, it’s used to expand `(or a b c)` _recursively_.
+";;   
 ;;       user=> (pprint (macroexpand '(or a b c d)))
 ;;       (let*
 ;;        [or__3943__auto__ a]
 ;;        (if or__3943__auto__ or__3943__auto__ (clojure.core/or b c d)))
 ;;       
 ;;   
-;;   We’re using `pprint` (for “pretty print”) to make this expression easier to read. `(or a b c d)` is defined in terms of _if_: if the first element is truthy we return it; otherwise we evaluate `(or b c d)` instead, and so on.
+";;   We’re using `pprint` (for “pretty print”) to make this expression easier to read. `(or a b c d)` is defined in terms of _if_: if the first element is truthy we return it; otherwise we evaluate `(or b c d)` instead, and so on.
 ;;   
 ;;   The final piece of the puzzle here is that weirdly named symbol: `or__3943__auto__`. That variable was _automatically generated_ by Clojure, to prevent _conflicts_ with an existing variable name. Because macros rewrite code, they have to be careful not to interfere with local variables, or it could get very confusing. Whenever we need a new variable in a macro, we use `gensym` to _generate a new symbol_.
-;;   
+";;   
 ;;       user=> (gensym "hi")
 ;;       hi326
 ;;       user=> (gensym "hi")
@@ -165,16 +167,16 @@
 ;;       hi332
 ;;       
 ;;   
-;;   Each symbol is different! If we tack on a `#` to the end of a symbol in a syntax-quoted expression, it’ll be expanded to a particular gensym:
-;;   
+";;   Each symbol is different! If we tack on a `#` to the end of a symbol in a syntax-quoted expression, it’ll be expanded to a particular gensym:
+";;   
 ;;       user=> `(let [x# 2] x#)
 ;;       (clojure.core/let [x__339__auto__ 2] x__339__auto__)
 ;;       
 ;;   
-;;   Note that you can always escape this safety feature if you _want_ to override local variables. That’s called _symbol capture_, or an _anaphoric_ or _unhygenic_ macro. To override local symbols, just use `~'foo` instead of `foo#`.
+";;   Note that you can always escape this safety feature if you _want_ to override local variables. That’s called _symbol capture_, or an _anaphoric_ or _unhygenic_ macro. To override local symbols, just use `~'foo` instead of `foo#`.
 ;;   
 ;;   With all the pieces on the board, let’s compare the `or` macro and its expansion:
-;;   
+";;   
 ;;       (defmacro or
 ;;         "Evaluates exprs one at a time, from left to right. If a form
 ;;         returns a logical true value, or returns that value and doesn't
@@ -199,9 +201,9 @@
 ;;          (if or__3943__auto__ or__3943__auto__ (wet? stone)))))
 ;;       
 ;;   
-;;   See how the macro’s syntax-quoted `(let ...` has the same shape as the resulting code? `or#` is expanded to a variable named `or__3943__auto__`, which is bound to the expression `(mossy? stone)`. If that variable is truthy, we return it. Otherwise, we (and here’s the recursive part) rebind `or__3943__auto__` to `(cool? stone)` and try again. If _that_ fails, we fall back to evaluating `(wet? stone)`–thanks to the base case, the single-argument form of the `or` macro.
-;;   
-;;   [Control flow](#control-flow)
+";;   See how the macro’s syntax-quoted `(let ...` has the same shape as the resulting code? `or#` is expanded to a variable named `or__3943__auto__`, which is bound to the expression `(mossy? stone)`. If that variable is truthy, we return it. Otherwise, we (and here’s the recursive part) rebind `or__3943__auto__` to `(cool? stone)` and try again. If _that_ fails, we fall back to evaluating `(wet? stone)`–thanks to the base case, the single-argument form of the `or` macro.
+";;   
+;; *   [Control flow](#control-flow)
 ;;   -----------------------------
 ;;   
 ;;   We’ve seen that `or` is a macro written in terms of the special form `if`–and because of the way the macro is structured, it does _not_ obey the normal execution order. In `(or a b c)`, only `a` is evaluated first–then, only if it is `false` or `nil`, do we evaluate `b`. This is called _short-circuiting_, and it works for `and` as well.
