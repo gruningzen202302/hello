@@ -197,162 +197,186 @@ numbers
 ";;   
 ;;       
 ;       (rest nums)
+       (rest nil)
 ;;       
 ;;   
 ";;   Hang on. That list–`(rest nums)`–that’s a list of numbers too. What if we… used our inc-first function on _that_ list, to increment _its_ first number? Then we’d have incremented both the first _and_ the second element.
 ";;   
-;;       (defn inc-more [nums]
-;;         (if (first nums)
-;;           (cons (inc (first nums))
-;;                 (inc-more (rest nums)))
-;;           (list)))
-;;       user=> (inc-more [1 2 3 4])
+       (defn inc-more [nums]
+         (if (first nums)
+           (cons (inc (first nums))
+                 (inc-more (rest nums)))
+           (list)))
+;;       user=> 
+
+(inc-more [1 2 3 4])
 ;;       (2 3 4 5)
 ;;       
 ;;   
-;;   Odd. That didn’t just increment the first two numbers. It incremented _all_ the numbers. We fell into the _complete_ solution entirely by accident. What happened here?
+";;   Odd. That didn’t just increment the first two numbers. It incremented _all_ the numbers. We fell into the _complete_ solution entirely by accident. What happened here?
 ;;   
 ;;   Well first we… yes, we got the number one, and incremented it. Then we stuck that onto `(inc-first [2 3 4])`, which got two, and incremented it. Then we stuck that two onto `(inc-first [3 4])`, which got three, and then we did the same for four. Only _that_ time around, at the very end of the list, `(rest [4])` would have been _empty_. So when we went to get the first number of the empty list, we took the _second_ branch of the `if`, and returned the empty list.
 ;;   
 ;;   Having reached the _bottom_ of the function calls, so to speak, we zip back up the chain. We can imagine this function turning into a long string of `cons` calls, like so:
-;;   
-;;       (cons 2 (cons 3 (cons 4 (cons 5 '()))))
-;;       (cons 2 (cons 3 (cons 4 '(5))))
-;;       (cons 2 (cons 3 '(4 5)))
-;;       (cons 2 '(3 4 5))
-;;       '(2 3 4 5)
+";;   
+       (cons 2 (cons 3 (cons 4 (cons 5 '()))))
+       (cons 2 (cons 3 (cons 4 '(5))))
+       (cons 2 (cons 3 '(4 5)))
+       (cons 2 '(3 4 5))
+       '(2 3 4 5)
 ;;       
 ;;   
-;;   This technique is called _recursion_, and it is a fundamental principle in working with collections, sequences, trees, or graphs… any problem which has small parts linked together. There are two key elements in a recursive program:
+";;   This technique is called _recursion_, and it is a fundamental principle in working with collections, sequences, trees, or graphs… any problem which has small parts linked together. There are two key elements in a recursive program:
 ;;   
 ;;   1.  Some part of the problem which has a known solution
 ;;   2.  A relationship which connects one part of the problem to the next
 ;;   
 ;;   Incrementing the elements of an empty list returns the empty list. This is our _base case_: the ground to build on. Our _inductive_ case, also called the _recurrence relation_, is how we broke the problem up into incrementing the _first_ number in the sequence, and incrementing all the numbers in the _rest_ of the sequence. The `if` expression bound these two cases together into a single function; a function _defined in terms of itself_.
-;;   
-;;   Once the initial step has been taken, _every_ step can be taken.
-;;   
-;;       user=> (inc-more [1 2 3 4 5 6 7 8 9 10 11 12])
+";;   
+"   Once the initial step has been taken, _every_ step can be taken.
+";;   
+;;       user=> 
+       (inc-more [1 2 3 4 5 6 7 8 9 10 11 12])
 ;;       (2 3 4 5 6 7 8 9 10 11 12 13)
 ;;       
 ;;   
-;;   This is the beauty of a recursive function; folding an unbounded stream of computation over and over, onto itself, until only a single step remains.
-;;   
-;;   [Generalizing from inc](#generalizing-from-inc)
+"This is the beauty of a recursive function; folding an unbounded stream of computation over and over, onto itself, until only a single step remains.
+";;   
+;; *  [Generalizing from inc](#generalizing-from-inc)
 ;;   -----------------------------------------------
 ;;   
-;;   We set out to increment every number in a vector, but nothing in our solution actually depended on `inc`. It just as well could have been `dec`, or `str`, or `keyword`. Let’s _parameterize_ our `inc-more` function to use _any_ transformation of its elements:
-;;   
-;;       (defn transform-all [f xs]
-;;         (if (first xs)
-;;           (cons (f (first xs))
-;;                 (transform-all f (rest xs)))
-;;           (list)))
+";;   We set out to increment every number in a vector, but nothing in our solution actually depended on `inc`. It just as well could have been `dec`, or `str`, or `keyword`. Let’s _parameterize_ our `inc-more` function to use _any_ transformation of its elements:
+";;   
+       (defn transform-all [f xs]
+         (if (first xs)
+           (cons (f (first xs))
+                 (transform-all f (rest xs)))
+           (list)))
 ;;       
 ;;   
-;;   Because we could be talking about _any_ kind of sequence, not just numbers, we’ve named the sequence `xs`, and its first element `x`. We also take a function `f` as an argument, and that function will be applied to each `x` in turn. So not only can we increment numbers…
-;;   
-;;       user=> (transform-all inc [1 2 3 4])
+";;   Because we could be talking about _any_ kind of sequence, not just numbers, we’ve named the sequence `xs`, and its first element `x`. We also take a function `f` as an argument, and that function will be applied to each `x` in turn. So not only can we increment numbers…
+";;   
+;;       user=> 
+       (transform-all inc [1 2 3 4])
 ;;       (2 3 4 5)
 ;;       
+       (transform-all dec [1 2 3 4])
 ;;   
 ;;   …but we can turn strings to keywords…
 ;;   
-;;       user=> (transform-all keyword ["bell" "hooks"])
+;;       user=> 
+(transform-all keyword ["bell" "hooks"])
 ;;       (:bell :hooks)
 ;;       
 ;;   
 ;;   …or wrap every element in a list:
 ;;   
-;;       user=> (transform-all list [:codex :book :manuscript])
+;;       user=> 
+       (transform-all list [:codex :book :manuscript])
 ;;       ((:codex) (:book) (:manuscript))
 ;;       
 ;;   
-;;   In short, this function expresses a sequence in which each element is some function applied to the corresponding element in the underlying sequence. This idea is so important that it has its own name, in mathematics, Clojure, and other languages. We call it `map`.
-;;   
-;;       user=> (map inc [1 2 3 4])
+";;   In short, this function expresses a sequence in which each element is some function applied to the corresponding element in the underlying sequence. This idea is so important that it has its own name, in mathematics, Clojure, and other languages. We call it `map`.
+";;   
+;;       user=> 
+       (map inc [1 2 3 4])
 ;;       (2 3 4 5)
 ;;       
 ;;   
-;;   You might remember maps as a datatype in Clojure, too–they’re dictionaries that relate keys to values.
-;;   
-;;       {:year  1969
-;;        :event "moon landing"}
+";;   You might remember maps as a datatype in Clojure, too–they’re dictionaries that relate keys to values.
+";;   
+;;       
+{:year  1969 :event "moon landing"}
 ;;       
 ;;   
-;;   The _function_ `map` relates one sequence to another. The _type_ map relates keys to values. There is a deep symmetry between the two: maps are usually sparse, and the relationships between keys and values may be arbitrarily complex. The map function, on the other hand, usually expresses the _same_ type of relationship, applied to a series of elements in _fixed order_.
-;;   
-;;   [Building sequences](#building-sequences)
+";;   The _function_ `map` relates one sequence to another. The _type_ map relates keys to values. There is a deep symmetry between the two: maps are usually sparse, and the relationships between keys and values may be arbitrarily complex. The map function, on the other hand, usually expresses the _same_ type of relationship, applied to a series of elements in _fixed order_.
+";;   
+;;   * [Building sequences](#building-sequences)
 ;;   -----------------------------------------
 ;;   
-;;   Recursion can do more than just `map`. We can use it to expand a single value into a sequence of values, each related by some function. For instance:
-;;   
-;;       (defn expand [f x count]
-;;         (when (pos? count)
-;;           (cons x (expand f (f x) (dec count)))))
+";;   Recursion can do more than just `map`. We can use it to expand a single value into a sequence of values, each related by some function. For instance:
+";;    
+(defn expand [f x count] 
+  (when (pos? count) 
+    (cons x (expand f (f x) (dec count)))))
 ;;       
 ;;   
-;;   Our base case is `nil`, returned when `count` is zero, and `(pos? count)` fails. Our inductive case returns a list of x, followed by the expansion starting with (f x), and a count _one smaller_. This means the first element of our list will be x, the second (f x), the third (f (f x)), and so on. Each time we call `expand`, we count down by one using `dec`. Once the count is zero, the `if` returns `nil`, and evaluation stops. If we start with the number 0 and use inc as our function:
-;;   
-;;       user=> user=> (expand inc 0 10)
+";;   Our base case is `nil`, returned when `count` is zero, and `(pos? count)` fails. Our inductive case returns a list of x, followed by the expansion starting with (f x), and a count _one smaller_. This means the first element of our list will be x, the second (f x), the third (f (f x)), and so on. Each time we call `expand`, we count down by one using `dec`. Once the count is zero, the `if` returns `nil`, and evaluation stops. If we start with the number 0 and use inc as our function:
+";;   
+;;       user=> user=> 
+(expand inc 0 10)
 ;;       (0 1 2 3 4 5 6 7 8 9)
 ;;       
 ;;   
-;;   Clojure has a more general form of this function, called `iterate`.
-;;   
-;;       user=> (take 10 (iterate inc 0))
+"   Clojure has a more general form of this function, called `iterate`.
+";;   
+;;       user=> 
+(take 10 (iterate inc 0))
 ;;       (0 1 2 3 4 5 6 7 8 9)
 ;;       
+(take 10 (iterate inc -2))
 ;;   
-;;   Since this sequence is _infinitely_ long, we’re using `take` to select only the first 10 elements. We can construct more complex sequences by using more complex functions:
-;;   
-;;       user=> (take 10 (iterate (fn [x] (if (odd? x) (+ 1 x) (/ x 2))) 10))
+";;   Since this sequence is _infinitely_ long, we’re using `take` to select only the first 10 elements. We can construct more complex sequences by using more complex functions:
+";;   
+;;       user=> 
+(take 10 (iterate (fn [x] (if (odd? x) (+ 1 x) (/ x 2))) 10))
 ;;       (10 5 6 3 4 2 1 2 1 2)
 ;;       
 ;;   
 ;;   Or build up strings:
 ;;   
-;;       user=> (take 5 (iterate (fn [x] (str x "o")) "y"))
+;;       user=> 
+(take 5 (iterate (fn [x] (str x "o")) "y"))
 ;;       ("y" "yo" "yoo" "yooo" "yoooo")
 ;;       
 ;;   
-;;   `iterate` is extremely handy for working with infinite sequences, and has some partners in crime. `repeat`, for instance, constructs a sequence where every element is the same.
-;;   
-;;       user=> (take 10 (repeat :hi))
+";;   `iterate` is extremely handy for working with infinite sequences, and has some partners in crime. `repeat`, for instance, constructs a sequence where every element is the same.
+";;   
+;;       user=> 
+(take 10 (repeat :hi))
 ;;       (:hi :hi :hi :hi :hi :hi :hi :hi :hi :hi)
-;;       user=> (repeat 3 :echo)
+;;       user=> 
+(repeat 3 :echo)
 ;;       (:echo :echo :echo)
 ;;       
 ;;   
-;;   And its close relative `repeatedly` simply calls a function `(f)` to generate an infinite sequence of values, over and over again, without any relationship between elements. For an infinite sequence of random numbers:
-;;   
-;;       user=> (rand)
+";;   And its close relative `repeatedly` simply calls a function `(f)` to generate an infinite sequence of values, over and over again, without any relationship between elements. For an infinite sequence of random numbers:
+";;   
+;;       user=> 
+(rand)
 ;;       0.9002678382322784
-;;       user=> (rand)
+;;       user=> 
+(rand)
 ;;       0.12375594203332863
-;;       user=> (take 3 (repeatedly rand))
+;;       user=> 
+(take 3 (repeatedly rand))
 ;;       (0.44442397843046755 0.33668691162169784 0.18244875487846746)
 ;;       
+(take 3 (repeat (rand 100)))
 ;;   
-;;   Notice that calling `(rand)` returns a different number each time. We say that `rand` is an _impure_ function, because it cannot simply be replaced by the same value every time. It does something different each time it’s called.
-;;   
-;;   There’s another very handy sequence function specifically for numbers: `range`, which generates a sequence of numbers between two points. `(range n)` gives n successive integers starting at 0. `(range n m)` returns integers from n to m-1. `(range n m step)` returns integers from n to m, but separated by `step`.
-;;   
-;;       user=> (range 5)
+";;   Notice that calling `(rand)` returns a different number each time. We say that `rand` is an _impure_ function, because it cannot simply be replaced by the same value every time. It does something different each time it’s called.
+";;   
+";;   There’s another very handy sequence function specifically for numbers: `range`, which generates a sequence of numbers between two points. `(range n)` gives n successive integers starting at 0. `(range n m)` returns integers from n to m-1. `(range n m step)` returns integers from n to m, but separated by `step`.
+";;   
+;;       user=> 
+(range 5)
 ;;       (0 1 2 3 4)
-;;       user=> (range 2 10)
+;;       user=> 
+(range 2 10)
 ;;       (2 3 4 5 6 7 8 9)
-;;       user=> (range 0 100 5)
+;;       user=> 
+(range 0 100 5)
 ;;       (0 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90 95)
 ;;       
 ;;   
 ;;   To extend a sequence by repeating it forever, use `cycle`:
 ;;   
-;;       user=> (take 10 (cycle [1 2 3]))
+;;       user=> 
+(take 10 (cycle [1 2 3]))
 ;;       (1 2 3 1 2 3 1 2 3 1)
 ;;       
 ;;   
-;;   [Transforming sequences](#transforming-sequences)
+;;*   [Transforming sequences](#transforming-sequences)
 ;;   -------------------------------------------------
 ;;   
 ;;   Given a sequence, we often want to find a _related_ sequence. `map`, for instance, applies a function to each element–but has a few more tricks up its sleeve.
