@@ -772,7 +772,7 @@ realized? infseq)
                    (map (fn [pair]
                           (* (first pair) (second pair))))
                    (take 1000)
-                   (reduce +))
+                   (reduce +)
 ;;       1335333000
 ;;       
 ;;   

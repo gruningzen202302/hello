@@ -1,7 +1,4 @@
-(ns welcome-to-clojure
-  (:require [clojure.repl :refer [source apropos dir pst doc find-doc]]
-            [clojure.string :as string]
-            [clojure.test :refer [is are]]))
+(ns chapter005book)
 
 (comment
 ;;     Clojure from the ground up: macros     window.dataLayer = window.dataLayer || \[\]; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-MXDP37S6QL');
@@ -14,27 +11,28 @@
 ;;   *   [Photos](/photos)
 ;;   *   [Code](http://github.com/aphyr)
 ;;   
-;;   [Clojure from the ground up: macros](/posts/305-clojure-from-the-ground-up-macros)
+;;*   [Clojure from the ground up: macros](/posts/305-clojure-from-the-ground-up-macros)
 ;;   ==================================================================================
 ;;   
 ;;   [Software](/tags/software) [Clojure](/tags/clojure) [Clojure from the ground up](/tags/clojure-from-the-ground-up)
 ;;   
 ;;   2013-11-26
 ;;   
-;;   In [Chapter 1](/posts/301-clojure-from-the-ground-up-welcome), I asserted that the grammar of Lisp is uniform: every expression is a list, beginning with a verb, and followed by some arguments. Evaluation proceeds from left to right, and every element of the list must be evaluated _before_ evaluating the list itself. Yet we just saw, at the end of [Sequences](/posts/304-clojure-from-the-ground-up-sequences), an expression which seemed to _violate_ these rules.
-;;   
-;;   Clearly, this is not the whole story.
-;;   
-;;   [Macroexpansion](#macroexpansion)
+";;   In [Chapter 1](/posts/301-clojure-from-the-ground-up-welcome), I asserted that the grammar of Lisp is uniform: every expression is a list, beginning with a verb, and followed by some arguments. Evaluation proceeds from left to right, and every element of the list must be evaluated _before_ evaluating the list itself. Yet we just saw, at the end of [Sequences](/posts/304-clojure-from-the-ground-up-sequences), an expression which seemed to _violate_ these rules.
+";;   
+";;   Clearly, this is not the whole story.
+";;   
+;;   * [Macroexpansion](#macroexpansion)
 ;;   ---------------------------------
 ;;   
-;;   There is another phase to evaluating an expression; one which takes place before the rules we’ve followed so far. That process is called _macro-expansion_. During macro-expansion, the _code itself_ is restructured according to some set of rules–rules which you, the programmer, can define.
-;;   
-;;       (defmacro ignore
-;;         "Cancels the evaluation of an expression, returning nil instead."
-;;         [expr]
-;;         nil)
-;;       user=> (ignore (+ 1 2))
+";;   There is another phase to evaluating an expression; one which takes place before the rules we’ve followed so far. That process is called _macro-expansion_. During macro-expansion, the _code itself_ is restructured according to some set of rules–rules which you, the programmer, can define.
+";;   
+;      (defmacro ignore
+;        "Cancels the evaluation of an expression, returning nil instead."
+;        [expr]
+;        nil)
+;;       user=> 
+;(ignore (+ 1 2))
 ;;       nil
 ;;       
 ;;   
