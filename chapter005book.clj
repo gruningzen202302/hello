@@ -26,21 +26,26 @@
 ;;   ---------------------------------
 ;;   
 ";;   There is another phase to evaluating an expression; one which takes place before the rules we’ve followed so far. That process is called _macro-expansion_. During macro-expansion, the _code itself_ is restructured according to some set of rules–rules which you, the programmer, can define.
-";;   
-;      (defmacro ignore
-;        "Cancels the evaluation of an expression, returning nil instead."
-;        [expr]
-;        nil)
+";;  
+)
+     (defmacro ignore 
+       "Cancels the evaluation of an expression, returning nil instead."
+       [expr]
+       nil)
 ;;       user=> 
-;(ignore (+ 1 2))
+(ignore (+ 1 2))
+
 ;;       nil
 ;;       
-;;   
+;;
+(comment     
 ";;   `defmacro` looks a lot like `defn`: it has a name, an optional documentation string, an argument vector, and a body–in this case, just `nil`. In this case, it looks like it simply ignored the expr `(+ 1 2)` and returned `nil`–but it’s actually deeper than that. `(+ 1 2)` was _never evaluated at all_."
 ;;   
-;;       user=> (def x 1)
+;;       user=> 
+  (def x 1)
 ;;       #'user/x
-;;       user=> x
+;;       user=> 
+  x
 ;;       1
 ;;       user=> (ignore (def x 2))
 ;;       nil
@@ -52,29 +57,31 @@
 ;;   
 ;;   To see these different layers in play, let’s try a macro which reverses the order of arguments to a function.
 ";;   
-;;       (defmacro rev [fun & args]
-;;         (cons fun (reverse args)))
-;;       
+      (defmacro rev [fun & args]
+        (cons fun (reverse args)))
+      
 ;;   
 ";;   This macro, named `rev`, takes one mandatory argument: a function. Then it takes any number of arguments, which are collected in the list `args`. It constructs a new list, starting with the function, and followed by the arguments, in reverse order.
 ;;   
 ;;   First, we macro-expand:
 ";;   
-;;       user=> (macroexpand '(rev str "hi" (+ 1 2)))
-;;       (str (+ 1 2) "hi")
+;;       user=> 
+  (macroexpand '(rev str "hi" (+ 1 2)))
+       (str (+ 1 2) "hi")
 ;;       
 ;;   
 ";;   So the `rev` macro took `str` as the function, and "
  ;;`"hi""` and `(+ 1 2)` 
 "as the arguments; then constructed a new list with the same function, but the arguments reversed. When we _evaluate_ that expression, we get:
 ";;   
-;;       user=> (eval (macroexpand '(rev str "hi" (+ 1 2))))
+;;       user=> 
+      (eval (macroexpand '(rev str "hi" (+ 1 2))))
 ;;       "3hi"
 ;;       
 ;;   
 ";;   `macroexpand` takes an expression and returns that expression with all macros expanded. `eval` takes an expression and evaluates it. When you type an unquoted expression into the REPL, Clojure macroexpands, then evaluates. Two stages–the first transforming _code_, the second transforming _values_.
 ";;   
-;;   [Across languages](#across-languages)
+;;   * [Across languages](#across-languages)
 ;;   -------------------------------------
 ;;   
 ";;   Some languages have a _metalanguage_: a language for extending the language itself. In C, for example, macros are implemented by the [C preprocessor](http://www.rt-embedded.com/blog/archives/macros-in-the-c-programming-language/), which has its own syntax for defining expressions, matching patterns in the source code’s text, and replacing that text with other text. But that preprocessor is _not_ C–it is a separate language entirely, with special limitations. In Clojure, the metalanguage is _Clojure itself_–the full power of the language is available to restructure programs. This is called a _procedural_ macro system. Some Lisps, like Scheme, use a macro system based on templating expressions, and still others use more powerful models like _f-expressions_–but that’s a discussion for a later time.
@@ -90,9 +97,9 @@
 ;;   
 ;;   Most languages encode special syntactic forms–things like “define a function”, “call a function”, “define a local variable”, “if this, then that”, and so on. In Clojure, these are called _special forms_. `if` is a special form, for instance. Its definition is built into the language core itself; it cannot be reduced into smaller parts.
 ";;   
-;;       (if (< 3 x)
-;;         "big"
-;;         "small")
+       (if (< 3 x)
+         "big"
+         "small")
 ;;       
 ;;   
 ;;   Or in Javascript:
@@ -106,34 +113,37 @@
 ;;   
 ";;   In Javascript, Ruby, and many other languages, these special forms are _fixed_. You cannot define your own syntax. For instance, one cannot define `or` in a language like JS or Ruby: it must be defined _for_ you by the language author.
 ";;   
-;;   In Clojure, `or` is just a macro.
-;;   
-;;       user=> (source or)
-;;       (defmacro or
-;;         "Evaluates exprs one at a time, from left to right. If a form
-;;         returns a logical true value, or returns that value and doesn't
-;;         evaluate any of the other expressions, otherwise it returns the
-;;         value of the last expression. (or) returns nil."
-;;         {:added "1.0"}
-;;         ([] nil)
-;;         ([x] x)
-;;         ([x & next]
-;;             `(let [or# ~x]
-;;                (if or# or# (or ~@next)))))
-;;       nil
+;;*   In Clojure, `or` is just a macro.
+;;    user=> 
+(source or)
+      (defmacro or
+        "Evaluates exprs one at a time, from left to right. If a form
+        returns a logical true value, or returns that value and doesn't
+        evaluate any of the other expressions, otherwise it returns the
+        value of the last expression. (or) returns nil."
+        {:added "1.0"}
+        ([] nil)
+        ([x] x)
+        ([x & next]
+            `(let [or# ~x]
+               (if or# or# (or ~@next)))))
+;      nil
 ;;       
 ;;   
 ";;   That `` ` `` operator–that’s called _syntax-quote_. It works just like regular quote–preventing evaluation of the following list–but with a twist: we can escape the quoting rule and substitute in regularly evaluated expressions using _unquote_ (`~`), and _unquote-splice_ (`~@`). Think of a syntax-quoted expression like a _template_ for code, with some parts filled in by evaluated forms.
 ";;   
-;;       user=> (let [x 2] `(inc x))
+;;       user=> 
+(let [x 2] `(inc x))
 ;;       (clojure.core/inc user/x)
-;;       user=> (let [x 2] `(inc ~x))
+;;       user=> 
+(let [x 2] `(inc ~x))
 ;;       (clojure.core/inc 2)
 ;;       
 ;;   
 ";;   See the difference? `~x` _substitutes_ the value of x, instead of using `x` as an unevaluated symbol. This code is essentially just shorthand for something like
 ";;   
-;;       user=> (let [x 2] (list 'clojure.core/inc x))
+;;       user=> 
+(let [x 2] (list 'clojure.core/inc x))
 ;;       (inc 2)
 ;;       
 ;;   
@@ -141,10 +151,12 @@
 ;;   
 ;;   The `~@` unquote splice works just like `~`, except it explodes a list into _multiple_ expressions in the resulting form:
 ";;   
-;;       user=> `(foo ~[1 2 3])
+;;       user=> 
+`(foo ~[1 2 3])
 ;;       (user/foo [1 2 3])
-;;       user=> `(foo ~@[1 2 3])
-;;       (user/foo 1 2 3)
+;;       user=> 
+`(foo ~@[1 2 3]) 
+;;(user/foo 1 2 3)
 ;;       
 ;;   
 ";;   `~@` is particularly useful when a function or macro takes an _arbitrary_ number of arguments. In the definition of `or`, it’s used to expand `(or a b c)` _recursively_.
