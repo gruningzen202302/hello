@@ -161,19 +161,23 @@
 ;;   
 ";;   `~@` is particularly useful when a function or macro takes an _arbitrary_ number of arguments. In the definition of `or`, it’s used to expand `(or a b c)` _recursively_.
 ";;   
-;;       user=> (pprint (macroexpand '(or a b c d)))
-;;       (let*
-;;        [or__3943__auto__ a]
-;;        (if or__3943__auto__ or__3943__auto__ (clojure.core/or b c d)))
+;;       user=> 
+(pprint (macroexpand '(or a b c d)))
+  
+(let* [or__3943__auto__ a]
+ (if or__3943__auto__ or__3943__auto__ (clojure.core/or b c d)))
 ;;       
 ;;   
 ";;   We’re using `pprint` (for “pretty print”) to make this expression easier to read. `(or a b c d)` is defined in terms of _if_: if the first element is truthy we return it; otherwise we evaluate `(or b c d)` instead, and so on.
 ;;   
 ;;   The final piece of the puzzle here is that weirdly named symbol: `or__3943__auto__`. That variable was _automatically generated_ by Clojure, to prevent _conflicts_ with an existing variable name. Because macros rewrite code, they have to be careful not to interfere with local variables, or it could get very confusing. Whenever we need a new variable in a macro, we use `gensym` to _generate a new symbol_.
 ";;   
-;;       user=> (gensym "hi")
+;;       user=>
+(gensym "hi")
 ;;       hi326
-;;       user=> (gensym "hi")
+;;       user=> 
+
+(gensym "hi")
 ;;       hi329
 ;;       user=> (gensym "hi")
 ;;       hi332
@@ -181,70 +185,80 @@
 ;;   
 ";;   Each symbol is different! If we tack on a `#` to the end of a symbol in a syntax-quoted expression, it’ll be expanded to a particular gensym:
 ";;   
-;;       user=> `(let [x# 2] x#)
+;;       user=> 
+`(let [x# 2] x#)
 ;;       (clojure.core/let [x__339__auto__ 2] x__339__auto__)
+x
+
+x__7612__auto__
 ;;       
 ;;   
 ";;   Note that you can always escape this safety feature if you _want_ to override local variables. That’s called _symbol capture_, or an _anaphoric_ or _unhygenic_ macro. To override local symbols, just use `~'foo` instead of `foo#`.
 ;;   
 ;;   With all the pieces on the board, let’s compare the `or` macro and its expansion:
 ";;   
-;;       (defmacro or
-;;         "Evaluates exprs one at a time, from left to right. If a form
-;;         returns a logical true value, or returns that value and doesn't
-;;         evaluate any of the other expressions, otherwise it returns the
-;;         value of the last expression. (or) returns nil."
-;;         {:added "1.0"}
-;;         ([] nil)
-;;         ([x] x)
-;;         ([x & next]
-;;             `(let [or# ~x]
-;;                (if or# or# (or ~@next)))))
-;;       
-;;       user=> (pprint (clojure.walk/macroexpand-all
-;;                        '(or (mossy? stone) (cool? stone) (wet? stone))))
-;;       (let*
-;;        [or__3943__auto__ (mossy? stone)]
-;;        (if
-;;         or__3943__auto__
-;;         or__3943__auto__
-;;         (let*
-;;          [or__3943__auto__ (cool? stone)]
-;;          (if or__3943__auto__ or__3943__auto__ (wet? stone)))))
-;;       
+       (defmacro or
+         "Evaluates exprs one at a time, from left to right. If a form
+         returns a logical true value, or returns that value and doesn't
+         evaluate any of the other expressions, otherwise it returns the
+         value of the last expression. (or) returns nil."
+         {:added "1.0"}
+         ([] nil)
+         ([x] x)
+         ([x & next]
+             `(let [or# ~x]
+                (if or# or# (or ~@next)))))
+       
+;;       user=> 
+(pprint (clojure.walk/macroexpand-all
+                        '(or (mossy? stone) (cool? stone) (wet? stone))))
+       (let*
+        [or__3943__auto__ (mossy? stone)]
+        (if
+         or__3943__auto__
+         or__3943__auto__
+         (let*
+          [or__3943__auto__ (cool? stone)]
+          (if or__3943__auto__ or__3943__auto__ (wet? stone)))))
+       
 ;;   
 ";;   See how the macro’s syntax-quoted `(let ...` has the same shape as the resulting code? `or#` is expanded to a variable named `or__3943__auto__`, which is bound to the expression `(mossy? stone)`. If that variable is truthy, we return it. Otherwise, we (and here’s the recursive part) rebind `or__3943__auto__` to `(cool? stone)` and try again. If _that_ fails, we fall back to evaluating `(wet? stone)`–thanks to the base case, the single-argument form of the `or` macro.
 ";;   
 ;; *   [Control flow](#control-flow)
 ;;   -----------------------------
 ;;   
-;;   We’ve seen that `or` is a macro written in terms of the special form `if`–and because of the way the macro is structured, it does _not_ obey the normal execution order. In `(or a b c)`, only `a` is evaluated first–then, only if it is `false` or `nil`, do we evaluate `b`. This is called _short-circuiting_, and it works for `and` as well.
-;;   
-;;   Changing the order of evaluation in a language is called _control flow_, and lets programs make decisions based on varying circumstances. We’ve already seen `if`:
-;;   
-;;       user=> (if (= 2 2) :a :b)
+"   We’ve seen that `or` is a macro written in terms of the special form `if`–and because of the way the macro is structured, it does _not_ obey the normal execution order. In `(or a b c)`, only `a` is evaluated first–then, only if it is `false` or `nil`, do we evaluate `b`. This is called _short-circuiting_, and it works for `and` as well.
+";;   
+"   Changing the order of evaluation in a language is called _control flow_, and lets programs make decisions based on varying circumstances. We’ve already seen `if`:
+";;   
+;;       user=> 
+       (if (= 2 2) :a :b)
 ;;       :a
 ;;       
 ;;   
-;;   `if` takes a predicate and two expressions, and only evaluates one of them, depending on whether the predicate evaluates to a truthy or falsey value. Sometimes you want to evaluate _more than one_ expression in order. For this, we have `do`.
-;;   
-;;       user=> (if (pos? -5)
-;;                (prn "-5 is positive")
-;;                (do
-;;                  (prn "-5 is negative")
-;;                  (prn "Who would have thought?")))
-;;       "-5 is negative"
-;;       "Who would have thought?"
-;;       nil
+;;
+"`if` takes a predicate and two expressions, and only evaluates one of them, depending on whether the predicate evaluates to a truthy or falsey value. Sometimes you want to evaluate _more than one_ expression in order. For this, we have `do`.
+";;   
+;;       user=> 
+(if (pos? -5)
+                (prn "-5 is positive")
+                (do
+                  (prn "-5 is negative")
+                  (prn "Who would have thought?")))
+       "-5 is negative"
+       "Who would have thought?"
+       nil
 ;;       
 ;;   
-;;   `prn` is a function which has a _side effect_: it prints a message to the screen, and returns `nil`. We wanted to print _two_ messages, but `if` only takes a single expression per branch–so in our false branch, we used `do` to wrap up two `prn`s into a single expression, and evaluate them in order. `do` returns the value of the final expression, which happens to be `nil` here.
+"   `prn` is a function which has a _side effect_: it prints a message to the screen, and returns `nil`. We wanted to print _two_ messages, but `if` only takes a single expression per branch–so in our false branch, we used `do` to wrap up two `prn`s into a single expression, and evaluate them in order. `do` returns the value of the final expression,which happens to be `nil` here."
 ;;   
-;;   When you only want to take one branch of an `if`, you can use `when`:
 ;;   
-;;       user=> (when false
-;;                (prn :hi)
-;;                (prn :there))
+       "When you only want to take one branch of an `if`, you can use `when`:"
+;;   
+;;       user=> 
+(when false
+                (prn :hi)
+                (prn :there))
 ;;       nil
 ;;       user=> (when true
 ;;                (prn :hi)
@@ -406,29 +420,35 @@
 ;;   
 ;;   In chapter 4 we mentioned that most of the sequences in Clojure, like `map`, `filter`, `iterate`, `repeatedly`, and so on, were _lazy_: they did not evaluate any of their elements until required. This too is provided by a macro, called `lazy-seq`.
 ;;   
-;;       (defn integers
-;;         [x]
-;;         (lazy-seq
-;;           (cons x (integers (inc x)))))
-;;       user=> (def xs (integers 0))
+       (defn integers
+         [x]
+         (lazy-seq
+           (cons x (integers (inc x)))))
+       ;;user=> 
+       (def xs (integers 0))
 ;;       #'user/xs
 ;;       
 ;;   
 ;;   This sequence does not terminate; it is _infinitely_ recursive. Yet it returned instantaneously. `lazy-seq` interrupted that recursion and restructured it into a sequence which constructs elements only when they are requested.
 ;;   
-;;       user=> (take 10 xs)
+;;       user=> 
+       (take 10 xs)
 ;;       (0 1 2 3 4 5 6 7 8 9)
 ;;       
 ;;   
 ;;   When using `lazy-seq` and its partner `lazy-cat`, you don’t have to use `recur`–or even be tail-recursive. The macros interrupt each level of recursion, preventing stack overflows.
 ;;   
 ;;   You can also delay evaluation of some expressions until later, using `delay` and `deref`.
-;;   
-;;       user=> (def x (delay
-;;                       (prn "computing a really big number!")
-;;                       (last (take 10000000 (iterate inc 0)))))
+;;  
+)
+(comment
+;;       user=> 
+       (def x (delay 
+                (prn "computing a really big number!") 
+                (last (take 10000000 (iterate inc 0)))))
 ;;       #'user/x ; Did nothing, returned immediately
-;;       user=> (deref x)
+;;       user=> 
+       (deref x)
 ;;       "computing a really big number!" ; Now we have to wait!
 ;;       9999999
 ;;       
@@ -444,26 +464,29 @@
 ;;   
 ;;   Like `let`, `for` takes a vector of `bindings`. Unlike `let`, however, `for` binds its variables to _each possible combination of elements in their corresponding sequences_.
 ;;   
-;;       user=> (for [x [1 2 3]
-;;                    y [:a :b]]
-;;                [x y])
+;;  
+
+  ;;user=> 
+  (for [x [1 2 3]
+                    y [:a :b]]
+                [x y])
 ;;       ([1 :a] [1 :b] [2 :a] [2 :b] [3 :a] [3 :b])
 ;;       
 ;;   
 ;;   “For each x in the sequence `[1 2 3]`, and for each `y` in the sequence `[:a :b]`, find all `[x y]` pairs.” Note that the rightmost variable `y` iterates the fastest.
 ;;   
 ;;   Like most sequence functions, the `for` macro yields lazy sequences. You can filter them with `take`, `filter`, et al like any other sequence. Or you can use `:while` to tell `for` when to stop, or `:when` to filter out combinations of elements.
-;;   
-;;       (for [x     (range 5)
-;;             y     (range 5)
-;;             :when (and (even? x) (odd? y))]
-;;         [x y])
-;;       ([0 1] [0 3] [2 1] [2 3] [4 1] [4 3])
+  
+      (for [x     (range 5)
+            y     (range 5)
+            :when (and (even? x) (odd? y))]
+        [x y])
+      ([0 1] [0 3] [2 1] [2 3] [4 1] [4 3])
 ;;       
 ;;   
 ;;   Clojure includes a rich smörgåsbord of control-flow constructs; we’ll meet new ones throughout the book.
 ;;   
-;;   [The threading macros](#the-threading-macros)
+;;*   [The threading macros](#the-threading-macros)
 ;;   ---------------------------------------------
 ;;   
 ;;   Sometimes you want to _thread_ a computation through several expressions, like a chain. Object-oriented languages like Ruby or Java are well-suited to this style:
@@ -476,10 +499,12 @@
 ;;   
 ;;   The Clojure threading macros do the same by restructuring a sequence of expressions, inserting each expression as the first (or final) argument in the next expression.
 ;;   
-;;       user=> (pprint (clojure.walk/macroexpand-all 
-;;                '(->> (range 10) (filter odd?) (reduce +))))
-;;       (reduce + (filter odd? (range 10)))
-;;       user=> (->> (range 10) (filter odd?) (reduce +))
+;;       user=> 
+ (pprint (clojure.walk/macroexpand-all 
+               '(->> (range 10) (filter odd?) (reduce +))))
+      (reduce + (filter odd? (range 10)))
+;       user=> 
+ (->> (range 10) (filter odd?) (reduce +))
 ;;       25
 ;;       
 ;;   
@@ -487,12 +512,14 @@
 ;;   
 ;;   `->`, by contrast, inserts each form in as the _first_ argument in the following expression.
 ;;   
-;;       user=> (pprint (clojure.walk/macroexpand-all 
-;;                '(-> {:proton :fermion} (assoc :photon :boson) (assoc :neutrino :fermion))))
-;;       (assoc (assoc {:proton :fermion} :photon :boson) :neutrino :fermion)
-;;       user=> (-> {:proton :fermion}
-;;                  (assoc :photon :boson)
-;;                  (assoc :neutrino :fermion))
+;;       user=> 
+ (pprint (clojure.walk/macroexpand-all 
+               '(-> {:proton :fermion} (assoc :photon :boson) (assoc :neutrino :fermion))))
+      (assoc (assoc {:proton :fermion} :photon :boson) :neutrino :fermion)
+;;      user=>      
+          (-> {:proton :fermion}
+                  (assoc :photon :boson)
+                  (assoc :neutrino :fermion))
 ;;       {:neutrino :fermion, :photon :boson, :proton :fermion}
 ;;       
 ;;   
@@ -507,7 +534,7 @@
 ;;   
 ;;   We’ll see a plethora of macros, from simple to complex, through the course of this book. Each one shares the common pattern of _simplifying code_; reducing tangled or verbose expressions into something more concise, more meaningful, better suited to the problem at hand.
 ;;   
-;;   [When to use macros](#when-to-use-macros)
+;;*   [When to use macros](#when-to-use-macros)
 ;;   -----------------------------------------
 ;;   
 ;;   While it’s important to be aware of the purpose and behavior of the macro system, you don’t need to write your own macros to be productive with Clojure. For now, you’ll be just fine writing code which uses the existing macros in the language. When you _do_ need to delve deeper, come back to this guide and experiment. It’ll take some time to sink in.
@@ -522,7 +549,7 @@
 ;;   
 ;;   For a deeper exploration of Clojure macros in a real-world application, try [Language Power](http://aphyr.com/posts/268-language-power).
 ;;   
-;;   [Review](#review)
+;;*   [Review](#review)
 ;;   -----------------
 ;;   
 ;;   In Chapter 4, deeply nested expressions led to the desire for a _simpler_, _more direct_ expression of a chain of sequence operations. We learned that the Clojure compiler first _expands_ expressions before evaluating them, using macros–special functions which take code and return other code. We used macros to define the short-circuiting `or` operator, and followed that with a tour of basic control flow, recursion, laziness, list comprehensions, and chained expressions. Finally, we learned a bit about when and how to write our own macros.
