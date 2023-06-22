@@ -8,8 +8,12 @@
 
 (print lines)
 
-(def str-to-num (map #(str/split % #" ") lines))
+(def str-to-num (map (fn[args](str/split args #" ")) lines))
 
 str-to-num
 
-(map identity str-to-num)
+(first str-to-num)
+
+(def number-list (map #(Integer/parseInt %) (first str-to-num)))
+
+number-list 
