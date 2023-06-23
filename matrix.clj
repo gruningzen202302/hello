@@ -28,3 +28,18 @@ length
 sqrt-length
 
 (int sqrt-length)
+
+(loop [i 0]
+  (when (< i sqrt-length)
+    (println (nth number-list i))
+    (recur (inc i))))
+
+(loop [i 0]
+  (when (< i length)
+    (println (nth number-list i))
+    (recur (inc i))))
+
+(loop [x 1]
+  (when (<= x sqrt-length)
+    (println (str "index " x) )
+    (recur (+ x 1))))
