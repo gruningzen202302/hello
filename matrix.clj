@@ -43,3 +43,7 @@ sqrt-length
   (when (<= x sqrt-length)
     (println (str "index " x) )
     (recur (+ x 1))))
+
+(reduce + number-list)
+
+(map #(* % %) number-list)
