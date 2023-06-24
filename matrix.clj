@@ -47,3 +47,7 @@ sqrt-length
 (reduce + number-list)
 
 (map #(* % %) number-list)
+
+(split-at 4 number-list)
+
+(str/split raw #" ")
